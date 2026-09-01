@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { missingSupabaseEnv, readSupabaseConfig } from "@/lib/supabase/config";
+import { formConfigError, missingSupabaseEnv, readSupabaseConfig } from "@/lib/supabase/config";
 
 const FULL = {
   NEXT_PUBLIC_SUPABASE_URL: "https://abc.supabase.co",
@@ -46,5 +46,24 @@ describe("đọc cấu hình Supabase", () => {
     });
     expect(cfg?.url).toBe("https://abc.supabase.co");
     expect(cfg?.anonKey).toBe("key");
+  });
+});
+
+describe("chắn lỗi cấu hình cho biểu mẫu công khai", () => {
+  it("đủ cấu hình thì không có lỗi", () => {
+    expect(formConfigError(FULL)).toBeNull();
+  });
+
+  it("thiếu cấu hình thì trả về thông báo hiện được trên biểu mẫu", () => {
+    const msg = formConfigError({});
+    expect(msg).toBeTruthy();
+    // Người dùng cuối cần biết đây là lỗi cấu hình phía máy chủ, không phải họ
+    // gõ sai mật khẩu — nhưng không cần nhìn thấy tên biến môi trường.
+    expect(msg).not.toContain("NEXT_PUBLIC_");
+    expect(msg).toMatch(/chưa được cấu hình/i);
+  });
+
+  it("biến để rỗng cũng tính là thiếu", () => {
+    expect(formConfigError({ ...FULL, NEXT_PUBLIC_SUPABASE_ANON_KEY: "  " })).toBeTruthy();
   });
 });

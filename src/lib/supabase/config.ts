@@ -32,3 +32,26 @@ export function missingConfigMessage(env: Env = process.env): string {
     `Project Settings → Environment Variables, rồi deploy lại để giá trị mới có hiệu lực.`
   );
 }
+
+/**
+ * Lỗi cấu hình ở dạng hiển thị được ngay trên biểu mẫu công khai, hoặc null nếu
+ * cấu hình đã đủ.
+ *
+ * Trang đăng nhập và đăng ký không chạm tới Supabase lúc dựng trang, nên chúng
+ * vẫn mở được bình thường khi thiếu biến môi trường — chỉ tới lúc bấm nút thì
+ * server action mới gọi createClient() và ném lỗi, và một lỗi không bắt trong
+ * server action làm Next.js thay cả trang bằng màn hình trắng kèm mã Digest.
+ * Người dùng không hiểu chuyện gì xảy ra, còn người vận hành thì phải đi mò log.
+ *
+ * Thông báo này cố ý không nêu tên biến môi trường: người đang đứng trước biểu
+ * mẫu không sửa được chúng. Chi tiết đầy đủ ghi vào log máy chủ.
+ */
+export function formConfigError(env: Env = process.env): string | null {
+  if (missingSupabaseEnv(env).length === 0) return null;
+  console.error(`[cấu hình] ${missingConfigMessage(env)}`);
+  return (
+    "Hệ thống chưa được cấu hình để kết nối cơ sở dữ liệu, nên chưa xử lý được " +
+    "yêu cầu này. Đây là lỗi phía máy chủ, không phải do thông tin bạn vừa nhập — " +
+    "vui lòng báo quản trị viên."
+  );
+}

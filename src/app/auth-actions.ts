@@ -3,12 +3,16 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { formConfigError } from "@/lib/supabase/config";
 import { homePathFor } from "@/lib/auth";
 import type { Database } from "@/types/database";
 
 type Role = Database["public"]["Enums"]["user_role"];
 
 export async function signIn(_prev: string | null, formData: FormData): Promise<string | null> {
+  const configError = formConfigError();
+  if (configError) return configError;
+
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -29,6 +33,9 @@ export async function signIn(_prev: string | null, formData: FormData): Promise<
 }
 
 export async function signUp(_prev: string | null, formData: FormData): Promise<string | null> {
+  const configError = formConfigError();
+  if (configError) return configError;
+
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
@@ -63,6 +70,9 @@ export async function signUp(_prev: string | null, formData: FormData): Promise<
 }
 
 export async function signOut() {
+  // Thiếu cấu hình thì không có phiên nào để đóng; đưa về trang chủ là đủ.
+  if (formConfigError()) redirect("/");
+
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
