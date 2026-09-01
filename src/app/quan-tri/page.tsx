@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { AppNav, PageHeader } from "@/components/app-nav";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import { Badge, Card, Empty, Stat, Table } from "@/components/ui";
 import { fmtTonnes, fmtVnd } from "@/lib/format";
 import { BATCH_STATUS_LABEL } from "@/lib/labels";
@@ -90,6 +91,7 @@ export default async function AdminPage() {
           </Card>
         </div>
       </main>
+      <ChatWidget audience="admin" />
     </div>
   );
 }

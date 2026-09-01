@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { AppNav } from "@/components/app-nav";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 export default async function OrdersLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireProfile();
@@ -7,6 +8,7 @@ export default async function OrdersLayout({ children }: { children: React.React
     <div className="min-h-dvh bg-soil-50">
       <AppNav profile={profile} />
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+      <ChatWidget audience="buyer" />
     </div>
   );
 }

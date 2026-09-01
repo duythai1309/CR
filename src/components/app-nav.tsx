@@ -10,6 +10,7 @@ const COOP_LINKS = [
   { href: "/htx/mua-vu", label: "Mùa vụ" },
   { href: "/htx/lo-tin-chi", label: "Lô tín chỉ" },
   { href: "/htx/he-so", label: "Hệ số phát thải" },
+  { href: "/htx/tro-ly", label: "Trợ lý" },
 ];
 
 const BUYER_LINKS = [

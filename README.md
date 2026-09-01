@@ -67,6 +67,7 @@ Bảng chia chi tiết đến từng nông hộ ghi vào `revenue_shares.breakdo
 | Giao diện | Next.js 15 (App Router, Server Actions), React 19, Tailwind CSS v4 |
 | Bản đồ | Leaflet, nền ảnh vệ tinh, vẽ và sửa polygon thửa ruộng |
 | Dữ liệu | Supabase — Postgres + PostGIS, Auth, Storage, RLS |
+| Trợ lý ảo | Google Gemini qua `@google/genai`, gọi công cụ, trả lời theo dòng |
 | Kiểm tra đầu vào | Zod, TypeScript `strict` |
 | Kiểm thử | Vitest (đơn vị + tích hợp trên cơ sở dữ liệu thật) |
 
@@ -75,6 +76,7 @@ Bảng chia chi tiết đến từng nông hộ ghi vào `revenue_shares.breakdo
 ```bash
 npm install
 cp .env.example .env.local   # điền NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY
+                             # thêm GEMINI_API_KEY nếu muốn bật trợ lý ảo
 npm run dev                  # http://localhost:3000
 ```
 
@@ -86,8 +88,8 @@ lên project Supabase, theo đúng thứ tự đánh số.
 | `npm run dev` | Chạy máy chủ phát triển |
 | `npm run build` | Dựng bản phát hành |
 | `npm start` | Chạy bản đã dựng |
-| `npm test` | Kiểm thử engine MRV và hàm hình học (26 ca, không cần mạng) |
-| `npm run test:e2e` | Kiểm thử tích hợp trên cơ sở dữ liệu thật, qua đúng RLS (35 ca) |
+| `npm test` | Kiểm thử engine MRV, hàm hình học và trợ lý (54 ca, không cần mạng) |
+| `npm run test:e2e` | Kiểm thử tích hợp trên cơ sở dữ liệu thật, qua đúng RLS (40 ca) |
 | `npm run types` | Kiểm tra kiểu TypeScript |
 
 Bộ kiểm thử tích hợp cần hai tài khoản thử — tạo bằng
@@ -127,22 +129,27 @@ src/
       nong-ho · thua-ruong             hồ sơ nông hộ, vẽ ranh thửa
       mua-vu · thua-vu/[id]            mùa vụ, nhật ký canh tác và tính MRV
       lo-tin-chi · he-so               gộp lô, chào bán; tra cứu hệ số kèm nguồn
+      tro-ly                           trò chuyện với trợ lý ảo
     cho · cho/[id] · don-hang          chợ tín chỉ, đặt mua, thanh toán
     quan-tri                           toàn cảnh nền tảng
+    api/chat                           một lượt hỏi–đáp của trợ lý, trả về theo dòng
   lib/
     mrv/engine.ts                      công thức IPCC, hàm thuần
     mrv/factors.ts                     nạp hệ số theo vùng và vụ từ cơ sở dữ liệu
     mrv/collect.ts                     gom nhật ký thành đầu vào cho engine
     gis/area.ts · region.ts            diện tích polygon, vùng đang triển khai
+    chat/tools.ts · handlers.ts        công cụ trợ lý được gọi và cài đặt truy vấn
+    chat/prompt.ts · knowledge.ts      system prompt và tri thức tĩnh về nền tảng
+    chat/provider.ts · run.ts          lớp bọc Gemini và vòng lặp gọi công cụ
     supabase/ · auth.ts                phiên đăng nhập phía máy chủ và trình duyệt
   middleware.ts                        chặn đường dẫn cần đăng nhập
 supabase/migrations/                   lược đồ, RLS, RPC nghiệp vụ
-tests/                                 mrv · gis (đơn vị) · e2e/flow (tích hợp)
+tests/                                 mrv · gis · chat (đơn vị) · e2e/flow (tích hợp)
 ```
 
 ## Cơ sở dữ liệu
 
-Chín migration, áp dụng theo thứ tự:
+Mười migration, áp dụng theo thứ tự:
 
 | Tệp | Nội dung |
 |---|---|
@@ -155,6 +162,7 @@ Chín migration, áp dụng theo thứ tự:
 | `0007_harden` | Siết `search_path` và quyền của các trigger |
 | `0008_vietnam_regional_factors` | Vùng miền, loại vụ, bộ hệ số Tier 2 đo tại Việt Nam |
 | `0009_coop_two_tier` | Cơ cấu hành chính hai cấp tỉnh/xã |
+| `0010_chat` | Hội thoại với trợ lý ảo, riêng tư theo từng người dùng |
 
 ## Ba quyết định thiết kế đáng chú ý
 
@@ -247,6 +255,37 @@ và ghi bảng chia doanh thu, không phát sinh giao dịch tiền thật; gi�
 giữ nguyên trạng thái chờ. Khi cắm cổng thanh toán thật, webhook của nhà cung cấp gọi vào
 chính hàm này — phần còn lại của hệ thống không đổi.
 
+## Trợ lý ảo
+
+Nút **Hỏi trợ lý** ở góc phải mọi màn hình sau đăng nhập, và trang riêng
+[`/htx/tro-ly`](src/app/htx/tro-ly/page.tsx) cho hội thoại dài. Trợ lý trả lời tiếng Việt
+hai nhóm câu hỏi: cách dùng hệ thống cùng phương pháp luận MRV, và số liệu thật của chính
+người đang hỏi.
+
+**Trợ lý không sinh câu lệnh SQL.** Model chỉ gọi được mười công cụ có kiểu rõ ràng —
+tra hệ số, tổng kết mùa vụ, rà thửa còn thiếu nhật ký, xem chi tiết thửa-vụ, danh sách
+nông hộ, lô tín chỉ, bảng chia doanh thu, chợ, đơn hàng. Mỗi công cụ là một truy vấn viết
+sẵn chạy bằng **phiên đăng nhập của chính người dùng**, nên RLS chặn y như khi họ bấm trên
+giao diện; không có công cụ nào ghi dữ liệu. Bỏ hướng để model tự sinh SQL vì tên nông hộ
+và ghi chú nhật ký là chữ người dùng nhập, hoàn toàn có thể chứa câu lệnh cài vào để lái
+model, và vì RLS chặn được rò rỉ dữ liệu nhưng không chặn được truy vấn nặng làm nghẽn cơ
+sở dữ liệu.
+
+**Trợ lý không tự tính MRV.** Công thức IPCC nằm trong prompt để giải thích cách hệ thống
+tính, không phải để model tính hộ. Mọi con số phải đến từ công cụ gọi trong chính lượt đó;
+thửa chưa có bản tính thì trả lời là chưa tính và chỉ chỗ bấm tính, chứ không ước lượng.
+Trong một hệ thống mà con số đi vào hồ sơ phát hành tín chỉ, đây là quy tắc quan trọng hơn
+cả sự trôi chảy của câu trả lời.
+
+**Hội thoại riêng tư hơn mọi dữ liệu khác trong hệ thống.** Chỉ đúng chủ hội thoại đọc
+được — đồng nghiệp cùng hợp tác xã và cả quản trị nền tảng đều không, vì câu hỏi người ta
+gõ cho trợ lý thường là đang dò xem mình làm sai chỗ nào. Mỗi câu trả lời lưu kèm tên các
+công cụ đã gọi, đủ để sau này truy được vì sao trợ lý nói ra một con số.
+
+Toàn bộ phần biết đến Gemini gói trong [src/lib/chat/provider.ts](src/lib/chat/provider.ts);
+đổi sang nhà cung cấp khác chỉ phải viết lại một cài đặt của `ChatProvider`. Thiếu
+`GEMINI_API_KEY` thì trợ lý tự tắt kèm lời nhắc, phần còn lại của nền tảng chạy bình thường.
+
 ## Bảo mật
 
 Toàn bộ phân quyền đặt ở tầng cơ sở dữ liệu bằng RLS, không ở tầng ứng dụng: kể cả khi mã
@@ -289,3 +328,4 @@ giới dữ liệu giữa các vai trò.
 - Thanh toán là chế độ thử, chưa cắm cổng thật.
 - Kiểm định vẫn là bước ngoài hệ thống: trạng thái `verified` do quản trị viên đặt, nền
   tảng chỉ đóng gói hồ sơ để đơn vị kiểm định làm việc.
+- Trợ lý chỉ đọc dữ liệu, chưa nhập liệu hộ; chưa có hạn mức số lượt hỏi mỗi ngày.

@@ -534,3 +534,93 @@ describe("7. Đặt mua và thanh toán thử", () => {
     expect(Number(batch!.sold_co2e_t)).toBe(0.2);
   });
 });
+
+describe("8. Hội thoại với trợ lý là riêng tư", () => {
+  let conversationId: string;
+
+  it("mỗi người mở được hội thoại của chính mình", async () => {
+    const { data, error } = await coop
+      .from("chat_conversations")
+      .insert({ user_id: coopUserId, cooperative_id: coopId, title: "Hỏi về vụ Xuân" })
+      .select("id")
+      .single();
+    expect(error).toBeNull();
+    conversationId = data!.id;
+
+    const { error: msgError } = await coop.from("chat_messages").insert({
+      conversation_id: conversationId,
+      user_id: coopUserId,
+      role: "user",
+      content: "Vụ này còn thửa nào chưa tính MRV?",
+    });
+    expect(msgError).toBeNull();
+  });
+
+  it("người khác không đọc được hội thoại và tin nhắn của mình", async () => {
+    const { data: convos } = await buyer
+      .from("chat_conversations")
+      .select("id")
+      .eq("id", conversationId);
+    expect(convos).toEqual([]);
+
+    const { data: messages } = await buyer
+      .from("chat_messages")
+      .select("content")
+      .eq("conversation_id", conversationId);
+    expect(messages).toEqual([]);
+  });
+
+  it("không chèn được tin nhắn vào hội thoại của người khác", async () => {
+    const buyerId = (await buyer.auth.getUser()).data.user!.id;
+    const { error } = await buyer.from("chat_messages").insert({
+      conversation_id: conversationId,
+      user_id: buyerId,
+      role: "user",
+      content: "Chen ngang vào hội thoại người khác",
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("không mạo danh người khác để ghi tin nhắn", async () => {
+    const buyerId = (await buyer.auth.getUser()).data.user!.id;
+    const { data: own } = await buyer
+      .from("chat_conversations")
+      .insert({ user_id: buyerId, title: "Hội thoại của doanh nghiệp" })
+      .select("id")
+      .single();
+
+    const { error } = await buyer.from("chat_messages").insert({
+      conversation_id: own!.id,
+      user_id: coopUserId,
+      role: "user",
+      content: "Mạo danh cán bộ hợp tác xã",
+    });
+    expect(error).not.toBeNull();
+  });
+
+  it("hội thoại vừa có tin nhắn được đẩy lên đầu danh sách", async () => {
+    const { data: before } = await coop
+      .from("chat_conversations")
+      .select("updated_at")
+      .eq("id", conversationId)
+      .single();
+
+    await coop.from("chat_messages").insert({
+      conversation_id: conversationId,
+      user_id: coopUserId,
+      role: "assistant",
+      content: "Mình đã tra giúp anh/chị.",
+      tool_calls: [{ name: "thua_thieu_nhat_ky", args: {} }],
+    });
+
+    const { data: after } = await coop
+      .from("chat_conversations")
+      .select("updated_at")
+      .eq("id", conversationId)
+      .single();
+
+    expect(new Date(after!.updated_at).getTime()).toBeGreaterThanOrEqual(
+      new Date(before!.updated_at).getTime(),
+    );
+  });
+});

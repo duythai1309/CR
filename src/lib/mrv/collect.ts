@@ -35,10 +35,53 @@ export interface CollectResult {
   };
 }
 
-function daysBetween(from: string | null, to: string | null): number | null {
+export function daysBetween(from: string | null, to: string | null): number | null {
   if (!from || !to) return null;
   const diff = (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000;
   return diff > 0 ? Math.round(diff) : null;
+}
+
+/** Những gì cần có trước khi tính được MRV cho một thửa-vụ. */
+export interface MrvReadiness {
+  areaHa: number | null;
+  transplantDate: string | null;
+  harvestDate: string | null;
+  /** Có bản ghi rơm rạ hay chưa; null nghĩa là chưa khai. */
+  strawMethod: StrawMethod | null;
+  baselineStrawMethod: StrawMethod | null;
+  strawTonnesPerHa: number | null;
+  region: VnRegion | null;
+  seasonType: SeasonType | null;
+}
+
+/**
+ * Việc còn phải làm trước khi tính được, viết bằng ngôn ngữ người nhập liệu hiểu.
+ * Hàm thuần, dùng chung cho màn hình nhập liệu và cho trợ lý ảo — hai chỗ phải nói
+ * đúng một danh sách, nếu không cán bộ HTX làm theo trợ lý xong vẫn thấy màn hình
+ * báo thiếu.
+ */
+export function missingMrvInputs(r: MrvReadiness): string[] {
+  const missing: string[] = [];
+  const cultivationDays = daysBetween(r.transplantDate, r.harvestDate);
+
+  if (!r.areaHa || r.areaHa <= 0) missing.push("Diện tích thửa (vẽ ranh thửa trên bản đồ)");
+  if (!r.transplantDate) missing.push("Ngày cấy");
+  if (!r.harvestDate) missing.push("Ngày thu hoạch");
+  if (r.transplantDate && r.harvestDate && !cultivationDays)
+    missing.push("Ngày thu hoạch phải sau ngày cấy");
+  if (!r.strawMethod) missing.push("Cách xử lý rơm rạ");
+  // Không có vùng và loại vụ thì không biết lấy hệ số phát thải nền nào, mà đây là
+  // đại lượng nhân trực tiếp vào toàn bộ kết quả nên tuyệt đối không được đoán.
+  if (!r.region) missing.push("Vùng miền của hợp tác xã (mục Thiết lập)");
+  if (!r.seasonType) missing.push("Loại vụ của mùa vụ này (đầu năm / giữa năm / cuối năm)");
+  if (
+    r.strawMethod &&
+    (r.strawMethod === "burned" || r.baselineStrawMethod === "burned") &&
+    !(Number(r.strawTonnesPerHa) > 0)
+  )
+    missing.push("Sản lượng rơm rạ (tấn/ha) — bắt buộc khi có đốt rơm");
+
+  return missing;
 }
 
 /**
@@ -99,20 +142,16 @@ export async function collectMrvInput(
     return [];
   };
 
-  const missing: string[] = [];
-  if (!areaHa || areaHa <= 0) missing.push("Diện tích thửa (vẽ ranh thửa trên bản đồ)");
-  if (!fs.transplant_date) missing.push("Ngày cấy");
-  if (!fs.harvest_date) missing.push("Ngày thu hoạch");
-  if (fs.transplant_date && fs.harvest_date && !cultivationDays)
-    missing.push("Ngày thu hoạch phải sau ngày cấy");
-  if (!straw) missing.push("Cách xử lý rơm rạ");
-  // Không có vùng và loại vụ thì không biết lấy hệ số phát thải nền nào, mà đây là
-  // đại lượng nhân trực tiếp vào toàn bộ kết quả nên tuyệt đối không được đoán.
-  if (!region) missing.push("Vùng miền của hợp tác xã (mục Thiết lập)");
-  if (!seasonType) missing.push("Loại vụ của mùa vụ này (đầu năm / giữa năm / cuối năm)");
-  if (straw && (straw.method === "burned" || straw.baseline_method === "burned") &&
-      !(Number(straw.amount_t_per_ha) > 0))
-    missing.push("Sản lượng rơm rạ (tấn/ha) — bắt buộc khi có đốt rơm");
+  const missing = missingMrvInputs({
+    areaHa,
+    transplantDate: fs.transplant_date,
+    harvestDate: fs.harvest_date,
+    strawMethod: (straw?.method as StrawMethod) ?? null,
+    baselineStrawMethod: (straw?.baseline_method as StrawMethod) ?? null,
+    strawTonnesPerHa: straw ? Number(straw.amount_t_per_ha ?? 0) : null,
+    region,
+    seasonType,
+  });
 
   const summary: CollectResult["summary"] = {
     fieldName: field?.name ?? "—",
