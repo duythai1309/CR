@@ -105,6 +105,11 @@ phát triển.
 | `buyer` | `/cho` | Duyệt lô đang chào bán, đặt mua, thanh toán thử |
 | `platform_admin` | `/quan-tri` | Toàn cảnh nền tảng và dòng doanh thu |
 
+Vai trò `platform_admin` **không đăng ký được qua giao diện** — xem phần bảo mật bên
+dưới. Tài khoản quản trị đầu tiên tạo bằng [supabase/seed-admin-user.sql](supabase/seed-admin-user.sql),
+chạy một lần trên bảng điều khiển Supabase. Chưa có tài khoản nào thuộc vai trò này thì
+`/quan-tri` và `/quan-tri/tro-ly` không vào được, kể cả khi mã nguồn đã có sẵn.
+
 Tài khoản hợp tác xã đăng ký xong sẽ vào `/thiet-lap` để **tạo đơn vị mới** hoặc **gia
 nhập đơn vị đã có bằng mã** — người tạo trở thành `coop_manager`, người gia nhập sau là
 `coop_staff`. Vai trò lưu trong `profiles` và không tự nâng lên được: trigger
