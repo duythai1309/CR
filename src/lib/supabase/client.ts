@@ -2,10 +2,10 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
+import { missingConfigMessage, readSupabaseConfig } from "./config";
 
 export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  const config = readSupabaseConfig();
+  if (!config) throw new Error(missingConfigMessage());
+  return createBrowserClient<Database>(config.url, config.anonKey);
 }

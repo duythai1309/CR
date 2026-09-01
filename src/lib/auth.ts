@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { readSupabaseConfig } from "@/lib/supabase/config";
 import type { Database } from "@/types/database";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type UserRole = Database["public"]["Enums"]["user_role"];
 
 export async function getProfile(): Promise<Profile | null> {
+  // Thiếu cấu hình thì coi như khách chưa đăng nhập, để trang giới thiệu vẫn dựng
+  // được. Các trang cần đăng nhập đã bị middleware chặn từ trước đó.
+  if (!readSupabaseConfig()) return null;
+
   const supabase = await createClient();
   const {
     data: { user },
