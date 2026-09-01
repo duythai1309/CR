@@ -13,6 +13,12 @@ import { readChatConfig } from "@/lib/chat/config";
 import { missingMrvInputs } from "@/lib/mrv/collect";
 import { FIXTURE_RESULTS, createFixtureExecute } from "@/lib/chat/eval/fixture";
 import { buildContexts, buildTrajectory } from "@/lib/chat/eval/trajectory";
+import {
+  PROVIDERS,
+  findProvider,
+  providersWithEnvKey,
+} from "@/lib/chat/providers/registry";
+import { resolveChatConfig } from "@/lib/chat/settings";
 
 describe("giới hạn quanh một lượt hỏi", () => {
   it("từ chối câu hỏi rỗng và câu hỏi không phải văn bản", () => {
@@ -355,5 +361,92 @@ describe("vết thực thi gửi cho eval platform", () => {
     const messages = buildTrajectory("Xin chào", [], "Chào anh/chị.");
     expect(messages).toHaveLength(2);
     expect(buildContexts([])).toEqual([]);
+  });
+});
+
+describe("danh mục nhà cung cấp", () => {
+  it("mỗi nhà cung cấp khai đủ và model mặc định nằm trong danh sách gợi ý", () => {
+    for (const p of PROVIDERS) {
+      expect(p.envKey, p.id).toMatch(/^[A-Z0-9_]+$/);
+      expect(p.envModelKey, p.id).toMatch(/^[A-Z0-9_]+$/);
+      expect(p.models.length, p.id).toBeGreaterThan(0);
+      expect(p.models.map((m) => m.id), p.id).toContain(p.defaultModel);
+    }
+  });
+
+  it("id không trùng nhau", () => {
+    const ids = PROVIDERS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("tra được nhà cung cấp theo id, id lạ trả null", () => {
+    expect(findProvider("gemini")?.label).toBe("Google Gemini");
+    expect(findProvider("khong-co-that")).toBeNull();
+    expect(findProvider(null)).toBeNull();
+  });
+
+  it("nhận ra nhà cung cấp đã có khoá trong biến môi trường", () => {
+    expect(providersWithEnvKey({})).toEqual([]);
+    expect(providersWithEnvKey({ GEMINI_API_KEY: "  " })).toEqual([]);
+    expect(providersWithEnvKey({ GEMINI_API_KEY: "k" })).toEqual(["gemini"]);
+  });
+});
+
+describe("thứ tự ưu tiên cấu hình trợ lý", () => {
+  const empty = { provider: null, model: null, apiKey: null, apiKeyLast4: null };
+
+  it("không có khoá ở đâu thì trợ lý tắt", () => {
+    expect(resolveChatConfig(empty, {})).toBeNull();
+  });
+
+  it("khoá trong biến môi trường là đủ để chạy", () => {
+    const c = resolveChatConfig(empty, { GEMINI_API_KEY: "env-key" });
+    expect(c?.apiKey).toBe("env-key");
+    expect(c?.model).toBe("gemini-2.5-flash");
+    expect(c?.source).toEqual({ provider: "default", model: "default", apiKey: "env" });
+  });
+
+  it("cấu hình lưu trong hệ thống đè lên biến môi trường", () => {
+    const c = resolveChatConfig(
+      { ...empty, model: "gemini-2.5-pro", apiKey: "db-key" },
+      { GEMINI_API_KEY: "env-key", GEMINI_MODEL: "gemini-2.0-flash" },
+    );
+    expect(c?.apiKey).toBe("db-key");
+    expect(c?.model).toBe("gemini-2.5-pro");
+    expect(c?.source).toEqual({ provider: "default", model: "db", apiKey: "db" });
+  });
+
+  it("từng giá trị xét riêng — model ở hệ thống, khoá vẫn ở biến môi trường", () => {
+    const c = resolveChatConfig(
+      { ...empty, model: "gemini-2.5-pro" },
+      { GEMINI_API_KEY: "env-key" },
+    );
+    expect(c?.model).toBe("gemini-2.5-pro");
+    expect(c?.apiKey).toBe("env-key");
+    expect(c?.source).toEqual({ provider: "default", model: "db", apiKey: "env" });
+  });
+
+  it("biến môi trường GEMINI_MODEL đè lên mặc định", () => {
+    const c = resolveChatConfig(empty, {
+      GEMINI_API_KEY: "k",
+      GEMINI_MODEL: "gemini-2.0-flash",
+    });
+    expect(c?.model).toBe("gemini-2.0-flash");
+    expect(c?.source.model).toBe("env");
+  });
+
+  it("nhà cung cấp lạ trong cơ sở dữ liệu thì quay về mặc định, không nổ", () => {
+    const c = resolveChatConfig(
+      { ...empty, provider: "nha-cung-cap-da-go-bo", apiKey: "k" },
+      {},
+    );
+    expect(c?.provider.id).toBe("gemini");
+    expect(c?.source.provider).toBe("default");
+  });
+
+  it("chuỗi rỗng và khoảng trắng không tính là đã cấu hình", () => {
+    expect(resolveChatConfig({ ...empty, apiKey: "   " }, {})).toBeNull();
+    const c = resolveChatConfig({ ...empty, model: "  ", apiKey: "k" }, {});
+    expect(c?.model).toBe("gemini-2.5-flash");
   });
 });

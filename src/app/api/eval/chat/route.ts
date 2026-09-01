@@ -1,10 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { UserRole } from "@/lib/auth";
-import { missingChatConfigMessage, readChatConfig } from "@/lib/chat/config";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
 import { checkQuestion } from "@/lib/chat/guards";
 import { buildSystemPrompt } from "@/lib/chat/prompt";
-import { createGeminiProvider, type ProviderTurn, type ToolCall } from "@/lib/chat/provider";
+import type { ProviderTurn, ToolCall } from "@/lib/chat/provider";
 import { runTurn } from "@/lib/chat/run";
 import { toolsForRole } from "@/lib/chat/tools";
 import { createFixtureExecute, FIXTURE_COOP, FIXTURE_USER } from "@/lib/chat/eval/fixture";
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
   if (!provided || !tokenMatches(provided, expected))
     return NextResponse.json({ error: "Token không hợp lệ." }, { status: 401 });
 
-  const config = readChatConfig();
-  if (!config) return NextResponse.json({ error: missingChatConfigMessage() }, { status: 503 });
+  const config = await loadChatConfig();
+  if (!config) return NextResponse.json({ error: missingKeyMessage() }, { status: 503 });
 
   let body: Record<string, unknown>;
   try {
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
 
   try {
     for await (const event of runTurn({
-      provider: createGeminiProvider(config),
+      provider: config.provider.create({ apiKey: config.apiKey, model: config.model }),
       system: buildSystemPrompt({
         role,
         fullName: FIXTURE_USER,

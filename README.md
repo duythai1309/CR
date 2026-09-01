@@ -88,7 +88,7 @@ lên project Supabase, theo đúng thứ tự đánh số.
 | `npm run dev` | Chạy máy chủ phát triển |
 | `npm run build` | Dựng bản phát hành |
 | `npm start` | Chạy bản đã dựng |
-| `npm test` | Kiểm thử engine MRV, hàm hình học và trợ lý (54 ca, không cần mạng) |
+| `npm test` | Kiểm thử engine MRV, hàm hình học và trợ lý (72 ca, không cần mạng) |
 | `npm run test:e2e` | Kiểm thử tích hợp trên cơ sở dữ liệu thật, qua đúng RLS (40 ca) |
 | `npm run types` | Kiểm tra kiểu TypeScript |
 
@@ -131,8 +131,9 @@ src/
       lo-tin-chi · he-so               gộp lô, chào bán; tra cứu hệ số kèm nguồn
       tro-ly                           trò chuyện với trợ lý ảo
     cho · cho/[id] · don-hang          chợ tín chỉ, đặt mua, thanh toán
-    quan-tri                           toàn cảnh nền tảng
+    quan-tri · quan-tri/tro-ly         toàn cảnh nền tảng; chọn model và khoá API
     api/chat                           một lượt hỏi–đáp của trợ lý, trả về theo dòng
+    api/eval/chat                      điểm nối cho eval platform, chạy dữ liệu mẫu
   lib/
     mrv/engine.ts                      công thức IPCC, hàm thuần
     mrv/factors.ts                     nạp hệ số theo vùng và vụ từ cơ sở dữ liệu
@@ -140,7 +141,10 @@ src/
     gis/area.ts · region.ts            diện tích polygon, vùng đang triển khai
     chat/tools.ts · handlers.ts        công cụ trợ lý được gọi và cài đặt truy vấn
     chat/prompt.ts · knowledge.ts      system prompt và tri thức tĩnh về nền tảng
-    chat/provider.ts · run.ts          lớp bọc Gemini và vòng lặp gọi công cụ
+    chat/provider.ts · run.ts          hợp đồng nhà cung cấp và vòng lặp gọi công cụ
+    chat/providers/                    danh mục nhà cung cấp; cài đặt Gemini
+    chat/settings.ts                   ghép cấu hình: hệ thống → môi trường → mặc định
+    chat/eval/                         dữ liệu mẫu và vết thực thi cho eval
     supabase/ · auth.ts                phiên đăng nhập phía máy chủ và trình duyệt
   middleware.ts                        chặn đường dẫn cần đăng nhập
 supabase/migrations/                   lược đồ, RLS, RPC nghiệp vụ
@@ -149,7 +153,7 @@ tests/                                 mrv · gis · chat (đơn vị) · e2e/fl
 
 ## Cơ sở dữ liệu
 
-Mười migration, áp dụng theo thứ tự:
+Mười hai migration, áp dụng theo thứ tự:
 
 | Tệp | Nội dung |
 |---|---|
@@ -163,6 +167,8 @@ Mười migration, áp dụng theo thứ tự:
 | `0008_vietnam_regional_factors` | Vùng miền, loại vụ, bộ hệ số Tier 2 đo tại Việt Nam |
 | `0009_coop_two_tier` | Cơ cấu hành chính hai cấp tỉnh/xã |
 | `0010_chat` | Hội thoại với trợ lý ảo, riêng tư theo từng người dùng |
+| `0011_chat_settings` | Chọn nhà cung cấp, model và khoá API của trợ lý trên giao diện |
+| `0012_signup_role_guard` | Chặn tự nâng quyền qua metadata lúc đăng ký |
 
 ## Ba quyết định thiết kế đáng chú ý
 
@@ -282,9 +288,23 @@ cả sự trôi chảy của câu trả lời.
 gõ cho trợ lý thường là đang dò xem mình làm sai chỗ nào. Mỗi câu trả lời lưu kèm tên các
 công cụ đã gọi, đủ để sau này truy được vì sao trợ lý nói ra một con số.
 
-Toàn bộ phần biết đến Gemini gói trong [src/lib/chat/provider.ts](src/lib/chat/provider.ts);
-đổi sang nhà cung cấp khác chỉ phải viết lại một cài đặt của `ChatProvider`. Thiếu
-`GEMINI_API_KEY` thì trợ lý tự tắt kèm lời nhắc, phần còn lại của nền tảng chạy bình thường.
+**Chọn model và khoá API trên giao diện.** Quản trị nền tảng vào `/quan-tri/tro-ly` để
+đổi nhà cung cấp, đổi model và dán khoá API, có nút gọi thử một lượt thật để biết ngay
+khoá dùng được hay không. Thứ tự ưu tiên là **cấu hình lưu trong hệ thống → biến môi
+trường → mặc định**, xét riêng từng giá trị, và màn hình nói rõ mỗi giá trị đang đến từ
+đâu để không ai phải đoán vì sao sửa biến môi trường mà không thấy tác dụng.
+
+Khoá API được giữ bằng **quyền cột của Postgres**, không phải bằng mã ứng dụng: cột
+`chat_settings.api_key` không cấp quyền đọc cho bất kỳ vai trò ứng dụng nào — kể cả quản
+trị nền tảng. Ghi được, không đọc lại được, đúng cách một secret nên hành xử; giao diện
+chỉ hiện bốn ký tự cuối qua một cột sinh sẵn. Máy chủ đọc khoá thật bằng service role,
+gói trong đúng một hàm ([src/lib/supabase/admin.ts](src/lib/supabase/admin.ts)) và không
+dùng ở bất kỳ chỗ nào khác. Chưa đặt `SUPABASE_SERVICE_ROLE_KEY` thì hệ thống vẫn chạy,
+chỉ là khoá lấy từ biến môi trường.
+
+Danh mục nhà cung cấp nằm ở [src/lib/chat/providers/registry.ts](src/lib/chat/providers/registry.ts);
+thêm một nhà cung cấp là thêm một tệp và một dòng, giao diện tự có mục mới. Không có khoá
+ở đâu cả thì trợ lý tự tắt kèm lời nhắc, phần còn lại của nền tảng chạy bình thường.
 
 ## Bảo mật
 
@@ -298,6 +318,20 @@ Bộ kiểm thử tích hợp có các ca kiểm chứng điều này — doanh 
 nông hộ, không đọc được nhật ký canh tác, không xem được chi tiết từng thửa trong lô, hợp
 tác xã không đặt mua tín chỉ được, không chèn được nông hộ vào hợp tác xã khác, và không
 ai tự nâng quyền lên quản trị nền tảng được.
+
+### Vai trò không tự nâng được, kể cả ở đường đăng ký
+
+`handle_new_user` trước đây lấy vai trò thẳng từ `raw_user_meta_data`. Server action
+`signUp` có chặn chỉ cho chọn `coop_manager` hoặc `buyer`, nhưng chặn đó nằm ở tầng
+Next.js, trong khi `supabase.auth.signUp()` là API công khai gọi được bằng chính anon key
+có sẵn trong bundle trình duyệt — bỏ qua tầng đó là tạo được tài khoản `platform_admin`,
+và `app_is_admin()` mở toàn bộ RLS. `guard_profile_escalation` không bắt được vì nó chỉ
+canh UPDATE, còn đây là INSERT lúc tạo hồ sơ.
+
+`0012_signup_role_guard` đưa danh sách vai trò tự đăng ký được vào trong chính trigger.
+Vai trò ngoài danh sách bị hạ về `coop_staff` chứ không báo lỗi, để người dò tìm không
+nhận được tín hiệu nào. `platform_admin` từ nay chỉ cấp được bằng truy cập cơ sở dữ liệu
+trực tiếp — nghĩa là tài khoản quản trị đầu tiên phải tạo từ phía máy chủ.
 
 ### Việc cần làm thủ công trên bảng điều khiển Supabase
 

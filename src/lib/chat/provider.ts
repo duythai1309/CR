@@ -1,11 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
-import type { ChatConfig } from "./config";
-import type { ToolParamSchema, ToolSpec } from "./tools";
+import type { ToolSpec } from "./tools";
 
 /**
- * Tệp duy nhất biết đến Gemini. Mọi phần còn lại của chatbot làm việc với các kiểu
- * khai báo ở đây, nên đổi sang nhà cung cấp khác chỉ phải viết lại một cài đặt của
- * `ChatProvider`.
+ * Hợp đồng giữa chatbot và nhà cung cấp model. Không tệp nào ở đây biết Gemini hay
+ * bất kỳ nhà cung cấp cụ thể nào — cài đặt nằm trong `providers/`, và `registry.ts`
+ * là nơi duy nhất biết có những cài đặt nào.
  */
 
 export type ToolCall = { name: string; args: Record<string, unknown> };
@@ -32,70 +30,4 @@ export interface StreamOptions {
 
 export interface ChatProvider {
   stream(opts: StreamOptions): AsyncGenerator<ProviderEvent>;
-}
-
-/** JSON Schema của `tools.ts` sang dạng Gemini mong đợi: cùng cấu trúc, kiểu viết hoa. */
-function toGeminiSchema(schema: ToolParamSchema) {
-  return {
-    type: "OBJECT",
-    properties: Object.fromEntries(
-      Object.entries(schema.properties).map(([name, p]) => [
-        name,
-        {
-          type: p.type.toUpperCase(),
-          description: p.description,
-          ...(p.enum ? { enum: p.enum } : {}),
-        },
-      ]),
-    ),
-    ...(schema.required?.length ? { required: schema.required } : {}),
-  };
-}
-
-export function createGeminiProvider(config: ChatConfig): ChatProvider {
-  const ai = new GoogleGenAI({ apiKey: config.apiKey });
-
-  return {
-    async *stream({ system, contents, tools }) {
-      const response = await ai.models.generateContentStream({
-        model: config.model,
-        // SDK khai báo kiểu Schema riêng; cấu trúc khớp nhưng TypeScript không tự
-        // nối được hai định nghĩa, nên ép kiểu đúng tại một chỗ duy nhất này.
-        contents: contents as never,
-        config: {
-          systemInstruction: system,
-          // Số liệu kiểm định không phải chỗ để model sáng tạo.
-          temperature: 0.2,
-          tools:
-            tools.length > 0
-              ? [
-                  {
-                    functionDeclarations: tools.map((t) => ({
-                      name: t.name,
-                      description: t.description,
-                      parameters: toGeminiSchema(t.parameters) as never,
-                    })),
-                  },
-                ]
-              : undefined,
-        },
-      });
-
-      for await (const chunk of response) {
-        const calls = chunk.functionCalls;
-        if (calls && calls.length > 0) {
-          yield {
-            type: "calls",
-            calls: calls.map((c) => ({
-              name: c.name ?? "",
-              args: (c.args ?? {}) as Record<string, unknown>,
-            })),
-          };
-          continue;
-        }
-        const text = chunk.text;
-        if (text) yield { type: "text", text };
-      }
-    },
-  };
 }

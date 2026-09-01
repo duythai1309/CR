@@ -4,15 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/app-nav";
 import { Alert } from "@/components/ui";
 import { ChatPanel, type ChatMessage } from "@/components/chat/chat-panel";
-import { readChatConfig, missingChatConfigMessage } from "@/lib/chat/config";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
 import { MAX_HISTORY_TURNS } from "@/lib/chat/guards";
 
 export const metadata: Metadata = { title: "Trợ lý" };
 
 export default async function AssistantPage() {
   const profile = await requireCoopProfile();
-  const configured = readChatConfig() !== null;
   const supabase = await createClient();
+  const configured = (await loadChatConfig(supabase)) !== null;
 
   // Mở lại hội thoại gần nhất thay vì bắt đầu trắng: người dùng thường quay lại để
   // hỏi tiếp chuyện đang dở.
@@ -46,7 +46,7 @@ export default async function AssistantPage() {
       {!configured && (
         <div className="mb-4">
           <Alert tone="warn" title="Trợ lý chưa hoạt động">
-            {missingChatConfigMessage()}
+            {missingKeyMessage()}
           </Alert>
         </div>
       )}

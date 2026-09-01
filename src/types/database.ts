@@ -147,6 +147,42 @@ export type Database = {
           },
         ]
       }
+      chat_settings: {
+        Row: {
+          api_key: string | null
+          api_key_last4: string | null
+          id: boolean
+          model: string | null
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          id?: boolean
+          model?: string | null
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          id?: boolean
+          model?: string | null
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cooperatives: {
         Row: {
           code: string

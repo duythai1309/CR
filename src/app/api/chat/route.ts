@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
-import { missingChatConfigMessage, readChatConfig } from "@/lib/chat/config";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
 import {
   checkQuestion,
   MAX_HISTORY_TURNS,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/chat/guards";
 import { HANDLERS } from "@/lib/chat/handlers";
 import { buildSystemPrompt } from "@/lib/chat/prompt";
-import { createGeminiProvider, type ProviderTurn, type ToolCall } from "@/lib/chat/provider";
+import type { ProviderTurn, ToolCall } from "@/lib/chat/provider";
 import { runTurn } from "@/lib/chat/run";
 import { findTool, toolsForRole } from "@/lib/chat/tools";
 
@@ -23,9 +23,6 @@ const json = (body: unknown, status: number) => NextResponse.json(body, { status
 export async function POST(request: Request) {
   const profile = await getProfile();
   if (!profile) return json({ error: "Bạn cần đăng nhập để dùng trợ lý." }, 401);
-
-  const config = readChatConfig();
-  if (!config) return json({ error: missingChatConfigMessage() }, 503);
 
   let body: { message?: unknown; conversationId?: unknown; path?: unknown };
   try {
@@ -39,6 +36,9 @@ export async function POST(request: Request) {
   const question = checked.question;
 
   const supabase = await createClient();
+
+  const config = await loadChatConfig(supabase);
+  if (!config) return json({ error: missingKeyMessage() }, 503);
 
   // Hội thoại: mở tiếp cái đang có, hoặc tạo mới. RLS đảm bảo không mở được của
   // người khác — truy vấn sẽ không trả về gì và ta tạo hội thoại mới thay vì lỗi.
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
 
       try {
         for await (const event of runTurn({
-          provider: createGeminiProvider(config),
+          provider: config.provider.create({ apiKey: config.apiKey, model: config.model }),
           system: buildSystemPrompt({
             role: profile.role,
             fullName: profile.full_name,

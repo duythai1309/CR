@@ -18,8 +18,18 @@ const BUYER_LINKS = [
   { href: "/don-hang", label: "Đơn hàng của tôi" },
 ];
 
+const ADMIN_LINKS = [
+  { href: "/quan-tri", label: "Tổng quan nền tảng" },
+  { href: "/quan-tri/tro-ly", label: "Cấu hình trợ lý" },
+];
+
 export function AppNav({ profile, coopName }: { profile: Profile; coopName?: string }) {
-  const links = profile.role === "buyer" ? BUYER_LINKS : COOP_LINKS;
+  const links =
+    profile.role === "buyer"
+      ? BUYER_LINKS
+      : profile.role === "platform_admin"
+        ? ADMIN_LINKS
+        : COOP_LINKS;
 
   return (
     <header className="border-b border-soil-200 bg-white">
