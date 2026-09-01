@@ -11,6 +11,8 @@ import { runTurn } from "@/lib/chat/run";
 import type { ChatProvider, ProviderEvent, ToolCall } from "@/lib/chat/provider";
 import { readChatConfig } from "@/lib/chat/config";
 import { missingMrvInputs } from "@/lib/mrv/collect";
+import { FIXTURE_RESULTS, createFixtureExecute } from "@/lib/chat/eval/fixture";
+import { buildContexts, buildTrajectory } from "@/lib/chat/eval/trajectory";
 
 describe("giới hạn quanh một lượt hỏi", () => {
   it("từ chối câu hỏi rỗng và câu hỏi không phải văn bản", () => {
@@ -267,5 +269,91 @@ describe("danh sách việc còn thiếu dùng chung với màn hình nhập li�
     expect(
       missingMrvInputs({ ...full, baselineStrawMethod: "burned", strawTonnesPerHa: 4 }),
     ).toEqual([]);
+  });
+});
+
+describe("dữ liệu mẫu cho eval", () => {
+  it("phủ đủ mọi công cụ đang khai báo", () => {
+    const missing = TOOLS.map((t) => t.name).filter((name) => !(name in FIXTURE_RESULTS));
+    expect(missing, "thêm công cụ mới thì phải thêm dữ liệu mẫu tương ứng").toEqual([]);
+  });
+
+  it("không thừa dữ liệu mẫu cho công cụ đã bỏ", () => {
+    const names = new Set(TOOLS.map((t) => t.name));
+    expect(Object.keys(FIXTURE_RESULTS).filter((k) => !names.has(k))).toEqual([]);
+  });
+
+  it("giữ nguyên việc chặn theo vai trò", async () => {
+    const asBuyer = createFixtureExecute("buyer");
+    const blocked = await asBuyer({ name: "liet_ke_nong_ho", args: {} });
+    expect(blocked.loi).toContain("không được phép");
+
+    const allowed = await asBuyer({ name: "lo_dang_chao_ban", args: {} });
+    expect(allowed.loi).toBeUndefined();
+    expect(allowed.lo_dang_chao_ban).toBeDefined();
+  });
+
+  it("tất định — gọi hai lần ra đúng một kết quả", async () => {
+    const run = createFixtureExecute("coop_manager");
+    const a = await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } });
+    const b = await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } });
+    expect(a).toEqual(b);
+  });
+
+  it("các con số khớp nhau theo quy tắc nghiệp vụ", async () => {
+    const run = createFixtureExecute("coop_manager");
+    const batches = (await run({ name: "liet_ke_lo_tin_chi", args: {} })) as {
+      lo_tin_chi: Array<Record<string, number>>;
+    };
+    const lo = batches.lo_tin_chi[0];
+    // Đệm rủi ro 15% trừ khỏi lượng gộp, làm tròn 3 chữ số như hệ thống thật.
+    expect(Number((lo.tong_gop_tco2e * 0.85).toFixed(3))).toBe(lo.phat_hanh_tco2e);
+    expect(lo.con_lai_tco2e).toBe(Number((lo.phat_hanh_tco2e - lo.da_ban_tco2e).toFixed(3)));
+
+    const revenue = (await run({ name: "chia_doanh_thu", args: { ma_lo: "LTC-2026-01" } })) as {
+      don_da_chia: Array<Record<string, number>>;
+    };
+    const don = revenue.don_da_chia[0];
+    expect(don.nen_tang_vnd + don.hop_tac_xa_vnd + don.nong_ho_vnd).toBe(don.thanh_tien_vnd);
+  });
+});
+
+describe("vết thực thi gửi cho eval platform", () => {
+  it("dựng đúng hình dạng message OpenAI mà evaluator agentic đọc", () => {
+    const messages = buildTrajectory(
+      "Vụ Xuân giảm bao nhiêu?",
+      [
+        {
+          call: { name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Xuân 2026" } },
+          result: { tong_giam_phat_thai_tco2e: 12.436 },
+        },
+      ],
+      "Vụ Xuân 2026 giảm 12,436 tấn CO2e.",
+    );
+
+    expect(messages[0]).toEqual({ role: "user", content: "Vụ Xuân giảm bao nhiêu?" });
+
+    const assistant = messages[1] as {
+      role: string;
+      tool_calls: Array<{ function: { name: string; arguments: string } }>;
+    };
+    expect(assistant.role).toBe("assistant");
+    // Evaluator đọc `arguments` như CHUỖI JSON, không phải object.
+    expect(typeof assistant.tool_calls[0].function.arguments).toBe("string");
+    expect(JSON.parse(assistant.tool_calls[0].function.arguments)).toEqual({
+      ten_mua_vu: "Vụ Xuân 2026",
+    });
+
+    expect(messages[2]).toMatchObject({ role: "tool", name: "tong_ket_mua_vu" });
+    expect(messages.at(-1)).toEqual({
+      role: "assistant",
+      content: "Vụ Xuân 2026 giảm 12,436 tấn CO2e.",
+    });
+  });
+
+  it("không gọi công cụ nào thì vẫn là một vết hợp lệ", () => {
+    const messages = buildTrajectory("Xin chào", [], "Chào anh/chị.");
+    expect(messages).toHaveLength(2);
+    expect(buildContexts([])).toEqual([]);
   });
 });

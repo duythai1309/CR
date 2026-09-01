@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getProfile, homePathFor } from "@/lib/auth";
 import { LinkButton } from "@/components/ui";
@@ -75,12 +76,24 @@ export default async function Home() {
       <main>
         {/* ---------------------------------------------------------------- hero */}
         <section className="relative overflow-hidden bg-leaf-900">
+          <Image
+            src="/anh/lua-chin.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          {/* Ảnh gốc ngả vàng rực; lớp phủ xanh đậm kéo nó về tông thương hiệu và
+              giữ chữ trắng đủ tương phản. Nhạt dần sang phải để chừa chỗ cho video. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-leaf-900 via-leaf-900/92 to-leaf-900/70" />
           <PaddyPattern />
-          <div className="relative mx-auto max-w-6xl px-6 py-24 sm:py-32">
+          <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 sm:py-32 lg:grid-cols-[1.15fr_0.85fr]">
+            <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-leaf-300">
               Nền tảng MRV cho nông nghiệp carbon thấp
             </p>
-            <h1 className="mt-6 max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl">
+            <h1 className="mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
               Nhật ký canh tác của nông hộ nhỏ,
               <br className="hidden sm:block" /> trở thành tín chỉ carbon bán được.
             </h1>
@@ -114,6 +127,9 @@ export default async function Home() {
                 </span>
               </Link>
             </div>
+            </div>
+
+            <HeroVideo />
           </div>
         </section>
 
@@ -151,6 +167,21 @@ export default async function Home() {
                 Nông dân Việt Nam đã biết cách tưới ngập khô xen kẽ và ngừng đốt rơm. Cái
                 thiếu là bằng chứng — thứ mà thị trường carbon đòi hỏi trước khi trả tiền.
               </p>
+              <figure className="mt-10">
+                <Image
+                  src="/anh/ruong-ngap-nuoc.jpg"
+                  alt="Ruộng lúa mới cấy đang ngập nước lúc hoàng hôn"
+                  width={735}
+                  height={486}
+                  sizes="(min-width: 1024px) 44vw, 100vw"
+                  className="w-full rounded-2xl object-cover"
+                />
+                <figcaption className="mt-3 text-sm leading-relaxed text-soil-500">
+                  Ruộng ngập nước liên tục là nguồn phát thải methane lớn nhất trong canh
+                  tác lúa. Rút nước đúng lúc cắt được phần lớn lượng đó — nhưng phải có
+                  nhật ký ghi lại thì mới quy ra tín chỉ được.
+                </figcaption>
+              </figure>
             </div>
             <dl className="space-y-8">
               {[
@@ -182,7 +213,22 @@ export default async function Home() {
             <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-soil-900 sm:text-4xl">
               Bốn bước, từ bờ ruộng đến hợp đồng
             </h2>
-            <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-14 grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+              <figure>
+                <Image
+                  src="/anh/nong-ho-ruong-xanh.jpg"
+                  alt="Nông dân và trâu trên cánh đồng lúa xanh, núi mờ phía xa"
+                  width={900}
+                  height={600}
+                  sizes="(min-width: 1024px) 36vw, 100vw"
+                  className="w-full rounded-2xl object-cover"
+                />
+                <figcaption className="mt-3 text-sm leading-relaxed text-soil-500">
+                  Quy trình bám theo cách nông hộ vẫn làm, không bắt ai đổi tập quán canh
+                  tác hay sắm thiết bị mới.
+                </figcaption>
+              </figure>
+              <div className="grid gap-10 sm:grid-cols-2">
               {STEPS.map((s) => (
                 <div key={s.n}>
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-leaf-700 text-sm font-bold text-white">
@@ -192,6 +238,7 @@ export default async function Home() {
                   <p className="mt-3 text-sm leading-relaxed text-soil-600">{s.body}</p>
                 </div>
               ))}
+              </div>
             </div>
           </div>
         </section>
@@ -231,8 +278,19 @@ export default async function Home() {
         </section>
 
         {/* ----------------------------------------------------------- phương pháp */}
-        <section id="phuong-phap" className="border-y border-soil-200 bg-soil-900">
-          <div className="mx-auto max-w-6xl px-6 py-24">
+        <section
+          id="phuong-phap"
+          className="relative overflow-hidden border-y border-soil-200 bg-soil-900"
+        >
+          <Image
+            src="/anh/ruong-bac-thang.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-soil-900 via-soil-900/90 to-soil-900" />
+          <div className="relative mx-auto max-w-6xl px-6 py-24">
             <div className="grid gap-16 lg:grid-cols-[1fr_1.1fr]">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -422,6 +480,37 @@ SFo = (1 + Σ ROAᵢ × CFOAᵢ)^0.59`}
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * Video quay dọc bằng điện thoại (720x1280). Giữ đúng khung 9:16 trong một tấm
+ * thẻ thay vì trải nền toàn hero — trải nền sẽ phải phóng to gấp đôi và cắt mất
+ * phần lớn khung hình trên màn hình ngang.
+ *
+ * `muted` + `playsInline` là bắt buộc để Safari/iOS chịu tự chạy. Không có ảnh
+ * poster nên nền leaf-800 đứng thay trong lúc video tải.
+ */
+function HeroVideo() {
+  return (
+    <div className="mx-auto w-full max-w-[300px] lg:max-w-[320px]">
+      <div className="overflow-hidden rounded-[2rem] border border-leaf-500/30 bg-leaf-800 shadow-2xl shadow-black/40">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label="Cán bộ hợp tác xã ghi nhật ký canh tác ngoài đồng"
+          className="aspect-[9/16] h-full w-full object-cover"
+        >
+          <source src="/video/hero.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <p className="mt-4 text-center text-xs leading-relaxed text-leaf-300">
+        Ghi nhật ký ngay tại bờ ruộng, không cần thiết bị chuyên dụng
+      </p>
     </div>
   );
 }
