@@ -23,6 +23,25 @@
   --color-soil-800: #3a352e;
   --color-soil-900: #23201b;
 
+  /*
+   * Bảng màu dựng theo trang tham chiếu grassrootscarbon.com: xanh rừng rất đậm
+   * cho các dải tối, xanh bạc hà nhạt cho dải sáng, và một sắc bạc hà tươi dùng
+   * riêng cho nút bấm với nửa sau của tiêu đề hai màu.
+   */
+  --color-forest-950: #10241F;
+  --color-forest-900: #16302A;
+  --color-forest-800: #1E3B33;
+  --color-forest-700: #27493F;
+  --color-forest-600: #325A4D;
+
+  --color-mint-50: #F1F8F4;
+  --color-mint-100: #E3EFE7;
+  --color-mint-200: #C9E3D4;
+  --color-mint-300: #9FD4B6;
+  --color-mint-400: #6BBF8E;
+  --color-mint-500: #4FB37C;
+  --color-mint-600: #3D9A67;
+
   --color-carbon-100: #fef3c7;
   --color-carbon-500: #f59e0b;
   --color-carbon-700: #b45309;
