@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LazyVideo } from "@/components/lazy-video";
 import Link from "next/link";
 import { getProfile, homePathFor } from "@/lib/auth";
 import { LinkButton } from "@/components/ui";
@@ -76,24 +77,23 @@ export default async function Home() {
       <main>
         {/* ---------------------------------------------------------------- hero */}
         <section className="relative overflow-hidden bg-leaf-900">
-          <Image
-            src="/anh/lua-chin.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
+          <LazyVideo
+            eager
+            src="/video/ruong-bac-thang.mp4"
+            poster="/anh/poster-hero.jpg"
+            label="Flycam ruộng bậc thang vùng cao phía Bắc lúc lúa chín"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          {/* Ảnh gốc ngả vàng rực; lớp phủ xanh đậm kéo nó về tông thương hiệu và
-              giữ chữ trắng đủ tương phản. Nhạt dần sang phải để chừa chỗ cho video. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-leaf-900 via-leaf-900/92 to-leaf-900/70" />
+          {/* Cảnh quay sáng và nhiều chi tiết, cần lớp phủ dày mới giữ được chữ trắng.
+              Đậm ở trên và dưới để mép giao với header và dải số liệu không bị gắt. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-leaf-900/92 via-leaf-900/72 to-leaf-900/95" />
           <PaddyPattern />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 sm:py-32 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
+          <div className="relative mx-auto max-w-6xl px-6 py-28 sm:py-40">
+            <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-leaf-300">
               Nền tảng MRV cho nông nghiệp carbon thấp
             </p>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl">
               Nhật ký canh tác của nông hộ nhỏ,
               <br className="hidden sm:block" /> trở thành tín chỉ carbon bán được.
             </h1>
@@ -128,8 +128,6 @@ export default async function Home() {
               </Link>
             </div>
             </div>
-
-            <HeroVideo />
           </div>
         </section>
 
@@ -277,6 +275,36 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* --------------------------------------------------- dải video: ranh thửa */}
+        <section className="relative isolate overflow-hidden bg-soil-900">
+          <LazyVideo
+            src="/video/thua-ruong-flycam.mp4"
+            poster="/anh/poster-thua-ruong.jpg"
+            label="Flycam toàn cảnh vùng ruộng bậc thang chia thành nhiều thửa nhỏ"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-soil-900/72" />
+          <div className="relative mx-auto max-w-4xl px-6 py-28 text-center sm:py-36">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-leaf-300">
+              Xác minh ranh thửa
+            </p>
+            <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl">
+              Một mảnh ruộng chỉ được tính tín chỉ một lần
+            </h2>
+            <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-soil-100">
+              Ranh thửa vẽ trực tiếp trên ảnh vệ tinh, diện tích tính từ hình học chứ
+              không lấy con số khai báo. Trước khi lưu, hệ thống đối chiếu vùng vừa vẽ
+              với toàn bộ thửa đã có — kể cả thửa của hợp tác xã khác — và chặn lại nếu
+              chồng lấn.
+            </p>
+            <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-soil-300">
+              Khai trùng ranh giới là cách gian lận phổ biến nhất trong tín chỉ carbon
+              nông nghiệp. Chặn được nó ở tầng cơ sở dữ liệu thì bên mua mới có cơ sở tin
+              vào con số.
+            </p>
+          </div>
+        </section>
+
         {/* ----------------------------------------------------------- phương pháp */}
         <section
           id="phuong-phap"
@@ -351,7 +379,20 @@ SFo = (1 + Σ ROAᵢ × CFOAᵢ)^0.59`}
 
         {/* ------------------------------------------------------------ doanh thu */}
         <section id="doanh-thu" className="mx-auto max-w-6xl px-6 py-24">
-          <div className="grid gap-16 lg:grid-cols-2">
+          <div className="grid items-center gap-14 lg:grid-cols-[0.78fr_1.22fr]">
+            <figure className="mx-auto w-full max-w-[300px]">
+              <LazyVideo
+                src="/video/nong-dan-trau.mp4"
+                poster="/anh/poster-nong-dan.jpg"
+                label="Nông dân dắt đàn trâu trên bờ ruộng lúc hoàng hôn"
+                className="aspect-[9/16] w-full rounded-[2rem] border border-soil-200 bg-soil-100 object-cover shadow-xl shadow-soil-900/10"
+              />
+              <figcaption className="mt-4 text-center text-sm leading-relaxed text-soil-500">
+                Tín chỉ carbon là khoản thu thêm trên chính mảnh ruộng đang canh tác,
+                không bắt nông hộ đổi nghề.
+              </figcaption>
+            </figure>
+
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-soil-900 sm:text-4xl">
                 Phần lớn doanh thu về tay nông dân
@@ -365,10 +406,8 @@ SFo = (1 + Σ ROAᵢ × CFOAᵢ)^0.59`}
                 Đây là nguồn sinh kế mới bên cạnh tiền bán lúa, trên chính mảnh ruộng họ
                 vẫn đang canh tác.
               </p>
-            </div>
 
-            <div>
-              <div className="flex h-14 overflow-hidden rounded-xl">
+              <div className="mt-10 flex h-14 overflow-hidden rounded-xl">
                 <div className="flex w-[80%] items-center justify-center bg-leaf-700 text-sm font-semibold text-white">
                   Nông hộ 80%
                 </div>
@@ -399,9 +438,17 @@ SFo = (1 + Σ ROAᵢ × CFOAᵢ)^0.59`}
         </section>
 
         {/* ------------------------------------------------------------ CTA hai luồng */}
-        <section className="border-t border-soil-200 bg-soil-50">
-          <div className="mx-auto max-w-6xl px-6 py-24">
-            <h2 className="text-center text-3xl font-bold tracking-tight text-soil-900 sm:text-4xl">
+        <section className="relative isolate overflow-hidden border-t border-soil-200 bg-leaf-900">
+          <Image
+            src="/anh/lua-chin.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-leaf-900/88" />
+          <div className="relative mx-auto max-w-6xl px-6 py-24">
+            <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Bạn đến từ phía nào?
             </h2>
             <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
@@ -480,37 +527,6 @@ SFo = (1 + Σ ROAᵢ × CFOAᵢ)^0.59`}
           </div>
         </div>
       </footer>
-    </div>
-  );
-}
-
-/**
- * Video quay dọc bằng điện thoại (720x1280). Giữ đúng khung 9:16 trong một tấm
- * thẻ thay vì trải nền toàn hero — trải nền sẽ phải phóng to gấp đôi và cắt mất
- * phần lớn khung hình trên màn hình ngang.
- *
- * `muted` + `playsInline` là bắt buộc để Safari/iOS chịu tự chạy. Không có ảnh
- * poster nên nền leaf-800 đứng thay trong lúc video tải.
- */
-function HeroVideo() {
-  return (
-    <div className="mx-auto w-full max-w-[300px] lg:max-w-[320px]">
-      <div className="overflow-hidden rounded-[2rem] border border-leaf-500/30 bg-leaf-800 shadow-2xl shadow-black/40">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label="Cán bộ hợp tác xã ghi nhật ký canh tác ngoài đồng"
-          className="aspect-[9/16] h-full w-full object-cover"
-        >
-          <source src="/video/hero.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <p className="mt-4 text-center text-xs leading-relaxed text-leaf-300">
-        Ghi nhật ký ngay tại bờ ruộng, không cần thiết bị chuyên dụng
-      </p>
     </div>
   );
 }

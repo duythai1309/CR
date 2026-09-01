@@ -8,3 +8,6 @@ build/
 next-env.d.ts
 .DS_Store
 .vercel
+
+# Video gốc độ phân giải cao — bản đã nén nằm ở public/video/
+media-goc/
