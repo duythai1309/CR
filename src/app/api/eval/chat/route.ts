@@ -58,6 +58,7 @@ export async function POST(request: Request) {
   const config = await loadChatConfig();
   if (!config) return NextResponse.json({ error: missingKeyMessage() }, { status: 503 });
 
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -73,6 +74,12 @@ export async function POST(request: Request) {
   const role = ROLES.includes(body.role as UserRole)
     ? (body.role as UserRole)
     : "coop_manager";
+  // Cho phép ghi đè model cho từng lượt gọi, để quét nhiều model trên cùng bộ ca mà
+  // không phải sửa cấu hình rồi khởi động lại giữa chừng. Chỉ đổi TÊN model, vẫn
+  // dùng đúng nhà cung cấp và khoá đã cấu hình — endpoint này đã sau lớp
+  // EVAL_API_TOKEN nên không mở thêm bề mặt nào ra ngoài.
+  const model =
+    typeof body.model === "string" && body.model.trim() ? body.model.trim() : config.model;
 
   // Hội thoại nhiều lượt: platform gửi cả đoạn qua `messages`, lượt cuối là câu hỏi.
   const priorTurns = Array.isArray(body.messages)
@@ -100,7 +107,7 @@ export async function POST(request: Request) {
 
   try {
     for await (const event of runTurn({
-      provider: config.provider.create({ apiKey: config.apiKey, model: config.model }),
+      provider: config.provider.create({ apiKey: config.apiKey, model }),
       system: buildSystemPrompt({
         role,
         fullName: FIXTURE_USER,
@@ -137,7 +144,7 @@ export async function POST(request: Request) {
     ),
     meta: {
       role,
-      model: config.model,
+      model,
       tool_rounds: steps.length,
       thread_id: typeof body.threadId === "string" ? body.threadId : null,
     },

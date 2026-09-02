@@ -6,7 +6,16 @@ import type { ToolSpec } from "./tools";
  * là nơi duy nhất biết có những cài đặt nào.
  */
 
-export type ToolCall = { name: string; args: Record<string, unknown> };
+export type ToolCall = {
+  name: string;
+  args: Record<string, unknown>;
+  /**
+   * Dữ liệu mờ do nhà cung cấp gắn kèm lượt gọi công cụ, phải trả lại NGUYÊN VĂN ở
+   * vòng sau. Gemini 3.x đòi `thoughtSignature` và từ chối cả lượt (HTTP 400) nếu
+   * thiếu. Không tầng nào ngoài adapter được diễn giải giá trị này.
+   */
+  signature?: string;
+};
 
 export type ProviderPart =
   | { text: string }
