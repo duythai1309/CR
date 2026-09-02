@@ -65,7 +65,10 @@ export const TOOLS: ToolSpec[] = [
       properties: {
         ten_mua_vu: {
           type: "string",
-          description: "Tên mùa vụ, khớp gần đúng cũng được. Bỏ trống thì lấy vụ mới nhất.",
+          description:
+            "CHỈ tên riêng của mùa vụ, ví dụ 'Vụ Xuân 2026' — không kèm từ 'mùa vụ'. " +
+            "Bỏ trống thì lấy vụ mới nhất. Tên không khớp vụ nào thì hàm báo không tìm thấy, " +
+            "KHÔNG tự lấy vụ khác thay thế.",
         },
       },
     },
@@ -96,10 +99,17 @@ export const TOOLS: ToolSpec[] = [
     parameters: {
       type: "object",
       properties: {
-        ten_thua: { type: "string", description: "Tên thửa ruộng, khớp gần đúng cũng được." },
+        ten_thua: {
+          type: "string",
+          description:
+            "CHỈ tên riêng của thửa, không kèm từ phân loại. Người hỏi nói 'thửa Ruộng Bãi' " +
+            "thì truyền 'Ruộng Bãi'. Khớp gần đúng được, nhưng thừa chữ 'thửa' sẽ không tìm ra.",
+        },
         ten_mua_vu: {
           type: "string",
-          description: "Mùa vụ cần xem. Bỏ trống thì lấy vụ gần nhất của thửa đó.",
+          description:
+            "CHỈ tên riêng của mùa vụ, ví dụ 'Vụ Xuân 2026' — không kèm từ 'mùa vụ'. " +
+            "Bỏ trống thì lấy vụ gần nhất của thửa đó.",
         },
       },
       required: ["ten_thua"],

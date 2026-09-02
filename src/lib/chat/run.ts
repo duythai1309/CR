@@ -18,6 +18,16 @@ export interface RunOptions {
   maxRounds?: number;
 }
 
+/**
+ * Model có thể kết thúc lượt mà không sinh chữ nào — không phải lỗi mạng, không ném
+ * ngoại lệ, chỉ là 0 token đầu ra. Gặp thật với `gemini-2.5-flash-lite`: nó im lặng
+ * trả về rỗng sau MỌI lượt `functionResponse`. Không có câu này thì người dùng nhận
+ * một bong bóng trắng và không có manh mối nào để lần ra.
+ */
+const EMPTY_ANSWER =
+  "Model không trả về nội dung nào cho câu hỏi này. Anh/chị thử hỏi lại bằng câu khác " +
+  "giúp mình; nếu lặp lại nhiều lần thì báo quản trị nền tảng kiểm tra cấu hình model.";
+
 const OUT_OF_ROUNDS =
   "Câu hỏi này cần tra nhiều bước quá nên mình dừng lại để khỏi chạy lòng vòng. " +
   "Anh/chị tách thành vài câu ngắn hơn giúp mình nhé.";
@@ -48,6 +58,11 @@ export async function* runTurn(opts: RunOptions): AsyncGenerator<RunEvent> {
     }
 
     if (calls.length === 0) {
+      if (!answer.trim()) {
+        yield { type: "delta", text: EMPTY_ANSWER };
+        yield { type: "done", text: EMPTY_ANSWER, toolCalls };
+        return;
+      }
       yield { type: "done", text: answer, toolCalls };
       return;
     }

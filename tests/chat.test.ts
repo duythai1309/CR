@@ -12,6 +12,7 @@ import type { ChatProvider, ProviderEvent, ToolCall } from "@/lib/chat/provider"
 import { readChatConfig } from "@/lib/chat/config";
 import { missingMrvInputs } from "@/lib/mrv/collect";
 import { FIXTURE_RESULTS, createFixtureExecute } from "@/lib/chat/eval/fixture";
+import { tenRieng } from "@/lib/chat/handlers";
 import { buildContexts, buildTrajectory } from "@/lib/chat/eval/trajectory";
 import {
   PROVIDERS,
@@ -448,5 +449,90 @@ describe("thứ tự ưu tiên cấu hình trợ lý", () => {
     expect(resolveChatConfig({ ...empty, apiKey: "   " }, {})).toBeNull();
     const c = resolveChatConfig({ ...empty, model: "  ", apiKey: "k" }, {});
     expect(c?.model).toBe("gemini-2.5-flash");
+  });
+});
+
+describe("bỏ từ phân loại khỏi tên riêng trước khi tìm", () => {
+  it("cắt từ phân loại đứng đầu", () => {
+    expect(tenRieng("Thửa Ruộng Bãi")).toBe("Ruộng Bãi");
+    // Cố ý giữ lại "ruộng": mọi tên thửa đều bắt đầu bằng từ đó, cắt đi là mất tên.
+    expect(tenRieng("thửa ruộng Đồng Trên")).toBe("ruộng Đồng Trên");
+    expect(tenRieng("mùa vụ Vụ Xuân 2026")).toBe("Vụ Xuân 2026");
+    expect(tenRieng("Lô tín chỉ LTC-2026-01")).toBe("LTC-2026-01");
+  });
+
+  it("không đụng tới từ nằm giữa tên thật", () => {
+    // "Ruộng" ở đây là một phần của tên, không phải từ phân loại.
+    expect(tenRieng("Ruộng Bãi")).toBe("Ruộng Bãi");
+    expect(tenRieng("Vụ Xuân 2026")).toBe("Vụ Xuân 2026");
+    expect(tenRieng("Đồng Ruộng Trên")).toBe("Đồng Ruộng Trên");
+  });
+
+  it("không trả về chuỗi rỗng khi tên chỉ gồm từ phân loại", () => {
+    expect(tenRieng("thửa")).toBe("thửa");
+    expect(tenRieng("  Thửa  ")).toBe("Thửa");
+  });
+});
+
+describe("dữ liệu mẫu bám đúng hành vi của handler thật", () => {
+  const run = createFixtureExecute("coop_manager");
+
+  it("tên mùa vụ không khớp thì báo không tìm thấy, không lấy vụ khác thay", async () => {
+    const r = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Hè Thu 2026" } })) as
+      Record<string, unknown>;
+    expect(r.khong_tim_thay).toBeDefined();
+    expect(r.tong_giam_phat_thai_tco2e).toBeUndefined();
+  });
+
+  it("vẫn tra được cả hai vụ có thật", async () => {
+    const xuan = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Xuân 2026" } })) as
+      Record<string, unknown>;
+    expect(xuan.mua_vu).toBe("Vụ Xuân 2026");
+    const mua = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Mùa 2025" } })) as
+      Record<string, unknown>;
+    expect(mua.mua_vu).toBe("Vụ Mùa 2025");
+  });
+
+  it("bỏ trống tên vụ thì lấy vụ mới nhất", async () => {
+    const r = (await run({ name: "tong_ket_mua_vu", args: {} })) as Record<string, unknown>;
+    expect(r.mua_vu).toBe("Vụ Xuân 2026");
+  });
+
+  it("tên thửa kèm từ phân loại vẫn tra ra — đúng ca eval bắt được", async () => {
+    const r = (await run({ name: "chi_tiet_thua_vu", args: { ten_thua: "Thửa Ruộng Bãi" } })) as
+      Record<string, unknown>;
+    expect(r.thua).toBe("Ruộng Bãi");
+  });
+});
+
+describe("model trả về rỗng", () => {
+  it("nói rõ thay vì đưa ra câu trả lời trắng", async () => {
+    const events = await collect(
+      runTurn(
+        runOptions(scriptedProvider([[]]), async () => ({})),
+      ),
+    );
+    const done = events.at(-1) as { type: string; text: string };
+    expect(done.type).toBe("done");
+    expect(done.text).toContain("không trả về nội dung nào");
+    // Người dùng phải nhìn thấy câu đó, không chỉ nằm trong bản ghi.
+    expect(events.some((e) => e.type === "delta")).toBe(true);
+  });
+
+  it("model rỗng NGAY SAU khi gọi công cụ cũng phải báo", async () => {
+    const events = await collect(
+      runTurn(
+        runOptions(
+          scriptedProvider([
+            [{ type: "calls", calls: [{ name: "liet_ke_mua_vu", args: {} }] }],
+            [],
+          ]),
+          async () => ({ mua_vu: [] }),
+        ),
+      ),
+    );
+    const done = events.at(-1) as { type: string; text: string; toolCalls: unknown[] };
+    expect(done.text).toContain("không trả về nội dung nào");
+    expect(done.toolCalls).toHaveLength(1);
   });
 });

@@ -34,6 +34,28 @@ const str = (v: unknown): string | null => {
  */
 const safeFilterTerm = (s: string): string => s.replace(/[,()%*\\"']/g, " ").trim();
 
+/**
+ * Bỏ từ phân loại đứng đầu tên riêng trước khi đem đi tìm.
+ *
+ * Người hỏi nói "thửa Ruộng Bãi" hoặc "mùa vụ Vụ Xuân 2026" theo đúng lối nói tự
+ * nhiên, và model chép nguyên cụm đó vào tham số. Tìm kiếm dùng `ilike '%...%'` nên
+ * cụm thừa một chữ là không khớp gì cả — thửa tên "Ruộng Bãi" không bao giờ tìm ra
+ * bằng chuỗi "Thửa Ruộng Bãi". Eval bắt được đúng ca này.
+ *
+ * Chỉ cắt từ đứng ĐẦU, và cố ý KHÔNG cắt cụm "thửa ruộng": mọi tên thửa trong hệ
+ * thống đều bắt đầu bằng "Ruộng" ("Ruộng Bãi", "Ruộng Đồng Trên"), nên cắt cả cụm
+ * sẽ ăn mất một phần tên thật. Bỏ mỗi chữ "thửa" là đủ: "thửa ruộng Đồng Trên"
+ * thành "ruộng Đồng Trên", vẫn khớp bằng `ilike`.
+ */
+const CLASSIFIER = /^(thửa|mùa\s+vụ|lô\s+tín\s+chỉ|nông\s+hộ|hộ)\s+/i;
+
+export function tenRieng(raw: string): string {
+  let s = raw.trim();
+  // Lặp vì người ta hay nói chồng: "thửa ruộng Ruộng Bãi".
+  for (let i = 0; i < 2 && CLASSIFIER.test(s); i++) s = s.replace(CLASSIFIER, "").trim();
+  return s || raw.trim();
+}
+
 const num = (v: unknown): number => Number(v ?? 0);
 const round = (n: number, digits = 3): number => Number(n.toFixed(digits));
 
@@ -51,7 +73,7 @@ async function resolveSeason(supabase: Client, name: string | null) {
     .select("id, name, season_type, start_date, end_date, is_locked")
     .order("start_date", { ascending: false })
     .limit(1);
-  if (name) q = q.ilike("name", `%${safeFilterTerm(name)}%`);
+  if (name) q = q.ilike("name", `%${safeFilterTerm(tenRieng(name))}%`);
   const { data, error } = await q;
   fail(error);
   return data?.[0] ?? null;
@@ -211,15 +233,14 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
          emission_calculations ( reduction_co2e_t, baseline_co2e_t, project_co2e_t, area_ha,
                                  cultivation_days, methodology_version, computed_at, is_current )`,
       )
-      .ilike("fields.name", `%${safeFilterTerm(fieldName)}%`)
+      .ilike("fields.name", `%${safeFilterTerm(tenRieng(fieldName))}%`)
       .limit(10);
     fail(error);
 
     const seasonName = str(args.ten_mua_vu);
+    const seasonTerm = seasonName ? tenRieng(seasonName).toLowerCase() : null;
     const candidates = (data ?? []).filter((r) =>
-      seasonName
-        ? (one(r.seasons)?.name ?? "").toLowerCase().includes(seasonName.toLowerCase())
-        : true,
+      seasonTerm ? (one(r.seasons)?.name ?? "").toLowerCase().includes(seasonTerm) : true,
     );
     if (candidates.length === 0) return { khong_tim_thay: "Không có thửa-vụ nào khớp." };
 

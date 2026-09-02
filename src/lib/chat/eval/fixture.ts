@@ -1,6 +1,7 @@
 import type { UserRole } from "@/lib/auth";
 import type { ToolCall } from "../provider";
 import { findTool } from "../tools";
+import { tenRieng } from "../handlers";
 
 /**
  * Hợp tác xã giả lập dùng cho eval.
@@ -17,6 +18,9 @@ import { findTool } from "../tools";
  */
 
 export const FIXTURE_COOP = "HTX Nông nghiệp Tân Phú";
+
+/** Tên các mùa vụ có thật trong dữ liệu mẫu, dùng để mô phỏng đúng phép tìm của handler. */
+const SEASON_NAMES = ["Vụ Xuân 2026", "Vụ Mùa 2025"];
 export const FIXTURE_USER = "Nguyễn Văn Cường";
 
 const HE_SO = [
@@ -168,8 +172,14 @@ export const FIXTURE_RESULTS: Record<
   }),
 
   tong_ket_mua_vu: (args) => {
-    const name = typeof args.ten_mua_vu === "string" ? args.ten_mua_vu.toLowerCase() : "";
-    if (name.includes("mùa") || name.includes("mua 2025") || name.includes("2025")) {
+    const name = typeof args.ten_mua_vu === "string" ? tenRieng(args.ten_mua_vu).toLowerCase() : "";
+    // Handler thật dùng `ilike` rồi trả `khong_tim_thay` khi không khớp. Trước đây
+    // fixture âm thầm rơi về vụ mới nhất, khiến trợ lý trả lời "hệ thống chỉ có Vụ
+    // Xuân 2026" trong khi dữ liệu mẫu có hai vụ — eval chấm trên một hành vi không
+    // tồn tại ngoài đời.
+    if (name && !SEASON_NAMES.some((n) => n.toLowerCase().includes(name)))
+      return { khong_tim_thay: "Không có mùa vụ nào khớp." };
+    if (name.includes("mùa") || name.includes("2025")) {
       return {
         mua_vu: "Vụ Mùa 2025",
         loai_vu: "Vụ Mùa (vụ cuối năm)",
@@ -211,7 +221,7 @@ export const FIXTURE_RESULTS: Record<
   }),
 
   chi_tiet_thua_vu: (args) => {
-    const name = typeof args.ten_thua === "string" ? args.ten_thua.toLowerCase() : "";
+    const name = typeof args.ten_thua === "string" ? tenRieng(args.ten_thua).toLowerCase() : "";
     if (name.includes("bãi") || name.includes("bai")) return THUA_CHUA_TINH;
     if (name.includes("trên") || name.includes("tren") || name.includes("đồng"))
       return THUA_DA_TINH;
