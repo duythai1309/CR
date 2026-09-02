@@ -63,7 +63,15 @@ export function buildTrajectory(
   return messages;
 }
 
-/** Kết quả tool phẳng ra thành chuỗi, dùng làm `contexts` cho faithfulness. */
-export function buildContexts(steps: TrajectoryStep[]): string[] {
-  return steps.map((s) => `${s.call.name}: ${JSON.stringify(s.result ?? null)}`);
+/**
+ * Căn cứ mà câu trả lời được phép dựa vào, dùng làm `contexts` cho faithfulness.
+ *
+ * Không chỉ có kết quả công cụ: danh tính người hỏi và tên hợp tác xã nằm trong
+ * system prompt, và trợ lý nhắc lại chúng một cách chính đáng. Thiếu dòng đó thì
+ * evaluator coi "HTX Nông nghiệp Tân Phú" là thông tin bịa và trừ điểm một hành vi
+ * đúng — đo sai chứ không phải trợ lý sai.
+ */
+export function buildContexts(steps: TrajectoryStep[], nguoiHoi?: string): string[] {
+  const base = nguoiHoi ? [`ngữ cảnh người hỏi: ${nguoiHoi}`] : [];
+  return [...base, ...steps.map((s) => `${s.call.name}: ${JSON.stringify(s.result ?? null)}`)];
 }

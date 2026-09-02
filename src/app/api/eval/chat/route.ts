@@ -130,7 +130,11 @@ export async function POST(request: Request) {
     answer,
     trajectory: buildTrajectory(question, steps, answer),
     tool_calls: toolCalls.map((c) => ({ name: c.name, arguments: c.args })),
-    contexts: buildContexts(steps),
+    contexts: buildContexts(
+      steps,
+      `${FIXTURE_USER}, vai trò ${role}` +
+        (role === "buyer" ? "" : `, thuộc ${FIXTURE_COOP}`),
+    ),
     meta: {
       role,
       model: config.model,
