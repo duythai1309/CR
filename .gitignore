@@ -11,3 +11,10 @@ next-env.d.ts
 
 # Video gốc độ phân giải cao — bản đã nén nằm ở public/video/
 media-goc/
+
+# Log thô của bộ kiểm chứng DB cục bộ (tests/db/run.py) — sinh lại được bằng cách chạy lại.
+# Giữ results.json vì các báo cáo trong docs/design trích dẫn chúng làm bằng chứng.
+tests/db/runs/**
+!tests/db/runs/
+!tests/db/runs/*/
+!tests/db/runs/*/results.json

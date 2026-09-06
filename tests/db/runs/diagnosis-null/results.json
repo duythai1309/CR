@@ -1,0 +1,21 @@
+{
+  "container": "cr-pgtest-baseline",
+  "image": "postgis/postgis:17-3.4",
+  "started_at": "2026-09-06T07:11:20.234906+00:00",
+  "migrations": [],
+  "tests": [
+    {
+      "id": "ASTNULL",
+      "description": "AST op=null phải bị từ chối",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001",
+      "actual": "",
+      "exit_code": 0,
+      "status": "FAIL"
+    }
+  ],
+  "not_run": [
+    "C13-HTTP: Không có Supabase Storage HTTP/S3/TUS trong shim."
+  ]
+}

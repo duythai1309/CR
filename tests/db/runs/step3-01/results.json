@@ -1,0 +1,1042 @@
+{
+  "container": "cr-pgtest-step3-01",
+  "image": "postgis/postgis@sha256:d0b5a6ecab18997637f55a83cb4a9467391de5645916cfa1b6f2a8d19eee7be5",
+  "started_at": "2026-09-06T07:36:54.940180+00:00",
+  "migration_transaction_mode": "psql -X -1 -v ON_ERROR_STOP=1 -f -",
+  "migrations": [
+    {
+      "file": "0001_core_schema.sql",
+      "sha256": "bf89c5abc5c53a28256cbc655d6257940f4460f29c15de50eeebdc3d82794e60",
+      "status": "PASS",
+      "output": "psql:<stdin>:3: NOTICE:  42710: extension \"postgis\" already exists, skipping\nLOCATION:  CreateExtension, extension.c:1881\n"
+    },
+    {
+      "file": "0002_mrv_and_market.sql",
+      "sha256": "2fbf3501d961b2bcd03ba1e73eb43442bdfdff3abf52ccfee2c065cabf0c3836",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0003_rls.sql",
+      "sha256": "51fb44c5f89fd168fd2e23c95c4b963f230e6bdd4025e42e54c07194ef57ba7d",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0004_functions_storage_factors.sql",
+      "sha256": "9701259cf7db9b5a09aed3cbbf77e60f940b6c820242f5554294c50bce532791",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0005_business_rpc.sql",
+      "sha256": "0107ace8f448d2d615471dcc64a2a7335f6eb436ee8d15563c37b04e31d2fc56",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0006_fields_api.sql",
+      "sha256": "4e54638fa3de6984077710a59370c2a3965f6b945f1bfb65bf55e9d844129421",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0007_harden.sql",
+      "sha256": "ded12e709f29a9678da7143f36708a8ba4731c796b344f9d80f8f141bf4e1063",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0008_vietnam_regional_factors.sql",
+      "sha256": "9fc6e50d83b092f69e305e35b9d9b7061db18129f1d251e6ae44808626df77cc",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0009_coop_two_tier.sql",
+      "sha256": "a10180e3fea304a56dbeadc55e5479847ae0dbda7f85eabc8d3075fb36f7c1c0",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0010_chat.sql",
+      "sha256": "4afd94824128280bd135b2d4bbfec3bc1f486a9bd03492423ae945c480863e75",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0011_chat_settings.sql",
+      "sha256": "c26cc28b7608a24ca65a5b2ac19f0927d9fe6da0146d55d40a9af495aaefe87a",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0012_signup_role_guard.sql",
+      "sha256": "cec207ad9c2e1c5485b054cccd5748aa26f6fb09e4cc967c2cce1e5a9079bce3",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0013_project_platform.sql",
+      "sha256": "d374d97f878dd5cb1450e12ccca65d5262b0e7301aafd3e0ad220fcf7eff25ba",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0014_project_platform_samples.sql",
+      "sha256": "8eebac58cb3556f9a6c0fdacabd6ffcbb1362df94b76e4c1971bf0cac086c441",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "file": "0015_project_identity.sql",
+      "sha256": "8360d2f743a828ed53a061f927aa75b0962f14aebd8b87d32a93e2799b18b307",
+      "status": "PASS",
+      "output": ""
+    }
+  ],
+  "tests": [
+    {
+      "id": "F01",
+      "description": "Tạo 8 user giả, trigger signup sinh profile",
+      "role": "postgres",
+      "uid": null,
+      "expected": "8",
+      "actual": "8",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H01",
+      "description": "Tạo project A bằng RPC",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "3c20c71c-d517-4044-b827-3c408a906d5d",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H02",
+      "description": "Tạo project B độc lập",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "SQL thành công",
+      "actual": "a94df16e-cf48-492a-94de-b7493a656789",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H03",
+      "description": "Project có đúng owner và 7 stage đúng tên/thứ tự",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "t",
+      "actual": "t",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "F02",
+      "description": "Lấy stage A bằng phiên owner A",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "da3f5cc1-415f-44a2-ab3d-2e9a6e085301",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "F03",
+      "description": "Lấy stage B bằng phiên owner B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "SQL thành công",
+      "actual": "d265ffd2-e195-4864-9bf5-1f37091c1253",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H04",
+      "description": "Owner thêm developer/viewer, đọc membership không đệ quy",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "3",
+      "actual": "3",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "F04",
+      "description": "Thêm developer riêng B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "2",
+      "actual": "2",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H05",
+      "description": "Tạo task, gán developer cùng project, đổi status",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "in_progress",
+      "actual": "in_progress",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "A01",
+      "description": "C18.1 Task A trỏ stage B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / project_tasks_stage_id_project_id_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: insert or update on table \"project_tasks\" violates foreign key constraint \"project_tasks_stage_id_project_id_fkey\"\nDETAIL:  Key is not present in table \"project_stages\".\nSCHEMA NAME:  public\nTABLE NAME:  project_tasks\nCONSTRAINT NAME:  project_tasks_stage_id_project_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A02",
+      "description": "C18.2 Assignee không là thành viên",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / project_tasks_project_id_assignee_id_assignee_role_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: insert or update on table \"project_tasks\" violates foreign key constraint \"project_tasks_project_id_assignee_id_assignee_role_fkey\"\nDETAIL:  Key is not present in table \"project_members\".\nSCHEMA NAME:  public\nTABLE NAME:  project_tasks\nCONSTRAINT NAME:  project_tasks_project_id_assignee_id_assignee_role_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A03",
+      "description": "C18.3 Assignee là viewer",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / project_tasks_project_id_assignee_id_assignee_role_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: insert or update on table \"project_tasks\" violates foreign key constraint \"project_tasks_project_id_assignee_id_assignee_role_fkey\"\nDETAIL:  Key is not present in table \"project_members\".\nSCHEMA NAME:  public\nTABLE NAME:  project_tasks\nCONSTRAINT NAME:  project_tasks_project_id_assignee_id_assignee_role_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A04",
+      "description": "C18.4 Assignee developer của B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / project_tasks_project_id_assignee_id_assignee_role_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: insert or update on table \"project_tasks\" violates foreign key constraint \"project_tasks_project_id_assignee_id_assignee_role_fkey\"\nDETAIL:  Key is not present in table \"project_members\".\nSCHEMA NAME:  public\nTABLE NAME:  project_tasks\nCONSTRAINT NAME:  project_tasks_project_id_assignee_id_assignee_role_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A08",
+      "description": "C18.8 Đổi project_id của task A sang B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table project_tasks\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A08P",
+      "description": "Sau tấn công task vẫn thuộc A",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "t",
+      "actual": "t",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "A09",
+      "description": "C18.9 Outsider tự INSERT membership owner",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "SQLSTATE 42501 / project_members",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table project_members\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "R01",
+      "description": "Outsider SELECT projects/members/tasks rỗng, không đệ quy",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "R02",
+      "description": "Outsider INSERT task bị RLS chặn",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "SQLSTATE 42501 / row-level security",
+      "actual": "psql:<stdin>:5: ERROR:  42501: new row violates row-level security policy for table \"project_tasks\"\nLOCATION:  ExecWithCheckOptions, execMain.c:2158",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "R03",
+      "description": "Outsider gọi RPC member không được",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "SQLSTATE P0001 / Chỉ owner",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Chỉ owner được quản lý thành viên\nCONTEXT:  PL/pgSQL function set_project_member(uuid,uuid,text) line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "R04",
+      "description": "Viewer đọc membership được, không đệ quy",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "3",
+      "actual": "3",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "R05",
+      "description": "Viewer INSERT task bị chặn",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "SQLSTATE 42501 / row-level security",
+      "actual": "psql:<stdin>:5: ERROR:  42501: new row violates row-level security policy for table \"project_tasks\"\nLOCATION:  ExecWithCheckOptions, execMain.c:2158",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "R06",
+      "description": "Viewer UPDATE task không sửa row nào",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "R07",
+      "description": "Developer DELETE project bị chặn quyền bảng",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table projects\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "R08",
+      "description": "Developer xoá mềm project không sửa được row",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "R09",
+      "description": "Anon không có quyền đọc projects",
+      "role": "anon",
+      "uid": null,
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:4: ERROR:  42501: permission denied for table projects\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "O01",
+      "description": "Không demote owner cuối cùng",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE P0001 / owner cuối cùng",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Không được mất owner cuối cùng\nCONTEXT:  PL/pgSQL function project_guard_member() line 12 at RAISE\nSQL statement \"insert into public.project_members(project_id,user_id,role) values(p_project_id,p_user_id,p_role)\n      on conflict(project_id,user_id) do update set role = excluded.role\"\nPL/pgSQL function set_project_member(uuid,uuid,text) line 9 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "O02",
+      "description": "Không xóa owner cuối cùng",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE P0001 / owner cuối cùng",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Không được mất owner cuối cùng\nCONTEXT:  PL/pgSQL function project_guard_member() line 12 at RAISE\nSQL statement \"delete from public.project_members where project_id = p_project_id and user_id = p_user_id\"\nPL/pgSQL function set_project_member(uuid,uuid,text) line 6 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "O03",
+      "description": "Không đổi developer còn được giao task sang viewer",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / project_tasks_project_id_assignee_id_assignee_role_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: update or delete on table \"project_members\" violates foreign key constraint \"project_tasks_project_id_assignee_id_assignee_role_fkey\" on table \"project_tasks\"\nDETAIL:  Key (project_id, user_id, role)=(3c20c71c-d517-4044-b827-3c408a906d5d, 30000000-0000-4000-8000-000000000003, developer) is still referenced from table \"project_tasks\".\nCONTEXT:  SQL statement \"insert into public.project_members(project_id,user_id,role) values(p_project_id,p_user_id,p_role)\n      on conflict(project_id,user_id) do update set role = excluded.role\"\nPL/pgSQL function set_project_member(uuid,uuid,text) line 9 at SQL statement\nSCHEMA NAME:  public\nTABLE NAME:  project_tasks\nCONSTRAINT NAME:  project_tasks_project_id_assignee_id_assignee_role_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2612",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "S01",
+      "description": "Không thêm stage tuỳ ý",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table project_stages\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "S02",
+      "description": "Không xoá stage",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table project_stages\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "F05",
+      "description": "Đăng ký metadata file A bằng owner A",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "F06",
+      "description": "Đăng ký metadata file B bằng owner B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "SQL thành công",
+      "actual": "",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "A07",
+      "description": "C18.7 Đính file B vào task A",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 23503 / task_attachments_file_id_project_id_fkey",
+      "actual": "psql:<stdin>:5: ERROR:  23503: insert or update on table \"task_attachments\" violates foreign key constraint \"task_attachments_file_id_project_id_fkey\"\nDETAIL:  Key is not present in table \"project_files\".\nSCHEMA NAME:  public\nTABLE NAME:  task_attachments\nCONSTRAINT NAME:  task_attachments_file_id_project_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "C13I",
+      "description": "C13 SQL shim: authenticated INSERT storage.objects",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13U",
+      "description": "C13 SQL shim: metadata UPDATE trả 0 row",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13UPS",
+      "description": "C13 SQL shim: upsert trên path có sẵn bị chặn",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / row-level security",
+      "actual": "psql:<stdin>:5: ERROR:  42501: new row violates row-level security policy (USING expression) for table \"objects\"\nLOCATION:  ExecWithCheckOptions, execMain.c:2183",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "C13V",
+      "description": "Viewer đọc object được nhưng không upload",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13VW",
+      "description": "Viewer upload SQL shim bị chặn",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "SQLSTATE 42501 / row-level security",
+      "actual": "psql:<stdin>:5: ERROR:  42501: new row violates row-level security policy for table \"objects\"\nLOCATION:  ExecWithCheckOptions, execMain.c:2158",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "C13O",
+      "description": "Outsider không đọc object project A",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "FADMIN",
+      "description": "Thiết lập global admin giả chỉ trên DB local",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQL thành công",
+      "actual": "",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13TI",
+      "description": "C13 SQL shim: admin INSERT template object đúng path",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000008",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13RF",
+      "description": "Kiểm restrictive UPDATE ngay cả khi có permissive UPDATE shim",
+      "role": "postgres",
+      "uid": null,
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "FCOOP",
+      "description": "Tạo HTX local để kiểm evidence không bị ảnh hưởng",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "869b2931-b709-48ad-9cd0-253c97939d03",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C13E",
+      "description": "Evidence vẫn INSERT và DELETE được qua policy legacy",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H06",
+      "description": "Owner chọn/khóa Standard+Methodology, nhập baseline",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H07",
+      "description": "Tạo kỳ với snapshot schema/baseline/hệ số",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "bb7174e9-81a7-4f7f-99f2-1e47bd960395",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H08",
+      "description": "Developer ghi observation qua RPC",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "A05",
+      "description": "C18.5 FK monitoring_data sai project, kiểm dưới DB owner để đi qua lớp grant",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE 23503 / monitoring_data_period_id_project_id_fkey",
+      "actual": "psql:<stdin>:3: ERROR:  23503: insert or update on table \"monitoring_data\" violates foreign key constraint \"monitoring_data_period_id_project_id_fkey\"\nDETAIL:  Key (period_id, project_id)=(bb7174e9-81a7-4f7f-99f2-1e47bd960395, a94df16e-cf48-492a-94de-b7493a656789) is not present in table \"monitoring_periods\".\nSCHEMA NAME:  public\nTABLE NAME:  monitoring_data\nCONSTRAINT NAME:  monitoring_data_period_id_project_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "A05AUTH",
+      "description": "C18.5 authenticated không được INSERT monitoring_data trực tiếp",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for table monitoring_data\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M01",
+      "description": "Sai expected_revision không ghi được",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "SQLSTATE P0001 / revision",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Kỳ khóa hoặc revision đã thay đổi\nCONTEXT:  PL/pgSQL function save_monitoring_records(uuid,jsonb,bigint,uuid,jsonb) line 14 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M02",
+      "description": "Batch có row sai bounds rollback toàn bộ",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "SQLSTATE P0001 / ngoài phạm vi",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Giá trị ngoài phạm vi/precision: area_ha\nCONTEXT:  PL/pgSQL function project_validate_values(jsonb,jsonb,text) line 25 at RAISE\nSQL statement \"SELECT public.project_validate_values(p.schema_snapshot,new.metric_values,'observation')\"\nPL/pgSQL function project_guard_monitoring_data() line 11 at PERFORM\nSQL statement \"insert into public.monitoring_data(project_id,period_id,record_key,observed_on,metric_values,raw_input,\n      import_id,source_row,entered_by,revision)\n      values(p.project_id,p.id,r->>'record_key',(r->>'observed_on')::date,r->'values',coalesce(r->'raw_input','{}'::jsonb),\n        import_uuid,case when import_uuid is not null then (r->>'source_row')::integer end,auth.uid(),next_rev)\n      on conflict(period_id,record_key) do update set observed_on=excluded.observed_on,metric_values=excluded.metric_values,\n        raw_input=excluded.raw_input,import_id=excluded.import_id,source_row=excluded.source_row,\n        entered_by=excluded.entered_by,revision=excluded.revision,updated_at=now()\"\nPL/pgSQL function save_monitoring_records(uuid,jsonb,bigint,uuid,jsonb) line 27 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M03",
+      "description": "Sau lỗi batch còn đúng 1 observation và revision=1",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "t",
+      "actual": "t",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "M04",
+      "description": "Viewer không gọi được RPC ghi monitoring",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000005",
+      "expected": "SQLSTATE P0001 / Không có quyền",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Không có quyền nhập monitoring\nCONTEXT:  PL/pgSQL function save_monitoring_records(uuid,jsonb,bigint,uuid,jsonb) line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M05",
+      "description": "Import file cùng project thành công nguyên tử",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "2",
+      "actual": "2",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "M06",
+      "description": "Retry import không tăng revision",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "true",
+      "actual": "true",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H09",
+      "description": "Owner khóa kỳ và snapshot dữ liệu",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "locked:2",
+      "actual": "locked:2",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "L01",
+      "description": "Kỳ đã khóa không ghi qua RPC",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "SQLSTATE P0001 / Kỳ khóa",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Kỳ khóa hoặc revision đã thay đổi\nCONTEXT:  PL/pgSQL function save_monitoring_records(uuid,jsonb,bigint,uuid,jsonb) line 14 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "L02",
+      "description": "Kỳ khóa chặn UPDATE dữ liệu kể cả DB owner",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / Kỳ không mở",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Kỳ không mở\nCONTEXT:  PL/pgSQL function project_guard_monitoring_data() line 6 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "L03",
+      "description": "Kỳ khóa chặn xóa observation qua RPC",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000003",
+      "expected": "SQLSTATE P0001 / Kỳ khóa",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Kỳ khóa hoặc revision đã thay đổi\nCONTEXT:  PL/pgSQL function delete_monitoring_record(uuid,text,bigint) line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "F07",
+      "description": "Lấy template placeholder đúng methodology",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "acdb73a6-bff7-4309-a288-b91bebc175c3",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "F08",
+      "description": "Lấy template khác Standard/methodology",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQL thành công",
+      "actual": "69c00b57-33fd-44a5-9943-3f84f54d9cfd",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H10",
+      "description": "Backend service_role sinh MRV preview từ kỳ khóa",
+      "role": "service_role",
+      "uid": null,
+      "expected": "SQL thành công",
+      "actual": "04e74524-905f-4954-8e71-e4635437681e",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "H11",
+      "description": "Report giữ nguyên snapshot/hash/revision của kỳ",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "t",
+      "actual": "t",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "A06",
+      "description": "C18.6 RPC từ chối template khác methodology/Standard",
+      "role": "service_role",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / Template khác",
+      "actual": "psql:<stdin>:4: ERROR:  P0001: Template khác methodology/standard của kỳ\nCONTEXT:  PL/pgSQL function create_mrv_report(uuid,uuid,jsonb,jsonb,text,uuid,text,uuid) line 12 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M07",
+      "description": "Authenticated không được gọi RPC kết quả report",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:5: ERROR:  42501: permission denied for function create_mrv_report\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M08",
+      "description": "Sample + placeholder không được tạo final",
+      "role": "service_role",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / Final cần",
+      "actual": "psql:<stdin>:4: ERROR:  P0001: Final cần methodology đã thẩm định, template thật và tệp xuất; dữ liệu MẪU chỉ preview\nCONTEXT:  PL/pgSQL function create_mrv_report(uuid,uuid,jsonb,jsonb,text,uuid,text,uuid) line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M09",
+      "description": "Report bất biến cả với DB owner",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / bất biến",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Bản ghi mrv_reports bất biến; thêm bản/version mới\nCONTEXT:  PL/pgSQL function project_reject_mutation() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M10",
+      "description": "Methodology published bất biến",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / published bất biến",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Methodology published bất biến\nCONTEXT:  PL/pgSQL function project_guard_methodology() line 4 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M11",
+      "description": "Factors published bất biến",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / draft",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Chỉ sửa factors của methodology draft\nCONTEXT:  PL/pgSQL function project_guard_factor() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "ASTNULL",
+      "description": "AST op=null phải bị từ chối",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / Toán tử AST",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Toán tử AST không hợp lệ\nCONTEXT:  PL/pgSQL function project_validate_expression(jsonb,text[],text[],text[],text[],integer) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "ASTCODE",
+      "description": "AST chứa mã lạ phải bị từ chối",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / Toán tử AST",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Toán tử AST không hợp lệ\nCONTEXT:  PL/pgSQL function project_validate_expression(jsonb,text[],text[],text[],text[],integer) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "ASTCYCLE",
+      "description": "AST tham chiếu calculation chưa có phải bị từ chối",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001 / đứng trước",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Calc phải tham chiếu calc đứng trước\nCONTEXT:  PL/pgSQL function project_validate_expression(jsonb,text[],text[],text[],text[],integer) line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "M12",
+      "description": "Đổi baseline project không làm đổi baseline report cũ",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "10",
+      "actual": "10",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "C21",
+      "description": "Xóa auth.users bị RESTRICT và rollback toàn bộ",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE 23503 / profiles",
+      "actual": "psql:<stdin>:3: ERROR:  23503: update or delete on table \"profiles\" violates foreign key constraint \"projects_created_by_fkey\" on table \"projects\"\nDETAIL:  Key (id)=(30000000-0000-4000-8000-000000000001) is still referenced from table \"projects\".\nSCHEMA NAME:  public\nTABLE NAME:  projects\nCONSTRAINT NAME:  projects_created_by_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2612",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "C21P",
+      "description": "User và profile vẫn còn sau lệnh DELETE lỗi",
+      "role": "postgres",
+      "uid": null,
+      "expected": "t",
+      "actual": "t",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "O04",
+      "description": "Thêm owner thứ hai để thử race",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "2",
+      "actual": "2",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "O05",
+      "description": "Hai owner đồng thời tự demote: đúng một thành công, một bị chặn",
+      "expected": "first success; second SQLSTATE P0001 owner cuối cùng",
+      "actual": "\n\n\nSECOND:\npsql:<stdin>:5: ERROR:  P0001: Không được mất owner cuối cùng\nCONTEXT:  PL/pgSQL function project_guard_member() line 12 at RAISE\nSQL statement \"insert into public.project_members(project_id,user_id,role) values(p_project_id,p_user_id,p_role)\n      on conflict(project_id,user_id) do update set role = excluded.role\"\nPL/pgSQL function set_project_member(uuid,uuid,text) line 9 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "status": "PASS"
+    },
+    {
+      "id": "O06",
+      "description": "Sau race còn đúng 1 owner",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000007",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "D01",
+      "description": "C5 Owner đọc danh bạ dự án: đủ thành viên, có email",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "2/2",
+      "actual": "2/2",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "D02",
+      "description": "C5 Developer đọc danh bạ: thấy tên, KHÔNG thấy email",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000004",
+      "expected": "2/0",
+      "actual": "2/0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "D03",
+      "description": "C5 Outsider gọi danh bạ trả rỗng, không lỗi, không lộ tồn tại dự án",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "0/0",
+      "actual": "0/0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "D04",
+      "description": "C5 Anon không execute được danh bạ",
+      "role": "anon",
+      "uid": null,
+      "expected": "SQLSTATE 42501 / permission denied",
+      "actual": "psql:<stdin>:4: ERROR:  42501: permission denied for function project_member_directory\nLOCATION:  aclcheck_error, aclchk.c:2838",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "D05",
+      "description": "C5 Danh bạ trả đúng full_name từ profiles",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "u3",
+      "actual": "u3",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "D06",
+      "description": "C5 profiles_select KHÔNG bị nới: vẫn không đọc được hồ sơ ngoài phạm vi",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000004",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "I01",
+      "description": "C5 Owner tra người đã là thành viên bằng email chính xác",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "30000000-0000-4000-8000-000000000004/t",
+      "actual": "30000000-0000-4000-8000-000000000004/true",
+      "exit_code": 0,
+      "status": "FAIL"
+    },
+    {
+      "id": "I02",
+      "description": "C5 Owner tra người chưa là thành viên: already_member=false",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "30000000-0000-4000-8000-000000000006/f",
+      "actual": "30000000-0000-4000-8000-000000000006/false",
+      "exit_code": 0,
+      "status": "FAIL"
+    },
+    {
+      "id": "I03",
+      "description": "C5 Developer KHÔNG được tra cứu người để mời",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000004",
+      "expected": "SQLSTATE P0001 / Chỉ owner",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Chỉ owner của dự án được tra cứu người để mời\nCONTEXT:  PL/pgSQL function project_lookup_invitee(uuid,text) line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "I04",
+      "description": "C5 Outsider KHÔNG được tra cứu người để mời",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000006",
+      "expected": "SQLSTATE P0001 / Chỉ owner",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Chỉ owner của dự án được tra cứu người để mời\nCONTEXT:  PL/pgSQL function project_lookup_invitee(uuid,text) line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "I05",
+      "description": "C5 Ký tự đại diện không liệt kê được người dùng (khớp tuyệt đối)",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "I06",
+      "description": "C5 Tiền tố email không khớp (không LIKE)",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "0",
+      "actual": "0",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "I07",
+      "description": "C5 Email rỗng bị từ chối",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "SQLSTATE P0001 / Email không hợp lệ",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Email không hợp lệ\nCONTEXT:  PL/pgSQL function project_lookup_invitee(uuid,text) line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    },
+    {
+      "id": "I08",
+      "description": "C5 Email khác hoa/thường vẫn khớp",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000002",
+      "expected": "1",
+      "actual": "1",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "I09",
+      "description": "C5 Owner dự án A không tra cứu được qua dự án B",
+      "role": "authenticated",
+      "uid": "30000000-0000-4000-8000-000000000001",
+      "expected": "SQLSTATE P0001 / Chỉ owner",
+      "actual": "psql:<stdin>:5: ERROR:  P0001: Chỉ owner của dự án được tra cứu người để mời\nCONTEXT:  PL/pgSQL function project_lookup_invitee(uuid,text) line 5 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    }
+  ],
+  "not_run": [
+    "C13-HTTP: Không có Supabase Storage HTTP/S3/TUS trong shim."
+  ],
+  "environment": "PostgreSQL 17.0 (Debian 17.0-1.pgdg110+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit\nPOSTGIS=\"3.4.3 e365945\" [EXTENSION] PGSQL=\"170\" GEOS=\"3.9.0-CAPI-1.16.2\" PROJ=\"7.2.1 NETWORK_ENABLED=OFF URL_ENDPOINT=https://cdn.proj.org USER_WRITABLE_DIRECTORY=/var/lib/postgresql/.local/share/proj DATABASE_PATH=/usr/share/proj/proj.db\" LIBXML=\"2.9.10\" LIBJSON=\"0.15\" LIBPROTOBUF=\"1.3.3\" WAGYU=\"0.5.0 (Internal)\" TOPOLOGY",
+  "image_inspect": "[\"postgis/postgis@sha256:d0b5a6ecab18997637f55a83cb4a9467391de5645916cfa1b6f2a8d19eee7be5\"]",
+  "fixture": {
+    "owner": "30000000-0000-4000-8000-000000000001",
+    "owner_b": "30000000-0000-4000-8000-000000000002",
+    "developer": "30000000-0000-4000-8000-000000000003",
+    "viewer": "30000000-0000-4000-8000-000000000005",
+    "outsider": "30000000-0000-4000-8000-000000000006",
+    "project_a": "3c20c71c-d517-4044-b827-3c408a906d5d",
+    "project_b": "a94df16e-cf48-492a-94de-b7493a656789"
+  },
+  "finished_at": "2026-09-06T07:37:48.341577+00:00"
+}

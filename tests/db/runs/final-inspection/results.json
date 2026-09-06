@@ -1,0 +1,21 @@
+{
+  "container": "cr-pgtest-fixed",
+  "image": "postgis/postgis:17-3.4",
+  "started_at": "2026-09-06T07:14:22.048961+00:00",
+  "migrations": [],
+  "tests": [
+    {
+      "id": "ASTNULL",
+      "description": "AST op=null phải bị từ chối",
+      "role": "postgres",
+      "uid": null,
+      "expected": "SQLSTATE P0001",
+      "actual": "psql:<stdin>:3: ERROR:  P0001: Toán tử AST không hợp lệ\nCONTEXT:  PL/pgSQL function project_validate_expression(jsonb,text[],text[],text[],text[],integer) line 11 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911",
+      "exit_code": 3,
+      "status": "PASS"
+    }
+  ],
+  "not_run": [
+    "C13-HTTP: Không có Supabase Storage HTTP/S3/TUS trong shim."
+  ]
+}
