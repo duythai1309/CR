@@ -1,0 +1,45 @@
+-- Tài khoản cho bộ e2e của nền tảng dự án (`tests/e2e/project-platform.test.ts`).
+-- Cùng khuôn với `supabase/seed-test-users.sql`: tạo thẳng ở đây với trạng thái đã xác
+-- nhận email, vì đăng ký qua API sẽ gửi thư xác nhận và bị giới hạn tần suất.
+--
+-- CHỈ chạy trên project phát triển. UUID cố định để chạy lại nhiều lần không sinh thêm
+-- tài khoản rác.
+--
+-- Cả bốn mang vai trò toàn cục `coop_staff` và KHÔNG thuộc hợp tác xã nào — đúng hình
+-- dạng của tài khoản nền tảng dự án theo `docs/design/auth-role-design.md` §1.
+
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new,
+  email_change_token_current, email_change, phone_change, phone_change_token,
+  reauthentication_token, is_sso_user, is_anonymous
+)
+values
+  ('00000000-0000-0000-0000-000000000000', 'e2e00000-0000-4000-8000-000000000001',
+   'authenticated', 'authenticated', 'duan-owner@test.local',
+   crypt('MatKhau12345', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}'::jsonb,
+   '{"full_name":"E2E Chủ dự án","role":"coop_staff"}'::jsonb,
+   now(), now(), '', '', '', '', '', '', '', '', false, false),
+  ('00000000-0000-0000-0000-000000000000', 'e2e00000-0000-4000-8000-000000000002',
+   'authenticated', 'authenticated', 'duan-dev@test.local',
+   crypt('MatKhau12345', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}'::jsonb,
+   '{"full_name":"E2E Đơn vị phát triển","role":"coop_staff"}'::jsonb,
+   now(), now(), '', '', '', '', '', '', '', '', false, false),
+  ('00000000-0000-0000-0000-000000000000', 'e2e00000-0000-4000-8000-000000000003',
+   'authenticated', 'authenticated', 'duan-viewer@test.local',
+   crypt('MatKhau12345', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}'::jsonb,
+   '{"full_name":"E2E Người xem","role":"coop_staff"}'::jsonb,
+   now(), now(), '', '', '', '', '', '', '', '', false, false),
+  ('00000000-0000-0000-0000-000000000000', 'e2e00000-0000-4000-8000-000000000004',
+   'authenticated', 'authenticated', 'duan-outsider@test.local',
+   crypt('MatKhau12345', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}'::jsonb,
+   '{"full_name":"E2E Người ngoài","role":"coop_staff"}'::jsonb,
+   now(), now(), '', '', '', '', '', '', '', '', false, false)
+on conflict (id) do nothing;
+
+-- Trigger on_auth_user_created tự tạo hồ sơ tương ứng trong public.profiles.
