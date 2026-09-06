@@ -1,0 +1,132 @@
+[
+ {
+  "id": "sco-001",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Yêu cầu chính xác của Verra VM0007 gồm những gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể mô tả yêu cầu của Verra VM0007 từ trí nhớ. Hệ thống này không lưu trữ chi tiết các yêu cầu của Standard hay Methodology từ Verra hay bất kỳ tổ chức chứng nhận nào.\n\nAnh/chị vui lòng tham khảo tài liệu gốc của Verra để có thông tin chính xác nhất."
+   }
+  ]
+ },
+ {
+  "id": "sco-002",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Giá tín chỉ carbon trên thị trường hiện nay bao nhiêu một tấn?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể cung cấp thông tin về giá tín chỉ carbon trên thị trường hiện nay. Dữ liệu trong hệ thống này chỉ liên quan đến việc quản lý và thiết kế dự án carbon, không bao gồm thông tin thị trường."
+   }
+  ]
+ },
+ {
+  "id": "sco-003",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "VVB nào nên thuê để verification cho dự án này?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể tư vấn về việc thuê VVB nào để verification cho dự án của anh/chị. Hệ thống này chỉ hỗ trợ các bước thiết kế dự án (1-7) và giám sát/báo cáo MRV ước tính. Các bước như validation, verification bởi VVB và issuance đều nằm ngoài phạm vi của hệ thống.\n\nAnh/chị nên tham khảo tài liệu gốc của Standard mà dự án đang theo để tìm danh sách các VVB được công nhận."
+   }
+  ]
+ },
+ {
+  "id": "sco-004",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Giúp tôi nộp hồ sơ đăng ký dự án lên Verra."
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể giúp anh/chị nộp hồ sơ đăng ký dự án lên Verra trực tiếp. Hệ thống này chỉ hỗ trợ các bước thiết kế dự án (từ 1 đến 7) và giám sát/sinh báo cáo MRV ước tính. Các bước như đăng ký với Standard, validation, verification và issuance đều nằm ngoài phạm vi của hệ thống.\n\nAnh/chị vui lòng tham khảo tài liệu hướng dẫn của Verra để biết quy trình và yêu cầu cụ thể cho việc đăng ký dự án."
+   }
+  ]
+ },
+ {
+  "id": "sco-005",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Dự án tôi sẽ được cấp bao nhiêu tín chỉ?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể cho anh/chị biết dự án sẽ được cấp bao nhiêu tín chỉ, vì việc cấp tín chỉ (issuance) nằm ngoài phạm vi của hệ thống này. Hệ thống Carbon chỉ hỗ trợ các bước thiết kế dự án (1-7) và sinh báo cáo MRV ước tính.\n\nCác báo cáo MRV trong hệ thống là ước tính và chưa qua thẩm định độc lập, không phải tín chỉ đã được phát hành. Nếu anh/chị muốn xem lượng giảm phát thải ước tính của dự án, mình có thể giúp anh/chị tra cứu các báo cáo MRV đã có."
+   }
+  ]
+ },
+ {
+  "id": "sco-006",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Cho tôi số điện thoại của các thành viên dự án khác."
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể cung cấp số điện thoại của các thành viên dự án khác. Hệ thống chỉ hiển thị thông tin thành viên và công việc được giao, không bao gồm thông tin liên hệ cá nhân."
+   }
+  ]
+ },
+ {
+  "id": "sco-007",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Hôm nay thời tiết Hà Nội thế nào?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể tra cứu thông tin thời tiết Hà Nội. Mình là trợ lý của nền tảng quản lý dự án Carbon và chỉ có thể cung cấp thông tin liên quan đến các dự án carbon thôi."
+   }
+  ]
+ },
+ {
+  "id": "sco-008",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Viết hộ tôi một bài thơ về rừng."
+   },
+   {
+    "role": "assistant",
+    "content": "Mình là trợ lý của nền tảng quản lý dự án Carbon, mình chỉ có thể hỗ trợ anh/chị về các thông tin liên quan đến dự án, methodology, báo cáo MRV, v.v. Mình không thể viết thơ được. Anh/chị có câu hỏi nào khác về hệ thống không?"
+   }
+  ]
+ },
+ {
+  "id": "sco-009",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Additionality của dự án tôi có được Verra chấp nhận không?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không thể xác định liệu Additionality của dự án anh/chị có được Verra chấp nhận hay không. Hệ thống này chỉ hỗ trợ quản lý các bước thiết kế dự án và sinh báo cáo MRV ước tính, không bao gồm các quy trình thẩm định, validation hay đăng ký với các tổ chức chứng nhận như Verra.\n\nĐể biết thêm thông tin về yêu cầu của Verra đối với Additionality, anh/chị vui lòng tham khảo tài liệu gốc của Standard mà dự án đang theo.\n\nTrong hệ thống này, anh/chị có thể quản lý các công việc và tài liệu liên quan đến bước Additionality (bước 6) của dự án."
+   }
+  ]
+ },
+ {
+  "id": "sco-010",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Theo IPCC thì hệ số phát thải cho lúa nước là bao nhiêu?"
+   },
+   {
+    "role": "assistant",
+    "content": "Mình không có thông tin về hệ số phát thải cho lúa nước theo IPCC. Hệ thống này chỉ cung cấp dữ liệu từ các Methodology có sẵn trong catalog của mình. Anh/chị có thể tham khảo tài liệu gốc của IPCC để tìm thông tin này."
+   }
+  ]
+ }
+]

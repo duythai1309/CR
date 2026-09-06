@@ -1,0 +1,65 @@
+id,question,output,tone_spec,topic,must_pass
+exp-001,"Tôi mới vào, chưa biết bắt đầu từ đâu.","Chào anh/chị, mình là trợ lý của nền tảng quản lý dự án Carbon. Mình có thể giúp anh/chị đi qua các bước thiết kế dự án, hiểu dữ liệu methodology và tra cứu tiến độ dự án.
+
+Để bắt đầu, anh/chị có thể xem danh sách các dự án mình đang tham gia hoặc tạo một dự án mới.
+
+Chào anh/chị, mình là trợ lý của nền tảng quản lý dự án Carbon.
+
+Trong hệ thống này, anh/chị có thể bắt đầu bằng cách xem các dự án mình đang tham gia. Hiện tại, anh/chị có 2 dự án:
+
+*   **Rừng ngập mặn Cà Mau**: Anh/chị là chủ dự án, dự án đang ở bước 4/7. Đã chọn Standard VCS và Methodology DEMO-VCS-FOREST (đây là methodology mẫu, chưa được thẩm định chuyên môn).
+*   **Biogas hộ gia đình Đồng Tháp**: Anh/chị là đơn vị phát triển, dự án đang ở bước 2/7. Đã chọn Standard GS nhưng chưa khoá Methodology.
+
+Anh/chị muốn mình hỗ trợ về dự án nào? Hoặc anh/chị có thể tạo dự án mới tại `/du-an/moi`.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-002,Giải thích ngắn gọn PDD là gì.,"PDD là viết tắt của Project Design Document, một tài liệu mô tả chi tiết về dự án carbon, bao gồm mục tiêu, thiết kế, baseline scenario, additionality, và monitoring plan. Đây là một trong những tài liệu quan trọng nhất trong quá trình phát triển dự án tín chỉ carbon.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-003,"Import CSV báo lỗi ở dòng 4, cột diện tích. Xử lý thế nào?","Trong hệ thống này, dự án ""Rừng ngập mặn Cà Mau"" đang sử dụng methodology MẪU ""DEMO-VCS-FOREST"". Methodology này yêu cầu trường ""Diện tích ô đo"" (mã `area_ha`) phải là số thập phân, đơn vị là ""ha"", và giá trị phải lớn hơn 0 với tối đa 4 chữ số sau dấu phẩy.
+
+Lỗi ở dòng 4, cột ""diện tích"" có thể do:
+1.  Giá trị không phải là số thập phân hợp lệ.
+2.  Giá trị bằng 0 hoặc số âm.
+3.  Giá trị có nhiều hơn 4 chữ số sau dấu phẩy.
+
+Anh/chị vui lòng kiểm tra lại tệp CSV ở dòng 4, cột ""diện tích"" để đảm bảo giá trị nhập vào đúng định dạng và nằm trong khoảng cho phép. Anh/chị có thể tham khảo chi tiết các trường cần nhập tại màn hình `/du-an/[id]/quy-trinh`.
+
+Mình xin nhắc lại, methodology ""DEMO-VCS-FOREST"" hiện tại là dữ liệu mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-004,Vì sao tôi không khoá được kỳ giám sát?,"Trong hệ thống này, dự án ""Rừng ngập mặn Cà Mau"" của anh/chị có 2 kỳ giám sát:
+
+*   **Kỳ 2026-1**: Từ 2026-01-01 đến 2026-06-30, trạng thái ""đã khoá"". Kỳ này đã có thể sinh báo cáo.
+*   **Kỳ 2026-2**: Từ 2026-07-01 đến 2026-12-31, trạng thái ""đang mở"".
+
+Anh/chị đang muốn khoá kỳ giám sát nào? Mình sẽ kiểm tra chi tiết lý do không khoá được cho kỳ đó.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-005,Con số trong báo cáo MRV ở đâu ra?,"Trong hệ thống này, báo cáo MRV của dự án ""Rừng ngập mặn Cà Mau"" cho ""Kỳ 2026-1"" với ước tính 128.4200 tCO2e được tính toán như sau:
+
+Đây là vết của ƯỚC TÍNH MRV, không phải bằng chứng verification hay tín chỉ đã phát hành. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.
+
+**Các yếu tố (factors) và nguồn:**
+*   `c_to_co2`: 3.6667 (nguồn: fixture factor snapshot)
+
+**Tính toán cho từng quan sát:**
+*   **PLOT-01**:
+    *   `credit_tco2e`: được tính bằng cách nhân `area_ha=2`, `delta_stock=8.2127` và `c_to_co2=3.6667`, cho ra giá trị `60.2200` tCO2e.
+
+**Tổng hợp toàn kỳ:**
+*   `credit_tco2e`: tổng hợp từ các giá trị `60.2200` và `68.2000` (giá trị này không hiển thị chi tiết trong trace cho PLOT-02 nhưng được dùng trong tổng hợp), cho ra tổng cộng `128.4200`.
+
+Mình không tự tính lại hoặc làm tròn thêm các con số này, mà chỉ diễn giải theo chuỗi tính toán mà hệ thống đã ghi lại.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-006,Tôi muốn mời đồng nghiệp vào dự án thì làm ở đâu?,Anh/chị có thể mời đồng nghiệp vào dự án tại màn hình quản lý thành viên: `/du-an/[id]/thanh-vien`.,"Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-007,Khác nhau giữa baseline scenario và monitoring data là gì?,"Trong hệ thống này, baseline scenario và monitoring data là hai loại dữ liệu khác nhau được yêu cầu bởi Methodology:
+
+*   **Baseline scenario** (kịch bản cơ sở) là dữ liệu được khai MỘT LẦN cho cả dự án ở bước 5 của quy trình thiết kế. Nó mô tả tình trạng hoặc hoạt động sẽ diễn ra nếu không có dự án carbon.
+*   **Monitoring data** (dữ liệu quan sát) là dữ liệu được nhập theo từng dòng trong mỗi kỳ giám sát. Đây là các số liệu thực tế được thu thập trong quá trình triển khai dự án để đo lường hiệu quả giảm phát thải.
+
+Ví dụ, với dự án ""Rừng ngập mặn Cà Mau"" đang dùng Methodology mẫu ""DEMO-VCS-FOREST"", baseline scenario cần có field ""baseline_stock_tc_ha"" (Trữ lượng carbon nền), nhưng hiện tại field này chưa được nhập.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-008,Tôi cần làm gì tiếp theo?,"Trong hệ thống này, dự án ""Rừng ngập mặn Cà Mau"" của mình đang ở Bước 5: Baseline scenario. Để duyệt được bước này, anh/chị cần đảm bảo baseline hợp lệ theo `metric_schema` của Methodology đã chọn.
+
+Hiện tại, điều kiện ""Baseline hợp lệ theo metric_schema của Methodology đã chọn"" chưa đạt. Mình có thể kiểm tra chi tiết bằng cách gọi công cụ `kiem_tra_baseline` để xem cụ thể field nào còn thiếu hoặc sai.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-009,Giải thích additionality cho người mới.,"Additionality là một khái niệm quan trọng trong các dự án tín chỉ carbon. Nó dùng để xác định liệu việc giảm phát thải hoặc loại bỏ carbon của một dự án có thực sự ""bổ sung"" so với những gì sẽ xảy ra nếu không có dự án đó hay không.
+
+Nói cách khác, một dự án được coi là có additionality nếu hoạt động giảm phát thải của nó sẽ không xảy ra trong kịch bản thông thường (baseline scenario), tức là không có động lực từ việc bán tín chỉ carbon. Nếu dự án đó vẫn được thực hiện dù không có tín chỉ carbon, thì nó không có additionality.
+
+Việc chứng minh additionality là bắt buộc để đảm bảo rằng các tín chỉ carbon được tạo ra là có giá trị thực sự trong việc chống biến đổi khí hậu.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false
+exp-010,Làm sao xem lại vì sao một bước bị chặn?,"Trong hệ thống này, để xem vì sao một bước bị chặn, anh/chị có thể dùng công cụ `yeu_cau_cua_buoc`. Công cụ này sẽ liệt kê các điều kiện cần thiết để duyệt bước đó và cho biết điều kiện nào chưa được đáp ứng.
+
+Ví dụ, với dự án ""Rừng ngập mặn Cà Mau"", bước 5 (Baseline) đang bị chặn vì ""Baseline hợp lệ theo metric_schema của Methodology đã chọn"" chưa đạt. Cụ thể là còn 1 field chưa đạt. Anh/chị có thể gọi `kiem_tra_baseline` để xem chi tiết field nào đang có vấn đề.
+
+Chỉ chủ dự án (owner) mới có quyền duyệt các bước. Anh/chị có thể truy cập màn hình `/du-an/[id]/quy-trinh` để kiểm tra và hoàn thành các điều kiện.","Tiếng Việt, giọng đồng nghiệp chuyên môn. Giữ nguyên thuật ngữ chuẩn ngành (PDD, baseline scenario, additionality, VVB, ex-ante/ex-post) thay vì dịch. Trả lời thẳng vào việc, dẫn đúng màn hình khi cần thao tác. Không hứa tính năng chưa có. Không dùng lời lẽ tiếp thị.",carbon-platform,false

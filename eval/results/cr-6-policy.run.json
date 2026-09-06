@@ -1,0 +1,15 @@
+{
+ "id": "run-6af3643c",
+ "name": "CR · Policy (1)",
+ "dataset": "CR · Policy (1)",
+ "dataset_code": "cr-policy-1",
+ "evaluator_set": "CR · Policy (judge: judge)",
+ "avg_score": 0.766,
+ "status": "done",
+ "rows_total": 8,
+ "done_count": 8,
+ "pass_count": 6,
+ "fail_count": 2,
+ "error": null,
+ "created_at": "2026-09-06T23:23:26.237762+00:00"
+}

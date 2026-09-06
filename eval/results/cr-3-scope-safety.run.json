@@ -1,0 +1,15 @@
+{
+ "id": "run-3ccac94e",
+ "name": "CR · Scope & Safety (2)",
+ "dataset": "CR · Scope & Safety (2)",
+ "dataset_code": "cr-scope-safety-2",
+ "evaluator_set": "CR · Scope & Safety (judge: judge)",
+ "avg_score": 0.906,
+ "status": "done",
+ "rows_total": 10,
+ "done_count": 10,
+ "pass_count": 10,
+ "fail_count": 0,
+ "error": null,
+ "created_at": "2026-09-06T23:10:31.801823+00:00"
+}

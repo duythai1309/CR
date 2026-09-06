@@ -1,0 +1,76 @@
+id,question,output,key_points,topic,must_pass
+acc-001,Quy trình thiết kế dự án trong hệ thống có mấy bước?,"Trong hệ thống này, quy trình thiết kế dự án có 7 bước cố định.",7 bước | Project Idea | Feasibility | Standard | Methodology | Baseline | Additionality | PDD,carbon-platform,true
+acc-002,Hệ thống đang hỗ trợ những Standard nào?,"Trong hệ thống này, mình đang hỗ trợ các Standard sau:
+
+*   **Gold Standard (GS)**: Có 2 methodology mẫu.
+*   **Verra — Verified Carbon Standard (VCS)**: Có 2 methodology mẫu.
+
+Mình xin lưu ý rằng các methodology hiện có trong catalog của hệ thống chỉ là dữ liệu mẫu do nhóm mình tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.",Verra | VCS | Gold Standard | đúng hai standard,carbon-platform,true
+acc-003,Có bao nhiêu methodology trong catalog và tên là gì?,"Trong hệ thống này, hiện có 4 methodology trong catalog. Đây là các methodology mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận:
+
+*   **MẪU VCS — thay đổi trữ lượng carbon rừng** (Mã: DEMO-VCS-FOREST)
+*   **MẪU VCS — điện năng thay thế** (Mã: DEMO-VCS-ENERGY)
+*   **MẪU GS — thay đổi trữ lượng carbon rừng** (Mã: DEMO-GS-FOREST)
+*   **MẪU GS — thu hồi khí sinh học** (Mã: DEMO-GS-BIOGAS)","4 | DEMO-VCS-FOREST | DEMO-VCS-ENERGY | DEMO-GS-FOREST | DEMO-GS-BIOGAS | methodology mẫu, chưa thẩm định",carbon-platform,true
+acc-004,Muốn duyệt bước 4 thì cần điều kiện gì?,"Trong hệ thống này, để duyệt bước 4 (Chọn Methodology), anh/chị cần đảm bảo các điều kiện sau:
+
+*   Các bước trước đã duyệt hết.
+*   Đã KHOÁ Standard.
+*   Đã KHOÁ Methodology.
+
+Hiện tại, dự án ""Rừng ngập mặn Cà Mau"" đã duyệt bước này vào ngày 2026-04-20. Anh/chị là chủ dự án nên có thể duyệt được.
+
+Lưu ý: Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước, không phải quy trình chung của ngành hay yêu cầu của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì thêm.",phải duyệt xong các bước trước | đã khoá Standard | đã khoá Methodology,carbon-platform,true
+acc-005,Bước 5 cần gì mới duyệt được?,"Trong hệ thống này, để duyệt được Bước 5 (Baseline), dự án ""Rừng ngập mặn Cà Mau"" cần thoả mãn các điều kiện sau:
+
+*   Các bước trước đã duyệt hết (đã đạt).
+*   Đã KHOÁ Standard (đã đạt).
+*   Đã KHOÁ Methodology (đã đạt).
+*   **Baseline hợp lệ theo metric_schema của Methodology đã chọn (chưa đạt).**
+
+Hiện tại, dự án còn vướng điều kiện ""Baseline hợp lệ theo metric_schema của Methodology đã chọn"" vì còn 1 field chưa đạt. Anh/chị có thể gọi `kiem_tra_baseline` để xem chi tiết từng field.
+
+Chỉ chủ dự án (owner) mới có quyền duyệt bước này. Anh/chị có thể thực hiện các thao tác này tại `/du-an/[id]/quy-trinh`.",baseline hợp lệ theo metric_schema | đã khoá Methodology | các bước trước đã duyệt,carbon-platform,true
+acc-006,Methodology DEMO-GS-BIOGAS yêu cầu đo những chỉ số nào?,"Trong hệ thống này, methodology **DEMO-GS-BIOGAS** là một methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Gold Standard công nhận.
+
+Methodology này yêu cầu đo các chỉ số sau:
+*   **Field baseline** (khai một lần cho cả dự án):
+    *   `baseline_fuel_t`: Nhiên liệu đường cơ sở (đơn vị: t)
+*   **Field quan sát** (nhập theo từng kỳ giám sát):
+    *   `biogas_m3`: Khí sinh học thu hồi (đơn vị: m3)",biogas_m3 | methane_fraction | equipment_type | digester_code | baseline_capture_fraction,carbon-platform,true
+acc-007,DEMO-VCS-FOREST cần những field giám sát gì?,"Trong hệ thống này, Methodology DEMO-VCS-FOREST (là dữ liệu mẫu, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận) cần các field giám sát sau:
+
+**Field Baseline (khai một lần cho cả dự án ở bước 5):**
+*   `baseline_stock_tc_ha` (Trữ lượng carbon nền): kiểu decimal, đơn vị tC/ha, bắt buộc, giá trị tối thiểu 0, 4 chữ số thập phân.
+
+**Field Observation (nhập theo từng kỳ giám sát):**
+*   `plot_code` (Mã ô đo): kiểu text, bắt buộc.
+*   `area_ha` (Diện tích ô đo): kiểu decimal, đơn vị ha, bắt buộc, giá trị lớn hơn 0, 4 chữ số thập phân.
+*   `stock_tc_ha` (Trữ lượng carbon đo được): kiểu decimal, đơn vị tC/ha, bắt buộc, giá trị tối thiểu 0, 4 chữ số thập phân.
+
+Tệp CSV cần hai cột `record_key` và `observed_on` cùng các cột ở `ten_cot_khi_nhap_csv`.",area_ha | stock_tc_ha | plot_code | baseline_stock_tc_ha,carbon-platform,true
+acc-008,Vai trò trong một dự án gồm những gì và ai xoá được dự án?,"Trong hệ thống này, vai trò trong một dự án bao gồm:
+
+*   **Chủ dự án (owner)**: Có toàn quyền, bao gồm mời thành viên, chọn và khoá Standard/Methodology, duyệt các bước, tạo và khoá kỳ giám sát, và xoá dự án.
+*   **Đơn vị phát triển (developer)**: Có thể thao tác công việc, nhập số liệu giám sát và sinh báo cáo. Đơn vị phát triển không có quyền duyệt bước hay xoá dự án.
+*   **Người xem (viewer)**: Chỉ có quyền xem dữ liệu của dự án.
+
+Như vậy, chỉ có **Chủ dự án** mới có thể xoá dự án.",owner | developer | viewer | chỉ owner,carbon-platform,true
+acc-009,Nhập dữ liệu giám sát bằng file thì hệ thống nhận định dạng nào?,"Trong hệ thống này, mình chỉ nhận tệp CSV để nhập dữ liệu giám sát, chưa hỗ trợ tệp Excel (.xlsx). Anh/chị vui lòng lưu tệp của mình sang định dạng CSV trước khi nhập nhé.",CSV | chưa hỗ trợ xlsx | Excel chưa có,carbon-platform,true
+acc-010,Kỳ giám sát đã khoá thì còn sửa dữ liệu được không?,"Trong hệ thống này, khi một kỳ giám sát đã được khoá, dữ liệu của kỳ đó sẽ bị đóng băng và không thể sửa đổi được nữa. Nếu anh/chị cần sửa dữ liệu, mình sẽ phải tạo một phiên bản kỳ giám sát mới với cùng khoảng thời gian, chứ không sửa trên kỳ cũ đã khoá.",không | phải tạo version kỳ mới | dữ liệu đã đóng băng,carbon-platform,true
+acc-011,Báo cáo MRV lấy dữ liệu từ đâu?,"Trong hệ thống này, mình thấy dự án ""Rừng ngập mặn Cà Mau"" có một báo cáo MRV là ""Kỳ 2026-1"", sinh ngày 2026-08-15, ước tính giảm phát thải 128.4200 tCO2e.
+
+Để biết báo cáo này lấy dữ liệu từ đâu, mình sẽ đọc vết tính của nó.
+Trong hệ thống này, báo cáo MRV là ước tính và được sinh ra từ dữ liệu của kỳ giám sát đã khoá. Cụ thể, báo cáo MRV cho dự án ""Rừng ngập mặn Cà Mau"", kỳ ""Kỳ 2026-1"" (phiên bản 1), sử dụng Methodology ""DEMO-VCS-FOREST · demo-1.0"". Mình xin nhắc lại, đây là methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.
+
+Dữ liệu để tính toán trong báo cáo này bao gồm:
+*   **Dữ liệu quan sát** từ kỳ giám sát ""Kỳ 2026-1"".
+*   **Dữ liệu baseline** của dự án.
+*   **Các hệ số (factors)** được định nghĩa trong Methodology. Ví dụ, hệ số `c_to_co2` có giá trị `3.6667` được lấy từ ""fixture factor snapshot"".
+
+Hệ thống sẽ áp dụng các công thức tính toán đã được định nghĩa trong Methodology ""DEMO-VCS-FOREST · demo-1.0"" lên dữ liệu quan sát và baseline cùng với các hệ số này để đưa ra ước tính giảm phát thải.
+
+Anh/chị có thể xem chi tiết vết tính toán của báo cáo này tại màn hình `/du-an/[id]/bao-cao`.",kỳ giám sát đã khoá | snapshot | data_revision,carbon-platform,true
+acc-012,Đơn vị của chỉ số stock_tc_ha là gì?,"Trong hệ thống này, chỉ số `stock_tc_ha` có đơn vị là **tC/ha**.
+
+Mình xin lưu ý rằng methodology này (DEMO-VCS-FOREST) là dữ liệu mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.",tC/ha,carbon-platform,true

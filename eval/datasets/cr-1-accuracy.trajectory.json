@@ -1,0 +1,424 @@
+[
+ {
+  "id": "acc-001",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Quy trình thiết kế dự án trong hệ thống có mấy bước?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_du_an",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_du_an",
+    "content": "{\"du_an\":[{\"ten\":\"Rừng ngập mặn Cà Mau\",\"mo_ta\":\"Trồng lại rừng ngập mặn ven biển, giai đoạn 1.\",\"vai_tro_trong_du_an\":\"chủ dự án\",\"buoc_da_duyet\":\"4/7\",\"so_thanh_vien\":3,\"standard\":\"VCS\",\"standard_da_khoa\":true,\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_da_khoa\":true,\"loai_hinh\":\"afolu\",\"methodology_la_du_lieu_mau\":true,\"cap_nhat_gan_nhat\":\"2026-09-01T00:00:00.000Z\",\"da_xoa\":false},{\"ten\":\"Biogas hộ gia đình Đồng Tháp\",\"mo_ta\":null,\"vai_tro_trong_du_an\":\"đơn vị phát triển\",\"buoc_da_duyet\":\"2/7\",\"so_thanh_vien\":2,\"standard\":\"GS\",\"standard_da_khoa\":false,\"methodology\":null,\"methodology_da_khoa\":false,\"loai_hinh\":null,\"methodology_la_du_lieu_mau\":null,\"cap_nhat_gan_nhat\":\"2026-08-01T00:00:00.000Z\",\"da_xoa\":false}],\"ghi_chu\":\"'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, quy trình thiết kế dự án có 7 bước cố định."
+   }
+  ]
+ },
+ {
+  "id": "acc-002",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Hệ thống đang hỗ trợ những Standard nào?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_standard",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_standard",
+    "content": "{\"standard\":[{\"ma\":\"GS\",\"ten\":\"Gold Standard\",\"so_methodology_nhin_thay\":2,\"so_methodology_mau\":2},{\"ma\":\"VCS\",\"ten\":\"Verra — Verified Carbon Standard (VCS)\",\"so_methodology_nhin_thay\":2,\"so_methodology_mau\":2}],\"ghi_chu\":\"Đây chỉ là catalog record mà tài khoản hiện nhìn thấy trong DB, không phải danh sách đầy đủ ngoài đời và không mô tả yêu cầu của Standard. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, mình đang hỗ trợ các Standard sau:\n\n*   **Gold Standard (GS)**: Có 2 methodology mẫu.\n*   **Verra — Verified Carbon Standard (VCS)**: Có 2 methodology mẫu.\n\nMình xin lưu ý rằng các methodology hiện có trong catalog của hệ thống chỉ là dữ liệu mẫu do nhóm mình tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận."
+   }
+  ]
+ },
+ {
+  "id": "acc-003",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Có bao nhiêu methodology trong catalog và tên là gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "goi_y_methodology",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "goi_y_methodology",
+    "content": "{\"tim_theo\":null,\"khop\":[{\"methodology_id\":\"20000000-0000-4000-8000-000000000001\",\"standard\":\"VCS\",\"standard_ten\":\"Verra — Verified Carbon Standard (VCS)\",\"ma\":\"DEMO-VCS-FOREST\",\"version\":\"demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"scope\":\"baseline\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true},{\"id\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"scope\":\"observation\",\"don_vi\":\"ha\",\"bat_buoc\":true},{\"id\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"scope\":\"observation\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000002\",\"standard\":\"VCS\",\"standard_ten\":\"Verra — Verified Carbon Standard (VCS)\",\"ma\":\"DEMO-VCS-ENERGY\",\"version\":\"demo-1.0\",\"ten\":\"MẪU VCS — điện năng thay thế\",\"loai_hinh\":\"energy\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_grid_ef\",\"ten\":\"Hệ số phát thải lưới nền\",\"scope\":\"baseline\",\"don_vi\":\"tCO2e/MWh\",\"bat_buoc\":true},{\"id\":\"electricity_mwh\",\"ten\":\"Điện năng thay thế\",\"scope\":\"observation\",\"don_vi\":\"MWh\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000003\",\"standard\":\"GS\",\"standard_ten\":\"Gold Standard\",\"ma\":\"DEMO-GS-FOREST\",\"version\":\"demo-1.0\",\"ten\":\"MẪU GS — thay đổi trữ lượng carbon rừng\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"scope\":\"baseline\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true},{\"id\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"scope\":\"observation\",\"don_vi\":\"ha\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000004\",\"standard\":\"GS\",\"standard_ten\":\"Gold Standard\",\"ma\":\"DEMO-GS-BIOGAS\",\"version\":\"demo-1.0\",\"ten\":\"MẪU GS — thu hồi khí sinh học\",\"loai_hinh\":\"biogas\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_fuel_t\",\"ten\":\"Nhiên liệu đường cơ sở\",\"scope\":\"baseline\",\"don_vi\":\"t\",\"bat_buoc\":true},{\"id\":\"biogas_m3\",\"ten\":\"Khí sinh học thu hồi\",\"scope\":\"observation\",\"don_vi\":\"m3\",\"bat_buoc\":true}]}],\"tong_so_trong_catalog\":4,\"ghi_chu\":\"Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, hiện có 4 methodology trong catalog. Đây là các methodology mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận:\n\n*   **MẪU VCS — thay đổi trữ lượng carbon rừng** (Mã: DEMO-VCS-FOREST)\n*   **MẪU VCS — điện năng thay thế** (Mã: DEMO-VCS-ENERGY)\n*   **MẪU GS — thay đổi trữ lượng carbon rừng** (Mã: DEMO-GS-FOREST)\n*   **MẪU GS — thu hồi khí sinh học** (Mã: DEMO-GS-BIOGAS)"
+   }
+  ]
+ },
+ {
+  "id": "acc-004",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Muốn duyệt bước 4 thì cần điều kiện gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "yeu_cau_cua_buoc",
+       "arguments": "{\"buoc\":4}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "yeu_cau_cua_buoc",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"buoc\":4,\"ten_buoc\":\"Chọn Methodology\",\"da_duyet\":true,\"duyet_luc\":\"2026-04-20T00:00:00.000Z\",\"dieu_kien\":[{\"dieu_kien\":\"Các bước trước đã duyệt hết\",\"dat\":true,\"cach_lam\":\"Đã đạt.\"},{\"dieu_kien\":\"Đã KHOÁ Standard\",\"dat\":true,\"cach_lam\":\"Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, không đổi lại được.\"},{\"dieu_kien\":\"Đã KHOÁ Methodology\",\"dat\":true,\"cach_lam\":\"Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở /du-an/[id]/quy-trinh. Khoá là một chiều.\"}],\"con_vuong\":[],\"ai_duyet_duoc\":\"Chỉ chủ dự án (owner).\",\"nguoi_hoi_duyet_duoc\":true,\"ghi_chu\":\"Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước (hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì thêm — đừng suy diễn thêm điều kiện nào không có ở đây.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, để duyệt bước 4 (Chọn Methodology), anh/chị cần đảm bảo các điều kiện sau:\n\n*   Các bước trước đã duyệt hết.\n*   Đã KHOÁ Standard.\n*   Đã KHOÁ Methodology.\n\nHiện tại, dự án \"Rừng ngập mặn Cà Mau\" đã duyệt bước này vào ngày 2026-04-20. Anh/chị là chủ dự án nên có thể duyệt được.\n\nLưu ý: Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước, không phải quy trình chung của ngành hay yêu cầu của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì thêm."
+   }
+  ]
+ },
+ {
+  "id": "acc-005",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Bước 5 cần gì mới duyệt được?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "yeu_cau_cua_buoc",
+       "arguments": "{\"buoc\":5}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "yeu_cau_cua_buoc",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"buoc\":5,\"ten_buoc\":\"Baseline\",\"da_duyet\":false,\"duyet_luc\":null,\"dieu_kien\":[{\"dieu_kien\":\"Các bước trước đã duyệt hết\",\"dat\":true,\"cach_lam\":\"Đã đạt.\"},{\"dieu_kien\":\"Đã KHOÁ Standard\",\"dat\":true,\"cach_lam\":\"Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, không đổi lại được.\"},{\"dieu_kien\":\"Đã KHOÁ Methodology\",\"dat\":true,\"cach_lam\":\"Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở /du-an/[id]/quy-trinh. Khoá là một chiều.\"},{\"dieu_kien\":\"Baseline hợp lệ theo metric_schema của Methodology đã chọn\",\"dat\":false,\"cach_lam\":\"Còn 1 field chưa đạt — gọi kiem_tra_baseline để xem từng cái.\"}],\"con_vuong\":[\"Baseline hợp lệ theo metric_schema của Methodology đã chọn\"],\"ai_duyet_duoc\":\"Chỉ chủ dự án (owner).\",\"nguoi_hoi_duyet_duoc\":true,\"ghi_chu\":\"Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước (hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì thêm — đừng suy diễn thêm điều kiện nào không có ở đây.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, để duyệt được Bước 5 (Baseline), dự án \"Rừng ngập mặn Cà Mau\" cần thoả mãn các điều kiện sau:\n\n*   Các bước trước đã duyệt hết (đã đạt).\n*   Đã KHOÁ Standard (đã đạt).\n*   Đã KHOÁ Methodology (đã đạt).\n*   **Baseline hợp lệ theo metric_schema của Methodology đã chọn (chưa đạt).**\n\nHiện tại, dự án còn vướng điều kiện \"Baseline hợp lệ theo metric_schema của Methodology đã chọn\" vì còn 1 field chưa đạt. Anh/chị có thể gọi `kiem_tra_baseline` để xem chi tiết từng field.\n\nChỉ chủ dự án (owner) mới có quyền duyệt bước này. Anh/chị có thể thực hiện các thao tác này tại `/du-an/[id]/quy-trinh`."
+   }
+  ]
+ },
+ {
+  "id": "acc-006",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Methodology DEMO-GS-BIOGAS yêu cầu đo những chỉ số nào?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "field_giam_sat_cua_methodology",
+       "arguments": "{\"ma_methodology\":\"DEMO-GS-BIOGAS\"}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "field_giam_sat_cua_methodology",
+    "content": "{\"du_an\":null,\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"standard_id\":\"10000000-0000-4000-8000-000000000001\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"schema_hash\":\"mau-khong-phai-hash-that\",\"field_baseline\":[{\"ma\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"baseline_stock_tc_ha\",\"Trữ lượng carbon nền\"]}],\"field_quan_sat\":[{\"ma\":\"plot_code\",\"ten\":\"Mã ô đo\",\"kieu\":\"text\",\"don_vi\":null,\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":null,\"ten_cot_khi_nhap_csv\":[\"plot_code\",\"Mã ô đo\"]},{\"ma\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"kieu\":\"decimal\",\"don_vi\":\"ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"exclusive_minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"area_ha\",\"Diện tích ô đo\"]},{\"ma\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"stock_tc_ha\",\"Trữ lượng carbon đo được\"]}],\"dai_luong_tinh_ra\":[{\"ma\":\"credit_tco2e\",\"don_vi\":\"tCO2e\",\"gop_theo\":\"sum\"}],\"he_so_can_co\":[{\"khoa\":\"c_to_co2\",\"don_vi\":\"1\"}],\"ghi_chu\":\"'field_baseline' khai MỘT LẦN cho cả dự án ở bước 5; 'field_quan_sat' nhập theo từng dòng dữ liệu trong mỗi kỳ giám sát, tay hoặc từ CSV. Tệp CSV cần hai cột record_key và observed_on cùng các cột ở 'ten_cot_khi_nhap_csv'. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_2",
+      "type": "function",
+      "function": {
+       "name": "goi_y_methodology",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "goi_y_methodology",
+    "content": "{\"tim_theo\":null,\"khop\":[{\"methodology_id\":\"20000000-0000-4000-8000-000000000001\",\"standard\":\"VCS\",\"standard_ten\":\"Verra — Verified Carbon Standard (VCS)\",\"ma\":\"DEMO-VCS-FOREST\",\"version\":\"demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"scope\":\"baseline\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true},{\"id\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"scope\":\"observation\",\"don_vi\":\"ha\",\"bat_buoc\":true},{\"id\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"scope\":\"observation\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000002\",\"standard\":\"VCS\",\"standard_ten\":\"Verra — Verified Carbon Standard (VCS)\",\"ma\":\"DEMO-VCS-ENERGY\",\"version\":\"demo-1.0\",\"ten\":\"MẪU VCS — điện năng thay thế\",\"loai_hinh\":\"energy\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_grid_ef\",\"ten\":\"Hệ số phát thải lưới nền\",\"scope\":\"baseline\",\"don_vi\":\"tCO2e/MWh\",\"bat_buoc\":true},{\"id\":\"electricity_mwh\",\"ten\":\"Điện năng thay thế\",\"scope\":\"observation\",\"don_vi\":\"MWh\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000003\",\"standard\":\"GS\",\"standard_ten\":\"Gold Standard\",\"ma\":\"DEMO-GS-FOREST\",\"version\":\"demo-1.0\",\"ten\":\"MẪU GS — thay đổi trữ lượng carbon rừng\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"scope\":\"baseline\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true},{\"id\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"scope\":\"observation\",\"don_vi\":\"ha\",\"bat_buoc\":true}]},{\"methodology_id\":\"20000000-0000-4000-8000-000000000004\",\"standard\":\"GS\",\"standard_ten\":\"Gold Standard\",\"ma\":\"DEMO-GS-BIOGAS\",\"version\":\"demo-1.0\",\"ten\":\"MẪU GS — thu hồi khí sinh học\",\"loai_hinh\":\"biogas\",\"la_du_lieu_mau\":true,\"da_tham_dinh_chuyen_mon\":false,\"canh_bao\":\"DỮ LIỆU MẪU DO NHÓM TỰ SOẠN, CHƯA ĐƯỢC THẨM ĐỊNH CHUYÊN MÔN; không phải trích dẫn hay methodology được Verra/Gold Standard công nhận.\",\"fields\":[{\"id\":\"baseline_fuel_t\",\"ten\":\"Nhiên liệu đường cơ sở\",\"scope\":\"baseline\",\"don_vi\":\"t\",\"bat_buoc\":true},{\"id\":\"biogas_m3\",\"ten\":\"Khí sinh học thu hồi\",\"scope\":\"observation\",\"don_vi\":\"m3\",\"bat_buoc\":true}]}],\"tong_so_trong_catalog\":4,\"ghi_chu\":\"Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, methodology **DEMO-GS-BIOGAS** là một methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Gold Standard công nhận.\n\nMethodology này yêu cầu đo các chỉ số sau:\n*   **Field baseline** (khai một lần cho cả dự án):\n    *   `baseline_fuel_t`: Nhiên liệu đường cơ sở (đơn vị: t)\n*   **Field quan sát** (nhập theo từng kỳ giám sát):\n    *   `biogas_m3`: Khí sinh học thu hồi (đơn vị: m3)"
+   }
+  ]
+ },
+ {
+  "id": "acc-007",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "DEMO-VCS-FOREST cần những field giám sát gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "field_giam_sat_cua_methodology",
+       "arguments": "{\"ma_methodology\":\"DEMO-VCS-FOREST\"}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "field_giam_sat_cua_methodology",
+    "content": "{\"du_an\":null,\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"standard_id\":\"10000000-0000-4000-8000-000000000001\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"schema_hash\":\"mau-khong-phai-hash-that\",\"field_baseline\":[{\"ma\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"baseline_stock_tc_ha\",\"Trữ lượng carbon nền\"]}],\"field_quan_sat\":[{\"ma\":\"plot_code\",\"ten\":\"Mã ô đo\",\"kieu\":\"text\",\"don_vi\":null,\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":null,\"ten_cot_khi_nhap_csv\":[\"plot_code\",\"Mã ô đo\"]},{\"ma\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"kieu\":\"decimal\",\"don_vi\":\"ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"exclusive_minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"area_ha\",\"Diện tích ô đo\"]},{\"ma\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"stock_tc_ha\",\"Trữ lượng carbon đo được\"]}],\"dai_luong_tinh_ra\":[{\"ma\":\"credit_tco2e\",\"don_vi\":\"tCO2e\",\"gop_theo\":\"sum\"}],\"he_so_can_co\":[{\"khoa\":\"c_to_co2\",\"don_vi\":\"1\"}],\"ghi_chu\":\"'field_baseline' khai MỘT LẦN cho cả dự án ở bước 5; 'field_quan_sat' nhập theo từng dòng dữ liệu trong mỗi kỳ giám sát, tay hoặc từ CSV. Tệp CSV cần hai cột record_key và observed_on cùng các cột ở 'ten_cot_khi_nhap_csv'. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, Methodology DEMO-VCS-FOREST (là dữ liệu mẫu, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận) cần các field giám sát sau:\n\n**Field Baseline (khai một lần cho cả dự án ở bước 5):**\n*   `baseline_stock_tc_ha` (Trữ lượng carbon nền): kiểu decimal, đơn vị tC/ha, bắt buộc, giá trị tối thiểu 0, 4 chữ số thập phân.\n\n**Field Observation (nhập theo từng kỳ giám sát):**\n*   `plot_code` (Mã ô đo): kiểu text, bắt buộc.\n*   `area_ha` (Diện tích ô đo): kiểu decimal, đơn vị ha, bắt buộc, giá trị lớn hơn 0, 4 chữ số thập phân.\n*   `stock_tc_ha` (Trữ lượng carbon đo được): kiểu decimal, đơn vị tC/ha, bắt buộc, giá trị tối thiểu 0, 4 chữ số thập phân.\n\nTệp CSV cần hai cột `record_key` và `observed_on` cùng các cột ở `ten_cot_khi_nhap_csv`."
+   }
+  ]
+ },
+ {
+  "id": "acc-008",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Vai trò trong một dự án gồm những gì và ai xoá được dự án?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "thanh_vien_va_phan_cong",
+       "arguments": "{\"ten_du_an\":\"\"}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "thanh_vien_va_phan_cong",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"thanh_vien\":[{\"user_id\":\"u-1\",\"ho_ten\":\"Nguyễn Văn Cường\",\"vai_tro\":\"chủ dự án\",\"email\":\"cuong@example.test\",\"so_viec_dang_mo\":0,\"viec_dang_mo\":[]},{\"user_id\":\"u-2\",\"ho_ten\":\"Trần Thị Bích\",\"vai_tro\":\"đơn vị phát triển\",\"email\":\"bich@example.test\",\"so_viec_dang_mo\":2,\"viec_dang_mo\":[{\"tieu_de\":\"Đo trữ lượng carbon nền trên 12 ô mẫu\",\"trang_thai\":\"đang làm\",\"han\":\"2026-09-30\"},{\"tieu_de\":\"Thu thập chứng cứ rào cản đầu tư\",\"trang_thai\":\"vướng\",\"han\":null}]},{\"user_id\":\"u-3\",\"ho_ten\":\"Lê Minh An\",\"vai_tro\":\"người xem\",\"email\":\"an@example.test\",\"so_viec_dang_mo\":0,\"viec_dang_mo\":[]}],\"viec_chua_giao\":[\"Nhập baseline vào hệ thống\"],\"da_doc_het_cong_viec\":true,\"ghi_chu\":\"Danh tính lấy qua project_member_directory. Email chỉ được RPC trả cho owner; null không có nghĩa là thành viên không có email. Chỉ developer được nhận việc.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, vai trò trong một dự án bao gồm:\n\n*   **Chủ dự án (owner)**: Có toàn quyền, bao gồm mời thành viên, chọn và khoá Standard/Methodology, duyệt các bước, tạo và khoá kỳ giám sát, và xoá dự án.\n*   **Đơn vị phát triển (developer)**: Có thể thao tác công việc, nhập số liệu giám sát và sinh báo cáo. Đơn vị phát triển không có quyền duyệt bước hay xoá dự án.\n*   **Người xem (viewer)**: Chỉ có quyền xem dữ liệu của dự án.\n\nNhư vậy, chỉ có **Chủ dự án** mới có thể xoá dự án."
+   }
+  ]
+ },
+ {
+  "id": "acc-009",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Nhập dữ liệu giám sát bằng file thì hệ thống nhận định dạng nào?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_ky_giam_sat",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_ky_giam_sat",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"tong_so_ky\":2,\"ky_giam_sat\":[{\"ma_ky\":\"period-open\",\"ten\":\"Kỳ 2026-2\",\"tu_ngay\":\"2026-07-01\",\"den_ngay\":\"2026-12-31\",\"phien_ban\":1,\"trang_thai\":\"đang mở\",\"data_revision\":2,\"so_ban_ghi\":2,\"khoa_luc\":null,\"co_the_sinh_bao_cao\":false},{\"ma_ky\":\"period-locked\",\"ten\":\"Kỳ 2026-1\",\"tu_ngay\":\"2026-01-01\",\"den_ngay\":\"2026-06-30\",\"phien_ban\":1,\"trang_thai\":\"đã khoá\",\"data_revision\":3,\"so_ban_ghi\":3,\"khoa_luc\":\"2026-07-05T03:00:00.000Z\",\"co_the_sinh_bao_cao\":true}],\"ghi_chu\":\"Chỉ monitoring period đã khoá mới sinh được MRV report. Khoá kỳ đóng băng snapshot; cần sửa dữ liệu thì tạo kỳ version mới, không sửa kỳ cũ.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, mình chỉ nhận tệp CSV để nhập dữ liệu giám sát, chưa hỗ trợ tệp Excel (.xlsx). Anh/chị vui lòng lưu tệp của mình sang định dạng CSV trước khi nhập nhé."
+   }
+  ]
+ },
+ {
+  "id": "acc-010",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Kỳ giám sát đã khoá thì còn sửa dữ liệu được không?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_ky_giam_sat",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_ky_giam_sat",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"tong_so_ky\":2,\"ky_giam_sat\":[{\"ma_ky\":\"period-open\",\"ten\":\"Kỳ 2026-2\",\"tu_ngay\":\"2026-07-01\",\"den_ngay\":\"2026-12-31\",\"phien_ban\":1,\"trang_thai\":\"đang mở\",\"data_revision\":2,\"so_ban_ghi\":2,\"khoa_luc\":null,\"co_the_sinh_bao_cao\":false},{\"ma_ky\":\"period-locked\",\"ten\":\"Kỳ 2026-1\",\"tu_ngay\":\"2026-01-01\",\"den_ngay\":\"2026-06-30\",\"phien_ban\":1,\"trang_thai\":\"đã khoá\",\"data_revision\":3,\"so_ban_ghi\":3,\"khoa_luc\":\"2026-07-05T03:00:00.000Z\",\"co_the_sinh_bao_cao\":true}],\"ghi_chu\":\"Chỉ monitoring period đã khoá mới sinh được MRV report. Khoá kỳ đóng băng snapshot; cần sửa dữ liệu thì tạo kỳ version mới, không sửa kỳ cũ.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, khi một kỳ giám sát đã được khoá, dữ liệu của kỳ đó sẽ bị đóng băng và không thể sửa đổi được nữa. Nếu anh/chị cần sửa dữ liệu, mình sẽ phải tạo một phiên bản kỳ giám sát mới với cùng khoảng thời gian, chứ không sửa trên kỳ cũ đã khoá."
+   }
+  ]
+ },
+ {
+  "id": "acc-011",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Báo cáo MRV lấy dữ liệu từ đâu?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_bao_cao_mrv",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_bao_cao_mrv",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"tong_so_bao_cao\":1,\"bao_cao\":[{\"ma_bao_cao\":\"report-1\",\"ky\":\"Kỳ 2026-1\",\"khoang_ngay\":\"2026-01-01 → 2026-06-30\",\"phien_ban\":1,\"trang_thai\":\"preview\",\"uoc_tinh\":\"128.4200\",\"don_vi\":\"tCO2e\",\"standard\":\"VCS\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_la_du_lieu_mau\":true,\"schema_hash\":\"schema-fixture-forest-v1\",\"data_revision\":3,\"baseline_revision\":1,\"engine_version\":\"methodology-engine/1\",\"sinh_luc\":\"2026-08-15T02:10:00.000Z\"}],\"ghi_chu\":\"Mọi giá trị là ƯỚC TÍNH MRV lưu trong report snapshot, chưa qua verification và KHÔNG phải tín chỉ đã phát hành. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_2",
+      "type": "function",
+      "function": {
+       "name": "doc_vet_tinh_bao_cao",
+       "arguments": "{\"phien_ban_bao_cao\":1,\"ten_ky\":\"Kỳ 2026-1\",\"ten_du_an\":\"Rừng ngập mặn Cà Mau\"}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "doc_vet_tinh_bao_cao",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"bao_cao\":{\"ma_bao_cao\":\"report-1\",\"ky\":\"Kỳ 2026-1\",\"phien_ban\":1,\"trang_thai\":\"preview\",\"uoc_tinh\":\"128.4200\",\"don_vi\":\"tCO2e\",\"standard\":\"VCS\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_la_du_lieu_mau\":true,\"schema_hash\":\"schema-fixture-forest-v1\",\"data_revision\":3,\"baseline_revision\":1,\"engine_version\":\"methodology-engine/1\",\"sinh_luc\":\"2026-08-15T02:10:00.000Z\"},\"lap_luan_tinh_toan\":{\"thu_tu\":[\"credit_tco2e\"],\"precision_digits\":28,\"rounding\":\"half_even\",\"output_scale\":4,\"operations\":6,\"tung_quan_sat\":[{\"record_key\":\"PLOT-01\",\"factors\":[{\"key\":\"c_to_co2\",\"value\":\"3.6667\",\"unit\":\"1\",\"source\":\"fixture factor snapshot\"}],\"calculations\":{\"credit_tco2e\":{\"value\":\"60.2200\",\"nodes\":[{\"path\":\"root\",\"operation\":\"multiply\",\"inputs\":[\"area_ha=2\",\"delta_stock=8.2127\",\"c_to_co2=3.6667\"],\"value\":\"60.2200\",\"unit\":\"tCO2e\"}]}}}],\"aggregation\":[{\"id\":\"credit_tco2e\",\"inputs\":[\"60.2200\",\"68.2000\"],\"value\":\"128.4200\"}],\"tong_so_quan_sat_trong_trace\":2,\"trace_bi_cat\":false},\"cach_dien_giai\":\"Đọc theo thứ tự: factors và source → calculation nodes của từng observation → aggregation toàn kỳ. Giữ nguyên chuỗi số engine trả về; không tự tính lại hoặc làm tròn thêm.\",\"ghi_chu\":\"Đây là vết của ƯỚC TÍNH MRV, không phải bằng chứng verification hay tín chỉ đã phát hành. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, mình thấy dự án \"Rừng ngập mặn Cà Mau\" có một báo cáo MRV là \"Kỳ 2026-1\", sinh ngày 2026-08-15, ước tính giảm phát thải 128.4200 tCO2e.\n\nĐể biết báo cáo này lấy dữ liệu từ đâu, mình sẽ đọc vết tính của nó.\nTrong hệ thống này, báo cáo MRV là ước tính và được sinh ra từ dữ liệu của kỳ giám sát đã khoá. Cụ thể, báo cáo MRV cho dự án \"Rừng ngập mặn Cà Mau\", kỳ \"Kỳ 2026-1\" (phiên bản 1), sử dụng Methodology \"DEMO-VCS-FOREST · demo-1.0\". Mình xin nhắc lại, đây là methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.\n\nDữ liệu để tính toán trong báo cáo này bao gồm:\n*   **Dữ liệu quan sát** từ kỳ giám sát \"Kỳ 2026-1\".\n*   **Dữ liệu baseline** của dự án.\n*   **Các hệ số (factors)** được định nghĩa trong Methodology. Ví dụ, hệ số `c_to_co2` có giá trị `3.6667` được lấy từ \"fixture factor snapshot\".\n\nHệ thống sẽ áp dụng các công thức tính toán đã được định nghĩa trong Methodology \"DEMO-VCS-FOREST · demo-1.0\" lên dữ liệu quan sát và baseline cùng với các hệ số này để đưa ra ước tính giảm phát thải.\n\nAnh/chị có thể xem chi tiết vết tính toán của báo cáo này tại màn hình `/du-an/[id]/bao-cao`."
+   }
+  ]
+ },
+ {
+  "id": "acc-012",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Đơn vị của chỉ số stock_tc_ha là gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "field_giam_sat_cua_methodology",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "field_giam_sat_cua_methodology",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"standard_id\":\"10000000-0000-4000-8000-000000000001\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"schema_hash\":\"mau-khong-phai-hash-that\",\"field_baseline\":[{\"ma\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"baseline_stock_tc_ha\",\"Trữ lượng carbon nền\"]}],\"field_quan_sat\":[{\"ma\":\"plot_code\",\"ten\":\"Mã ô đo\",\"kieu\":\"text\",\"don_vi\":null,\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":null,\"ten_cot_khi_nhap_csv\":[\"plot_code\",\"Mã ô đo\"]},{\"ma\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"kieu\":\"decimal\",\"don_vi\":\"ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"exclusive_minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"area_ha\",\"Diện tích ô đo\"]},{\"ma\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"stock_tc_ha\",\"Trữ lượng carbon đo được\"]}],\"dai_luong_tinh_ra\":[{\"ma\":\"credit_tco2e\",\"don_vi\":\"tCO2e\",\"gop_theo\":\"sum\"}],\"he_so_can_co\":[{\"khoa\":\"c_to_co2\",\"don_vi\":\"1\"}],\"ghi_chu\":\"'field_baseline' khai MỘT LẦN cho cả dự án ở bước 5; 'field_quan_sat' nhập theo từng dòng dữ liệu trong mỗi kỳ giám sát, tay hoặc từ CSV. Tệp CSV cần hai cột record_key và observed_on cùng các cột ở 'ten_cot_khi_nhap_csv'. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, chỉ số `stock_tc_ha` có đơn vị là **tC/ha**.\n\nMình xin lưu ý rằng methodology này (DEMO-VCS-FOREST) là dữ liệu mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận."
+   }
+  ]
+ }
+]

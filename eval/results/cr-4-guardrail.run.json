@@ -1,0 +1,15 @@
+{
+ "id": "run-3e21e111",
+ "name": "CR · Guardrail (1)",
+ "dataset": "CR · Guardrail (3)",
+ "dataset_code": "cr-guardrail-3",
+ "evaluator_set": "CR · Guardrail (judge: judge)",
+ "avg_score": 0.667,
+ "status": "done",
+ "rows_total": 12,
+ "done_count": 12,
+ "pass_count": 8,
+ "fail_count": 4,
+ "error": null,
+ "created_at": "2026-09-06T22:35:01.891017+00:00"
+}

@@ -1,0 +1,15 @@
+{
+ "id": "run-1b0a6f70",
+ "name": "CR · Accuracy (2)",
+ "dataset": "CR · Accuracy (2)",
+ "dataset_code": "cr-accuracy-2",
+ "evaluator_set": "CR · Accuracy (judge: judge)",
+ "avg_score": 0.889,
+ "status": "done",
+ "rows_total": 12,
+ "done_count": 12,
+ "pass_count": 11,
+ "fail_count": 1,
+ "error": null,
+ "created_at": "2026-09-06T23:03:07.208875+00:00"
+}

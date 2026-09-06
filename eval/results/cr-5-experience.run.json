@@ -1,0 +1,15 @@
+{
+ "id": "run-9b267f50",
+ "name": "CR · Experience (1)",
+ "dataset": "CR · Experience (1)",
+ "dataset_code": "cr-experience-1",
+ "evaluator_set": "CR · Experience (judge: judge)",
+ "avg_score": 0.831,
+ "status": "done",
+ "rows_total": 10,
+ "done_count": 10,
+ "pass_count": 9,
+ "fail_count": 1,
+ "error": null,
+ "created_at": "2026-09-06T22:35:52.623868+00:00"
+}

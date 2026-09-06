@@ -1,0 +1,265 @@
+[
+ {
+  "id": "exp-001",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Tôi mới vào, chưa biết bắt đầu từ đâu."
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_du_an",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_du_an",
+    "content": "{\"du_an\":[{\"ten\":\"Rừng ngập mặn Cà Mau\",\"mo_ta\":\"Trồng lại rừng ngập mặn ven biển, giai đoạn 1.\",\"vai_tro_trong_du_an\":\"chủ dự án\",\"buoc_da_duyet\":\"4/7\",\"so_thanh_vien\":3,\"standard\":\"VCS\",\"standard_da_khoa\":true,\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_da_khoa\":true,\"loai_hinh\":\"afolu\",\"methodology_la_du_lieu_mau\":true,\"cap_nhat_gan_nhat\":\"2026-09-01T00:00:00.000Z\",\"da_xoa\":false},{\"ten\":\"Biogas hộ gia đình Đồng Tháp\",\"mo_ta\":null,\"vai_tro_trong_du_an\":\"đơn vị phát triển\",\"buoc_da_duyet\":\"2/7\",\"so_thanh_vien\":2,\"standard\":\"GS\",\"standard_da_khoa\":false,\"methodology\":null,\"methodology_da_khoa\":false,\"loai_hinh\":null,\"methodology_la_du_lieu_mau\":null,\"cap_nhat_gan_nhat\":\"2026-08-01T00:00:00.000Z\",\"da_xoa\":false}],\"ghi_chu\":\"'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Chào anh/chị, mình là trợ lý của nền tảng quản lý dự án Carbon. Mình có thể giúp anh/chị đi qua các bước thiết kế dự án, hiểu dữ liệu methodology và tra cứu tiến độ dự án.\n\nĐể bắt đầu, anh/chị có thể xem danh sách các dự án mình đang tham gia hoặc tạo một dự án mới.\n\nChào anh/chị, mình là trợ lý của nền tảng quản lý dự án Carbon.\n\nTrong hệ thống này, anh/chị có thể bắt đầu bằng cách xem các dự án mình đang tham gia. Hiện tại, anh/chị có 2 dự án:\n\n*   **Rừng ngập mặn Cà Mau**: Anh/chị là chủ dự án, dự án đang ở bước 4/7. Đã chọn Standard VCS và Methodology DEMO-VCS-FOREST (đây là methodology mẫu, chưa được thẩm định chuyên môn).\n*   **Biogas hộ gia đình Đồng Tháp**: Anh/chị là đơn vị phát triển, dự án đang ở bước 2/7. Đã chọn Standard GS nhưng chưa khoá Methodology.\n\nAnh/chị muốn mình hỗ trợ về dự án nào? Hoặc anh/chị có thể tạo dự án mới tại `/du-an/moi`."
+   }
+  ]
+ },
+ {
+  "id": "exp-002",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Giải thích ngắn gọn PDD là gì."
+   },
+   {
+    "role": "assistant",
+    "content": "PDD là viết tắt của Project Design Document, một tài liệu mô tả chi tiết về dự án carbon, bao gồm mục tiêu, thiết kế, baseline scenario, additionality, và monitoring plan. Đây là một trong những tài liệu quan trọng nhất trong quá trình phát triển dự án tín chỉ carbon."
+   }
+  ]
+ },
+ {
+  "id": "exp-003",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Import CSV báo lỗi ở dòng 4, cột diện tích. Xử lý thế nào?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "field_giam_sat_cua_methodology",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "field_giam_sat_cua_methodology",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"ten\":\"MẪU VCS — thay đổi trữ lượng carbon rừng\",\"standard_id\":\"10000000-0000-4000-8000-000000000001\",\"loai_hinh\":\"afolu\",\"la_du_lieu_mau\":true,\"schema_hash\":\"mau-khong-phai-hash-that\",\"field_baseline\":[{\"ma\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"baseline_stock_tc_ha\",\"Trữ lượng carbon nền\"]}],\"field_quan_sat\":[{\"ma\":\"plot_code\",\"ten\":\"Mã ô đo\",\"kieu\":\"text\",\"don_vi\":null,\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":null,\"ten_cot_khi_nhap_csv\":[\"plot_code\",\"Mã ô đo\"]},{\"ma\":\"area_ha\",\"ten\":\"Diện tích ô đo\",\"kieu\":\"decimal\",\"don_vi\":\"ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"exclusive_minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"area_ha\",\"Diện tích ô đo\"]},{\"ma\":\"stock_tc_ha\",\"ten\":\"Trữ lượng carbon đo được\",\"kieu\":\"decimal\",\"don_vi\":\"tC/ha\",\"bat_buoc\":true,\"bat_buoc_neu\":null,\"rang_buoc\":{\"minimum\":0,\"scale\":4},\"ten_cot_khi_nhap_csv\":[\"stock_tc_ha\",\"Trữ lượng carbon đo được\"]}],\"dai_luong_tinh_ra\":[{\"ma\":\"credit_tco2e\",\"don_vi\":\"tCO2e\",\"gop_theo\":\"sum\"}],\"he_so_can_co\":[{\"khoa\":\"c_to_co2\",\"don_vi\":\"1\"}],\"ghi_chu\":\"'field_baseline' khai MỘT LẦN cho cả dự án ở bước 5; 'field_quan_sat' nhập theo từng dòng dữ liệu trong mỗi kỳ giám sát, tay hoặc từ CSV. Tệp CSV cần hai cột record_key và observed_on cùng các cột ở 'ten_cot_khi_nhap_csv'. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, dự án \"Rừng ngập mặn Cà Mau\" đang sử dụng methodology MẪU \"DEMO-VCS-FOREST\". Methodology này yêu cầu trường \"Diện tích ô đo\" (mã `area_ha`) phải là số thập phân, đơn vị là \"ha\", và giá trị phải lớn hơn 0 với tối đa 4 chữ số sau dấu phẩy.\n\nLỗi ở dòng 4, cột \"diện tích\" có thể do:\n1.  Giá trị không phải là số thập phân hợp lệ.\n2.  Giá trị bằng 0 hoặc số âm.\n3.  Giá trị có nhiều hơn 4 chữ số sau dấu phẩy.\n\nAnh/chị vui lòng kiểm tra lại tệp CSV ở dòng 4, cột \"diện tích\" để đảm bảo giá trị nhập vào đúng định dạng và nằm trong khoảng cho phép. Anh/chị có thể tham khảo chi tiết các trường cần nhập tại màn hình `/du-an/[id]/quy-trinh`.\n\nMình xin nhắc lại, methodology \"DEMO-VCS-FOREST\" hiện tại là dữ liệu mẫu do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận."
+   }
+  ]
+ },
+ {
+  "id": "exp-004",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Vì sao tôi không khoá được kỳ giám sát?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "liet_ke_ky_giam_sat",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "liet_ke_ky_giam_sat",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"tong_so_ky\":2,\"ky_giam_sat\":[{\"ma_ky\":\"period-open\",\"ten\":\"Kỳ 2026-2\",\"tu_ngay\":\"2026-07-01\",\"den_ngay\":\"2026-12-31\",\"phien_ban\":1,\"trang_thai\":\"đang mở\",\"data_revision\":2,\"so_ban_ghi\":2,\"khoa_luc\":null,\"co_the_sinh_bao_cao\":false},{\"ma_ky\":\"period-locked\",\"ten\":\"Kỳ 2026-1\",\"tu_ngay\":\"2026-01-01\",\"den_ngay\":\"2026-06-30\",\"phien_ban\":1,\"trang_thai\":\"đã khoá\",\"data_revision\":3,\"so_ban_ghi\":3,\"khoa_luc\":\"2026-07-05T03:00:00.000Z\",\"co_the_sinh_bao_cao\":true}],\"ghi_chu\":\"Chỉ monitoring period đã khoá mới sinh được MRV report. Khoá kỳ đóng băng snapshot; cần sửa dữ liệu thì tạo kỳ version mới, không sửa kỳ cũ.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, dự án \"Rừng ngập mặn Cà Mau\" của anh/chị có 2 kỳ giám sát:\n\n*   **Kỳ 2026-1**: Từ 2026-01-01 đến 2026-06-30, trạng thái \"đã khoá\". Kỳ này đã có thể sinh báo cáo.\n*   **Kỳ 2026-2**: Từ 2026-07-01 đến 2026-12-31, trạng thái \"đang mở\".\n\nAnh/chị đang muốn khoá kỳ giám sát nào? Mình sẽ kiểm tra chi tiết lý do không khoá được cho kỳ đó."
+   }
+  ]
+ },
+ {
+  "id": "exp-005",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Con số trong báo cáo MRV ở đâu ra?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "doc_vet_tinh_bao_cao",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "doc_vet_tinh_bao_cao",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"bao_cao\":{\"ma_bao_cao\":\"report-1\",\"ky\":\"Kỳ 2026-1\",\"phien_ban\":1,\"trang_thai\":\"preview\",\"uoc_tinh\":\"128.4200\",\"don_vi\":\"tCO2e\",\"standard\":\"VCS\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_la_du_lieu_mau\":true,\"schema_hash\":\"schema-fixture-forest-v1\",\"data_revision\":3,\"baseline_revision\":1,\"engine_version\":\"methodology-engine/1\",\"sinh_luc\":\"2026-08-15T02:10:00.000Z\"},\"lap_luan_tinh_toan\":{\"thu_tu\":[\"credit_tco2e\"],\"precision_digits\":28,\"rounding\":\"half_even\",\"output_scale\":4,\"operations\":6,\"tung_quan_sat\":[{\"record_key\":\"PLOT-01\",\"factors\":[{\"key\":\"c_to_co2\",\"value\":\"3.6667\",\"unit\":\"1\",\"source\":\"fixture factor snapshot\"}],\"calculations\":{\"credit_tco2e\":{\"value\":\"60.2200\",\"nodes\":[{\"path\":\"root\",\"operation\":\"multiply\",\"inputs\":[\"area_ha=2\",\"delta_stock=8.2127\",\"c_to_co2=3.6667\"],\"value\":\"60.2200\",\"unit\":\"tCO2e\"}]}}}],\"aggregation\":[{\"id\":\"credit_tco2e\",\"inputs\":[\"60.2200\",\"68.2000\"],\"value\":\"128.4200\"}],\"tong_so_quan_sat_trong_trace\":2,\"trace_bi_cat\":false},\"cach_dien_giai\":\"Đọc theo thứ tự: factors và source → calculation nodes của từng observation → aggregation toàn kỳ. Giữ nguyên chuỗi số engine trả về; không tự tính lại hoặc làm tròn thêm.\",\"ghi_chu\":\"Đây là vết của ƯỚC TÍNH MRV, không phải bằng chứng verification hay tín chỉ đã phát hành. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, báo cáo MRV của dự án \"Rừng ngập mặn Cà Mau\" cho \"Kỳ 2026-1\" với ước tính 128.4200 tCO2e được tính toán như sau:\n\nĐây là vết của ƯỚC TÍNH MRV, không phải bằng chứng verification hay tín chỉ đã phát hành. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận.\n\n**Các yếu tố (factors) và nguồn:**\n*   `c_to_co2`: 3.6667 (nguồn: fixture factor snapshot)\n\n**Tính toán cho từng quan sát:**\n*   **PLOT-01**:\n    *   `credit_tco2e`: được tính bằng cách nhân `area_ha=2`, `delta_stock=8.2127` và `c_to_co2=3.6667`, cho ra giá trị `60.2200` tCO2e.\n\n**Tổng hợp toàn kỳ:**\n*   `credit_tco2e`: tổng hợp từ các giá trị `60.2200` và `68.2000` (giá trị này không hiển thị chi tiết trong trace cho PLOT-02 nhưng được dùng trong tổng hợp), cho ra tổng cộng `128.4200`.\n\nMình không tự tính lại hoặc làm tròn thêm các con số này, mà chỉ diễn giải theo chuỗi tính toán mà hệ thống đã ghi lại."
+   }
+  ]
+ },
+ {
+  "id": "exp-006",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Tôi muốn mời đồng nghiệp vào dự án thì làm ở đâu?"
+   },
+   {
+    "role": "assistant",
+    "content": "Anh/chị có thể mời đồng nghiệp vào dự án tại màn hình quản lý thành viên: `/du-an/[id]/thanh-vien`."
+   }
+  ]
+ },
+ {
+  "id": "exp-007",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Khác nhau giữa baseline scenario và monitoring data là gì?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "kiem_tra_baseline",
+       "arguments": "{\"ten_du_an\":\"\"}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "kiem_tra_baseline",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_la_du_lieu_mau\":true,\"dat\":false,\"so_field_baseline\":1,\"so_field_da_nhap\":0,\"ban_sua_baseline\":0,\"con_thieu_hoac_sai\":[{\"field\":\"baseline_stock_tc_ha\",\"ten\":\"Trữ lượng carbon nền\",\"van_de\":\"Bắt buộc nhưng chưa nhập\"}],\"ghi_chu\":\"Còn field chưa đạt, nên duyệt bước 5 và tạo kỳ giám sát đều sẽ bị từ chối. Đây là kiểm tra KỸ THUẬT theo metric_schema, không phải đánh giá chuyên môn xem kịch bản cơ sở có hợp lý hay không — việc đó thuộc về VVB, ngoài phạm vi hệ thống. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, baseline scenario và monitoring data là hai loại dữ liệu khác nhau được yêu cầu bởi Methodology:\n\n*   **Baseline scenario** (kịch bản cơ sở) là dữ liệu được khai MỘT LẦN cho cả dự án ở bước 5 của quy trình thiết kế. Nó mô tả tình trạng hoặc hoạt động sẽ diễn ra nếu không có dự án carbon.\n*   **Monitoring data** (dữ liệu quan sát) là dữ liệu được nhập theo từng dòng trong mỗi kỳ giám sát. Đây là các số liệu thực tế được thu thập trong quá trình triển khai dự án để đo lường hiệu quả giảm phát thải.\n\nVí dụ, với dự án \"Rừng ngập mặn Cà Mau\" đang dùng Methodology mẫu \"DEMO-VCS-FOREST\", baseline scenario cần có field \"baseline_stock_tc_ha\" (Trữ lượng carbon nền), nhưng hiện tại field này chưa được nhập."
+   }
+  ]
+ },
+ {
+  "id": "exp-008",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Tôi cần làm gì tiếp theo?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "tien_do_du_an",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "tien_do_du_an",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"vai_tro_cua_nguoi_hoi\":\"chủ dự án\",\"da_xoa\":false,\"standard_da_khoa\":true,\"methodology_da_khoa\":true,\"methodology\":\"DEMO-VCS-FOREST · demo-1.0\",\"methodology_la_du_lieu_mau\":true,\"bay_buoc\":[{\"buoc\":1,\"ten\":\"Project Idea\",\"da_duyet\":true,\"duyet_luc\":\"2026-03-01T00:00:00.000Z\",\"nguoi_duyet\":\"Nguyễn Văn Cường\"},{\"buoc\":2,\"ten\":\"Feasibility Assessment\",\"da_duyet\":true,\"duyet_luc\":\"2026-03-12T00:00:00.000Z\",\"nguoi_duyet\":\"Nguyễn Văn Cường\"},{\"buoc\":3,\"ten\":\"Chọn Standard\",\"da_duyet\":true,\"duyet_luc\":\"2026-04-02T00:00:00.000Z\",\"nguoi_duyet\":\"Nguyễn Văn Cường\"},{\"buoc\":4,\"ten\":\"Chọn Methodology\",\"da_duyet\":true,\"duyet_luc\":\"2026-04-20T00:00:00.000Z\",\"nguoi_duyet\":\"Nguyễn Văn Cường\"},{\"buoc\":5,\"ten\":\"Baseline\",\"da_duyet\":false,\"duyet_luc\":null,\"nguoi_duyet\":null},{\"buoc\":6,\"ten\":\"Additionality\",\"da_duyet\":false,\"duyet_luc\":null,\"nguoi_duyet\":null},{\"buoc\":7,\"ten\":\"Project Design/PDD\",\"da_duyet\":false,\"duyet_luc\":null,\"nguoi_duyet\":null}],\"buoc_ke_tiep\":{\"buoc\":5,\"ten\":\"Baseline\",\"dieu_kien\":[{\"dieu_kien\":\"Các bước trước đã duyệt hết\",\"dat\":true,\"cach_lam\":\"Đã đạt.\"},{\"dieu_kien\":\"Đã KHOÁ Standard\",\"dat\":true,\"cach_lam\":\"Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, không đổi lại được.\"},{\"dieu_kien\":\"Đã KHOÁ Methodology\",\"dat\":true,\"cach_lam\":\"Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở /du-an/[id]/quy-trinh. Khoá là một chiều.\"},{\"dieu_kien\":\"Baseline hợp lệ theo metric_schema của Methodology đã chọn\",\"dat\":false,\"cach_lam\":\"Còn 1 field chưa đạt — gọi kiem_tra_baseline để xem từng cái.\"}]},\"cong_viec\":{\"tong\":9,\"chua_lam\":3,\"dang_lam\":2,\"xong\":3,\"vuong\":1},\"ky_giam_sat\":[{\"ten\":\"Kỳ 2026-2\",\"tu_ngay\":\"2026-07-01\",\"den_ngay\":\"2026-12-31\",\"ban\":1,\"trang_thai\":\"đang mở\",\"so_lan_ghi\":2},{\"ten\":\"Kỳ 2026-1\",\"tu_ngay\":\"2026-01-01\",\"den_ngay\":\"2026-06-30\",\"ban\":1,\"trang_thai\":\"đã khoá\",\"so_lan_ghi\":3}],\"bao_cao_gan_nhat\":{\"ban\":1,\"trang_thai\":\"xem thử\",\"uoc_tinh\":\"128.4200\",\"don_vi\":\"tCO2e\",\"sinh_luc\":\"2026-08-15T02:10:00.000Z\"},\"ghi_chu\":\"Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua thẩm định độc lập và không phải tín chỉ đã được phát hành. Chỉ chủ dự án mới duyệt được bước. Catalog của hệ thống hiện CHỈ có methodology MẪU do nhóm tự soạn, chưa được thẩm định chuyên môn và KHÔNG phải methodology được Verra hay Gold Standard công nhận. Phải nói rõ điều này mỗi lần nhắc tới chúng, và không được mô tả yêu cầu thật của tổ chức chứng nhận nếu dữ liệu không có.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, dự án \"Rừng ngập mặn Cà Mau\" của mình đang ở Bước 5: Baseline scenario. Để duyệt được bước này, anh/chị cần đảm bảo baseline hợp lệ theo `metric_schema` của Methodology đã chọn.\n\nHiện tại, điều kiện \"Baseline hợp lệ theo metric_schema của Methodology đã chọn\" chưa đạt. Mình có thể kiểm tra chi tiết bằng cách gọi công cụ `kiem_tra_baseline` để xem cụ thể field nào còn thiếu hoặc sai."
+   }
+  ]
+ },
+ {
+  "id": "exp-009",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Giải thích additionality cho người mới."
+   },
+   {
+    "role": "assistant",
+    "content": "Additionality là một khái niệm quan trọng trong các dự án tín chỉ carbon. Nó dùng để xác định liệu việc giảm phát thải hoặc loại bỏ carbon của một dự án có thực sự \"bổ sung\" so với những gì sẽ xảy ra nếu không có dự án đó hay không.\n\nNói cách khác, một dự án được coi là có additionality nếu hoạt động giảm phát thải của nó sẽ không xảy ra trong kịch bản thông thường (baseline scenario), tức là không có động lực từ việc bán tín chỉ carbon. Nếu dự án đó vẫn được thực hiện dù không có tín chỉ carbon, thì nó không có additionality.\n\nViệc chứng minh additionality là bắt buộc để đảm bảo rằng các tín chỉ carbon được tạo ra là có giá trị thực sự trong việc chống biến đổi khí hậu."
+   }
+  ]
+ },
+ {
+  "id": "exp-010",
+  "trajectory": [
+   {
+    "role": "user",
+    "content": "Làm sao xem lại vì sao một bước bị chặn?"
+   },
+   {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+     {
+      "id": "call_1",
+      "type": "function",
+      "function": {
+       "name": "yeu_cau_cua_buoc",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   {
+    "role": "tool",
+    "name": "yeu_cau_cua_buoc",
+    "content": "{\"du_an\":\"Rừng ngập mặn Cà Mau\",\"buoc\":5,\"ten_buoc\":\"Baseline\",\"da_duyet\":false,\"duyet_luc\":null,\"dieu_kien\":[{\"dieu_kien\":\"Các bước trước đã duyệt hết\",\"dat\":true,\"cach_lam\":\"Đã đạt.\"},{\"dieu_kien\":\"Đã KHOÁ Standard\",\"dat\":true,\"cach_lam\":\"Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, không đổi lại được.\"},{\"dieu_kien\":\"Đã KHOÁ Methodology\",\"dat\":true,\"cach_lam\":\"Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở /du-an/[id]/quy-trinh. Khoá là một chiều.\"},{\"dieu_kien\":\"Baseline hợp lệ theo metric_schema của Methodology đã chọn\",\"dat\":false,\"cach_lam\":\"Còn 1 field chưa đạt — gọi kiem_tra_baseline để xem từng cái.\"}],\"con_vuong\":[\"Baseline hợp lệ theo metric_schema của Methodology đã chọn\"],\"ai_duyet_duoc\":\"Chỉ chủ dự án (owner).\",\"nguoi_hoi_duyet_duoc\":true,\"ghi_chu\":\"Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước (hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì thêm — đừng suy diễn thêm điều kiện nào không có ở đây.\"}"
+   },
+   {
+    "role": "assistant",
+    "content": "Trong hệ thống này, để xem vì sao một bước bị chặn, anh/chị có thể dùng công cụ `yeu_cau_cua_buoc`. Công cụ này sẽ liệt kê các điều kiện cần thiết để duyệt bước đó và cho biết điều kiện nào chưa được đáp ứng.\n\nVí dụ, với dự án \"Rừng ngập mặn Cà Mau\", bước 5 (Baseline) đang bị chặn vì \"Baseline hợp lệ theo metric_schema của Methodology đã chọn\" chưa đạt. Cụ thể là còn 1 field chưa đạt. Anh/chị có thể gọi `kiem_tra_baseline` để xem chi tiết field nào đang có vấn đề.\n\nChỉ chủ dự án (owner) mới có quyền duyệt các bước. Anh/chị có thể truy cập màn hình `/du-an/[id]/quy-trinh` để kiểm tra và hoàn thành các điều kiện."
+   }
+  ]
+ }
+]
