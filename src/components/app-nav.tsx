@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth-actions";
-import { ROLE_LABEL } from "@/lib/labels";
-import type { Profile } from "@/lib/auth";
+import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
+import type { Profile, ProjectRole } from "@/lib/auth";
+
+/** Lối vào nền tảng dự án, thêm vào cả ba menu cũ để người dùng hiện tại tìm thấy nó. */
+const PROJECT_LINK = { href: "/du-an", label: "Dự án carbon" };
 
 const COOP_LINKS = [
   { href: "/htx", label: "Tổng quan" },
@@ -11,21 +14,52 @@ const COOP_LINKS = [
   { href: "/htx/lo-tin-chi", label: "Lô tín chỉ" },
   { href: "/htx/he-so", label: "Hệ số phát thải" },
   { href: "/htx/tro-ly", label: "Trợ lý" },
+  PROJECT_LINK,
 ];
 
 const BUYER_LINKS = [
   { href: "/cho", label: "Chợ tín chỉ" },
   { href: "/don-hang", label: "Đơn hàng của tôi" },
+  PROJECT_LINK,
 ];
 
 const ADMIN_LINKS = [
   { href: "/quan-tri", label: "Tổng quan nền tảng" },
   { href: "/quan-tri/tro-ly", label: "Cấu hình trợ lý" },
+  PROJECT_LINK,
 ];
 
-export function AppNav({ profile, coopName }: { profile: Profile; coopName?: string }) {
-  const links =
-    profile.role === "buyer"
+/** Nền tảng dự án. Chỉ dùng khi đang ở trong ngữ cảnh một dự án. */
+const PROJECT_LINKS = [{ href: "/du-an", label: "Dự án của tôi" }];
+
+/**
+ * Dòng chú thích dưới tên người dùng.
+ *
+ * `ROLE_LABEL[coop_staff]` là "Cán bộ hợp tác xã" — đúng với người gia nhập HTX bằng mã,
+ * nhưng SAI với tài khoản nền tảng dự án, vốn cũng mang `coop_staff` (xem
+ * `docs/design/auth-role-design.md` §1). Phân biệt bằng `cooperative_id`: không có HTX
+ * thì không nói gì về hợp tác xã cả.
+ */
+function accountLabel(profile: Profile, coopName?: string): string {
+  if (coopName) return coopName;
+  if (profile.company_name) return profile.company_name;
+  if (profile.role === "coop_staff" && !profile.cooperative_id) return "Tài khoản nền tảng";
+  return ROLE_LABEL[profile.role];
+}
+
+export function AppNav({
+  profile,
+  coopName,
+  projectRole,
+}: {
+  profile: Profile;
+  coopName?: string;
+  /** Có mặt khi đang mở một dự án: thanh điều hướng chuyển sang nền tảng dự án. */
+  projectRole?: ProjectRole;
+}) {
+  const links = projectRole
+    ? PROJECT_LINKS
+    : profile.role === "buyer"
       ? BUYER_LINKS
       : profile.role === "platform_admin"
         ? ADMIN_LINKS
@@ -52,7 +86,9 @@ export function AppNav({ profile, coopName }: { profile: Profile; coopName?: str
           <div className="text-right leading-tight">
             <div className="font-medium text-soil-900">{profile.full_name}</div>
             <div className="text-xs text-soil-600">
-              {coopName ?? profile.company_name ?? ROLE_LABEL[profile.role]}
+              {projectRole
+                ? PROJECT_ROLE_LABEL[projectRole]
+                : accountLabel(profile, coopName)}
             </div>
           </div>
           <form action={signOut}>

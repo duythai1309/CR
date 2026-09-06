@@ -6,13 +6,17 @@ import { Alert, Button, Field, Input, Select } from "@/components/ui";
 
 export function SignupForm() {
   const [error, action, pending] = useActionState(signUp, null);
-  const [role, setRole] = useState("coop_manager");
+  // Gửi lên NGỮ CẢNH tài khoản, không phải giá trị enum `user_role`. Server ánh xạ sang
+  // vai trò toàn cục (`src/app/auth-actions.ts`), nên trình duyệt không chọn được vai
+  // trò tuỳ ý — dù `handle_new_user` cũng đã chặn ở tầng cơ sở dữ liệu.
+  const [kind, setKind] = useState("du_an");
 
   return (
     <form action={action} className="mt-5 space-y-3.5">
       <Field label="Bạn là">
-        <Select name="role" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="coop_manager">Hợp tác xã nông nghiệp</option>
+        <Select name="account_kind" value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="du_an">Đơn vị phát triển dự án carbon</option>
+          <option value="htx">Hợp tác xã nông nghiệp</option>
           <option value="buyer">Doanh nghiệp mua tín chỉ carbon</option>
         </Select>
       </Field>
@@ -24,9 +28,13 @@ export function SignupForm() {
           <Input name="phone" type="tel" autoComplete="tel" />
         </Field>
       </div>
-      {role === "buyer" && (
-        <Field label="Tên doanh nghiệp">
-          <Input name="company_name" required autoComplete="organization" />
+      {(kind === "buyer" || kind === "du_an") && (
+        <Field label={kind === "buyer" ? "Tên doanh nghiệp" : "Tên tổ chức"}>
+          <Input
+            name="company_name"
+            required={kind === "buyer"}
+            autoComplete="organization"
+          />
         </Field>
       )}
       <div className="grid gap-3.5 sm:grid-cols-2">

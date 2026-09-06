@@ -39,12 +39,25 @@ export async function signUp(_prev: string | null, formData: FormData): Promise<
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const role = String(formData.get("role") ?? "coop_staff") as Role;
 
   if (password.length < 8) return "Mật khẩu cần ít nhất 8 ký tự.";
-  if (role !== "coop_manager" && role !== "buyer") {
-    return "Vai trò không hợp lệ.";
-  }
+
+  // Biểu mẫu gửi lên NGỮ CẢNH đăng ký, không gửi thẳng giá trị enum. Ánh xạ nằm ở đây
+  // để danh sách hợp lệ chỉ có một chỗ, và để giá trị lạ bị từ chối thành lỗi nhìn thấy
+  // được thay vì bị `handle_new_user` (0012_signup_role_guard.sql:33-38) âm thầm hạ về
+  // `coop_staff` — đó là rủi ro R5 trong docs/audit/audit-keep.md.
+  //
+  // `du_an` ánh xạ sang `coop_staff` một cách CÓ CHỦ Ý: nền tảng dự án không đọc
+  // `user_role`, quyền của nó nằm ở `project_members.role`. Xem
+  // docs/design/auth-role-design.md §1 để biết vì sao không thêm giá trị enum mới.
+  const ACCOUNT_KINDS: Record<string, Role> = {
+    du_an: "coop_staff",
+    htx: "coop_manager",
+    buyer: "buyer",
+  };
+  const kind = String(formData.get("account_kind") ?? "du_an");
+  const role = ACCOUNT_KINDS[kind];
+  if (!role) return "Loại tài khoản không hợp lệ.";
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -66,7 +79,9 @@ export async function signUp(_prev: string | null, formData: FormData): Promise<
   }
 
   revalidatePath("/", "layout");
-  redirect(role === "buyer" ? "/cho" : "/thiet-lap");
+  // Tài khoản mới chưa có hợp tác xã nào, nên `homePathFor` tự đưa đúng chỗ:
+  // buyer → /cho, htx → /thiet-lap, du_an → /du-an.
+  redirect(homePathFor(role, null));
 }
 
 export async function signOut() {
