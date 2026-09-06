@@ -20,6 +20,15 @@ export interface ToolSpec {
   parameters: ToolParamSchema;
   /** Vai trò được phép gọi. Đây là lớp phòng thủ thứ hai — RLS mới là lớp chặn thật. */
   roles: UserRole[];
+  /**
+   * Công cụ chỉ có ý nghĩa khi người hỏi thuộc một hợp tác xã.
+   *
+   * Mọi truy vấn của nhóm này lọc theo `app_coop_id()`; người dùng nền tảng dự án mang
+   * vai trò toàn cục `coop_staff` nhưng KHÔNG thuộc hợp tác xã nào (xem
+   * `docs/design/auth-role-design.md` §1), nên các công cụ này luôn trả rỗng với họ.
+   * Đưa vào danh sách chỉ khiến trợ lý mời tra cứu thứ chắc chắn không có gì.
+   */
+  needsCooperative?: boolean;
 }
 
 const COOP: UserRole[] = ["coop_manager", "coop_staff"];
@@ -54,6 +63,7 @@ export const TOOLS: ToolSpec[] = [
       "để biết tên vụ chính xác trong hệ thống.",
     parameters: NO_PARAMS,
     roles: COOP,
+    needsCooperative: true,
   },
   {
     name: "tong_ket_mua_vu",
@@ -73,6 +83,7 @@ export const TOOLS: ToolSpec[] = [
       },
     },
     roles: COOP,
+    needsCooperative: true,
   },
   {
     name: "thua_thieu_nhat_ky",
@@ -90,6 +101,7 @@ export const TOOLS: ToolSpec[] = [
       },
     },
     roles: COOP,
+    needsCooperative: true,
   },
   {
     name: "chi_tiet_thua_vu",
@@ -115,6 +127,7 @@ export const TOOLS: ToolSpec[] = [
       required: ["ten_thua"],
     },
     roles: COOP,
+    needsCooperative: true,
   },
   {
     name: "liet_ke_nong_ho",
@@ -127,6 +140,7 @@ export const TOOLS: ToolSpec[] = [
       },
     },
     roles: COOP,
+    needsCooperative: true,
   },
   {
     name: "liet_ke_lo_tin_chi",
@@ -144,6 +158,7 @@ export const TOOLS: ToolSpec[] = [
       },
     },
     roles: ["coop_manager", "coop_staff", "platform_admin"],
+    needsCooperative: true,
   },
   {
     name: "chia_doanh_thu",
@@ -165,6 +180,36 @@ export const TOOLS: ToolSpec[] = [
     roles: ["buyer", "platform_admin"],
   },
   {
+    name: "liet_ke_du_an",
+    description:
+      "Danh sách dự án carbon mà người đang hỏi là thành viên: tên, vai trò trong dự án, " +
+      "số bước thiết kế đã duyệt trên tổng bảy bước, Standard và Methodology đã chọn. " +
+      "Gọi trước khi trả lời bất kỳ câu hỏi nào nhắc tới một dự án, để biết tên dự án " +
+      "chính xác trong hệ thống.",
+    parameters: NO_PARAMS,
+    roles: ALL,
+  },
+  {
+    name: "tien_do_du_an",
+    description:
+      "Tiến độ chi tiết của một dự án: bảy bước thiết kế đã duyệt tới đâu, số công việc " +
+      "theo từng trạng thái, các kỳ giám sát và số quan sát đã nhập, cùng ước tính giảm " +
+      "phát thải gần nhất nếu đã sinh báo cáo.",
+    parameters: {
+      type: "object",
+      properties: {
+        ten_du_an: {
+          type: "string",
+          description:
+            "CHỈ tên riêng của dự án, không kèm từ 'dự án'. Bỏ trống thì lấy dự án vừa " +
+            "cập nhật gần nhất. Tên không khớp dự án nào thì hàm báo không tìm thấy, " +
+            "KHÔNG tự lấy dự án khác thay thế.",
+        },
+      },
+    },
+    roles: ALL,
+  },
+  {
     name: "don_hang_cua_toi",
     description:
       "Đơn hàng của chính người đang hỏi: mã đơn, lô, khối lượng, thành tiền, trạng thái " +
@@ -182,4 +227,19 @@ export function toolsForRole(role: UserRole): ToolSpec[] {
 
 export function findTool(name: string, role: UserRole): ToolSpec | null {
   return toolsForRole(role).find((t) => t.name === name) ?? null;
+}
+
+/**
+ * Bộ công cụ nên GIỚI THIỆU cho người hỏi, hẹp hơn bộ được phép gọi.
+ *
+ * `toolsForRole` giữ nguyên chữ ký vì nó là lớp chặn ở `/api/chat`; hàm này chỉ dùng khi
+ * dựng system prompt. Bỏ bớt công cụ chắc chắn trả rỗng không phải là bảo mật — người
+ * dùng vẫn không thấy dữ liệu của hợp tác xã khác nhờ RLS — mà là để trợ lý không mời
+ * người ta tra thứ không tồn tại.
+ */
+export function toolsForContext(
+  role: UserRole,
+  context: { hasCooperative: boolean },
+): ToolSpec[] {
+  return toolsForRole(role).filter((t) => context.hasCooperative || !t.needsCooperative);
 }

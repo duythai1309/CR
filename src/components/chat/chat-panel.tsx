@@ -19,11 +19,23 @@ const TOOL_LABEL: Record<string, string> = {
   liet_ke_nong_ho: "Đang xem danh sách nông hộ…",
   liet_ke_lo_tin_chi: "Đang xem các lô tín chỉ…",
   chia_doanh_thu: "Đang tra bảng chia doanh thu…",
+  liet_ke_du_an: "Đang xem danh sách dự án…",
+  tien_do_du_an: "Đang xem tiến độ dự án…",
   lo_dang_chao_ban: "Đang xem chợ tín chỉ…",
   don_hang_cua_toi: "Đang tra đơn hàng của anh/chị…",
 };
 
+/**
+ * Gợi ý câu hỏi. Khoá `du_an` KHÔNG đến từ prop `audience` mà suy từ đường dẫn đang mở:
+ * cùng một người có thể mở trợ lý ở nền tảng dự án lẫn ở phần lúa nước, và panel vốn đã
+ * đọc `usePathname()` để gửi kèm ngữ cảnh màn hình cho máy chủ.
+ */
 const SUGGESTIONS_BY_ROLE: Record<string, string[]> = {
+  du_an: [
+    "Tôi đang có những dự án nào?",
+    "Dự án này đã duyệt tới bước mấy, còn vướng gì?",
+    "Khoá kỳ giám sát rồi có sửa số liệu được nữa không?",
+  ],
   coop: [
     "Vụ này còn thửa nào chưa tính được MRV?",
     "Muốn được hệ số nước tốt hơn thì phải làm gì?",
@@ -143,7 +155,10 @@ export function ChatPanel({
     }
   }
 
-  const suggestions = SUGGESTIONS_BY_ROLE[audience] ?? SUGGESTIONS_BY_ROLE.coop;
+  // Đường dẫn thắng prop: trợ lý mở trong nền tảng dự án thì gợi ý theo dự án, bất kể
+  // vai trò toàn cục của người dùng là gì.
+  const context = pathname?.startsWith("/du-an") ? "du_an" : audience;
+  const suggestions = SUGGESTIONS_BY_ROLE[context] ?? SUGGESTIONS_BY_ROLE.coop;
 
   return (
     <div className={`flex min-h-0 flex-col ${className}`}>

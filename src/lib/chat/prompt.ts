@@ -1,7 +1,7 @@
 import type { UserRole } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/labels";
 import { PRODUCT_KNOWLEDGE } from "./knowledge";
-import { toolsForRole } from "./tools";
+import { toolsForContext } from "./tools";
 
 export interface PromptContext {
   role: UserRole;
@@ -14,6 +14,17 @@ export interface PromptContext {
 
 /** Mô tả màn hình đang mở, giúp trợ lý hiểu "cái này" trong câu hỏi trỏ vào đâu. */
 const PAGE_HINTS: Array<[RegExp, string]> = [
+  // Nền tảng dự án đặt trước vì đây là sản phẩm chính; các nhánh cũ giữ nguyên bên dưới.
+  [/^\/du-an\/[^/]+\/giam-sat\/[^/]+/, "một kỳ giám sát: nhập số liệu, đối chiếu baseline, khoá kỳ"],
+  [/^\/du-an\/[^/]+\/giam-sat/, "danh sách kỳ giám sát của dự án"],
+  [/^\/du-an\/[^/]+\/bao-cao\/[^/]+/, "chi tiết một báo cáo MRV ước tính"],
+  [/^\/du-an\/[^/]+\/bao-cao/, "danh sách báo cáo MRV của dự án"],
+  [/^\/du-an\/[^/]+\/quy-trinh/, "bảy bước thiết kế dự án: chọn Standard, Methodology, baseline, tài liệu"],
+  [/^\/du-an\/[^/]+\/thanh-vien/, "danh sách thành viên dự án và phân vai trò"],
+  [/^\/du-an\/[^/]+\/cong-viec\//, "chi tiết một công việc: mô tả, người nhận, bình luận, tệp đính kèm"],
+  [/^\/du-an\/moi/, "màn hình tạo dự án mới"],
+  [/^\/du-an\/[^/]+$/, "bảng công việc kanban bảy cột của một dự án"],
+  [/^\/du-an$/, "danh sách dự án carbon của người dùng"],
   [/^\/htx\/nong-ho/, "danh sách nông hộ"],
   [/^\/htx\/thua-ruong/, "bản đồ và danh sách thửa ruộng"],
   [/^\/htx\/thua-vu\//, "màn hình ghi nhật ký canh tác và tính MRV của một thửa trong một vụ"],
@@ -81,7 +92,9 @@ const SAFETY_RULES = `
 `.trim();
 
 export function buildSystemPrompt(ctx: PromptContext): string {
-  const tools = toolsForRole(ctx.role);
+  // `coopName` rỗng nghĩa là người hỏi không thuộc hợp tác xã nào — thường là tài khoản
+  // nền tảng dự án. Khi đó bỏ các công cụ lọc theo hợp tác xã khỏi danh sách giới thiệu.
+  const tools = toolsForContext(ctx.role, { hasCooperative: Boolean(ctx.coopName) });
   const page = describePage(ctx.path);
 
   const who = [

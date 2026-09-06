@@ -10,11 +10,74 @@
 export const PRODUCT_KNOWLEDGE = `
 ## Nền tảng này là gì
 
-Agri-Carbon Pass số hoá quy trình MRV (Đo lường – Báo cáo – Xác minh) tín chỉ carbon
-cho nông hộ trồng lúa nước, và kết nối lô tín chỉ với doanh nghiệp mua qua chợ B2B.
-Toàn bộ giao diện tiếng Việt. Hiện chỉ hỗ trợ cây lúa nước và triển khai ở miền Bắc.
+Agri-Carbon Pass có HAI phần, dùng chung một tài khoản đăng nhập.
 
-## Bốn vai trò
+**1. Nền tảng quản lý dự án carbon (phần chính, mới).** Quản lý một dự án carbon đi qua
+bảy bước thiết kế chuẩn, rồi giám sát và sinh báo cáo MRV. Dùng cho đơn vị phát triển dự
+án, không giới hạn ở cây lúa — dữ liệu mẫu hiện có dự án rừng, điện thay thế và biogas.
+
+**2. Phần MRV lúa nước và chợ tín chỉ (phần cũ, vẫn chạy).** Số hoá quy trình MRV cho
+nông hộ trồng lúa nước theo hợp tác xã, và kết nối lô tín chỉ với doanh nghiệp mua qua
+chợ B2B. Hiện chỉ hỗ trợ cây lúa nước và triển khai ở miền Bắc.
+
+Người dùng thường chỉ làm việc với MỘT trong hai phần. Đừng chỉ họ sang phần kia trừ khi
+họ hỏi đúng về nó.
+
+## Nền tảng dự án: khái niệm và đường dẫn màn hình
+
+Một **Dự án** chọn đúng một **Standard** (Verra/VCS hoặc Gold Standard) và một
+**Methodology** thuộc Standard đó. Methodology mang sẵn bộ chỉ số cần giám sát, nên form
+nhập liệu và bảng import được sinh tự động theo từng methodology.
+
+Vai trò TRONG một dự án, tách hẳn khỏi vai trò toàn nền tảng:
+- Chủ dự án (owner): toàn quyền — mời thành viên, chọn và khoá Standard/Methodology,
+  duyệt bước, tạo và khoá kỳ giám sát, xoá dự án.
+- Đơn vị phát triển (developer): thao tác công việc, nhập số liệu giám sát, sinh báo cáo.
+  Không xoá được dự án.
+- Người xem (viewer): chỉ xem.
+
+Một người có thể là chủ dự án ở dự án này và đơn vị phát triển ở dự án khác.
+
+Bảy bước thiết kế, cố định và phải duyệt tuần tự:
+1. Ý tưởng dự án — 2. Đánh giá khả thi — 3. Chọn Standard — 4. Chọn Methodology —
+5. Xác định baseline — 6. Additionality — 7. Mô tả dự án (PDD).
+Bước 3 và 4 có thao tác KHOÁ. Khoá là một chiều, không đổi lại được; cần Standard khác
+thì phải tạo dự án mới.
+
+Đường dẫn màn hình:
+1. /du-an — danh sách dự án của người dùng. /du-an/moi — tạo dự án mới.
+2. /du-an/[id] — bảng công việc kanban, mỗi bước là một cột, kéo card sang cột khác để
+   đổi bước. Trạng thái công việc là ô chọn riêng trên card.
+3. /du-an/[id]/quy-trinh — bảy bước: chọn/khoá Standard và Methodology, nhập baseline,
+   tải tài liệu, duyệt từng bước.
+4. /du-an/[id]/thanh-vien — mời người theo email và phân vai trò. Người được mời phải đã
+   có tài khoản trước.
+5. /du-an/[id]/giam-sat — kỳ giám sát; /du-an/[id]/giam-sat/[id] — nhập số liệu tay hoặc
+   từ tệp CSV, đối chiếu với baseline, khoá kỳ.
+6. /du-an/[id]/bao-cao — sinh và xem báo cáo MRV ước tính từ kỳ đã khoá.
+
+## Nền tảng dự án: bốn quy tắc hay bị hỏi
+
+**Kỳ giám sát chụp lại mọi thứ lúc tạo.** Lược đồ chỉ số, baseline và bộ hệ số được chụp
+ngay khi tạo kỳ. Sửa methodology hay baseline sau đó KHÔNG làm đổi kỳ đã tạo, và không
+làm đổi báo cáo đã sinh.
+
+**Chỉ sinh được báo cáo từ kỳ ĐÃ KHOÁ.** Khoá kỳ đóng băng dữ liệu. Khoá là một chiều;
+cần sửa thì tạo kỳ bản mới cùng khoảng ngày, không sửa kỳ cũ.
+
+**Chỉ giao việc được cho Đơn vị phát triển.** Đây là ràng buộc của cơ sở dữ liệu, không
+phải lựa chọn giao diện. Muốn giao việc cho ai thì đổi vai trò của họ thành Đơn vị phát
+triển trước.
+
+**Số liệu methodology hiện là DỮ LIỆU MẪU chưa thẩm định.** Bốn methodology trong hệ
+thống do nhóm tự soạn để minh hoạ, KHÔNG phải methodology được Verra hay Gold Standard
+công nhận. Vì vậy mọi báo cáo chỉ ở dạng xem thử, và con số là ƯỚC TÍNH — không phải tín
+chỉ đã được phát hành. Khi nói về con số của dự án, luôn nhắc điều này.
+
+Nhập tệp: hiện chỉ nhận CSV. Tệp Excel (.xlsx) chưa hỗ trợ — bảo người dùng lưu sang CSV.
+Bảng cần hai cột record_key và observed_on cùng các cột chỉ số của methodology.
+
+## Bốn vai trò TOÀN NỀN TẢNG (khác với vai trò trong một dự án ở trên)
 
 - Giám đốc hợp tác xã (coop_manager): toàn quyền trong HTX, gộp lô và chào bán tín chỉ.
 - Cán bộ hợp tác xã (coop_staff): nhập nhật ký canh tác.
@@ -23,7 +86,7 @@ Toàn bộ giao diện tiếng Việt. Hiện chỉ hỗ trợ cây lúa nước
 
 Nông hộ KHÔNG có tài khoản. Họ là bản ghi trong hệ thống, cán bộ HTX nhập liệu hộ.
 
-## Luồng công việc và đường dẫn màn hình
+## Phần lúa nước: luồng công việc và đường dẫn màn hình
 
 1. /thiet-lap — tạo HTX mới hoặc gia nhập bằng mã. Người tạo thành giám đốc HTX.
 2. /htx/nong-ho — thêm hồ sơ nông hộ (họ tên, thôn xóm, mã xã viên).

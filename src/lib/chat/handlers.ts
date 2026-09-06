@@ -85,6 +85,70 @@ const seasonLabel = (t: string | null) =>
 const strawLabel = (m: string | null) =>
   m ? (STRAW_LABEL[m as keyof typeof STRAW_LABEL] ?? m) : null;
 
+/**
+ * Cửa ép kiểu DUY NHẤT của tệp này cho các bảng nền tảng dự án.
+ *
+ * `src/types/database.ts` sinh từ cơ sở dữ liệu thật và chưa thể sinh lại (mục C9 trong
+ * `docs/design/schema-review-findings.md`: phải áp 0013–0015 lên DB trước, mà việc đó
+ * chưa được phép). Truy vấn vẫn chạy bằng phiên của người dùng nên RLS là thứ quyết định
+ * thấy gì — ép kiểu ở đây chỉ mất kiểm tra tên cột lúc biên dịch, không mở thêm quyền.
+ */
+const projectTables = (supabase: Client): SupabaseClient =>
+  supabase as unknown as SupabaseClient;
+
+interface ProjectRow {
+  id: string;
+  name: string;
+  description?: string;
+  deleted_at: string | null;
+  standard_id: string | null;
+  methodology_id: string | null;
+  standard_locked_at?: string | null;
+  methodology_locked_at?: string | null;
+  updated_at?: string;
+}
+interface MemberRow {
+  project_id: string;
+  user_id: string;
+  role: string;
+}
+interface StageCountRow {
+  project_id: string;
+  approved_at: string | null;
+}
+interface StageDetailRow {
+  ordinal: number;
+  title: string;
+  approved_at: string | null;
+}
+interface MethodologyRow {
+  id: string;
+  code: string;
+  version: string;
+  is_sample: boolean;
+}
+interface PeriodRow {
+  name: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  version: number;
+  data_revision: number;
+}
+interface ReportRow {
+  version: number;
+  status: string;
+  generated_at: string;
+  results?: { estimated_credit?: { value?: string; unit?: string } };
+}
+
+/** Nhãn tiếng Việt cho vai trò trong dự án; trợ lý nói với người dùng, không nói mã. */
+const PROJECT_ROLE_VI: Record<string, string> = {
+  owner: "chủ dự án",
+  developer: "đơn vị phát triển",
+  viewer: "người xem",
+};
+
 export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<unknown>> = {
   async tra_cuu_he_so({ supabase }, args) {
     const keyword = str(args.tu_khoa);
@@ -432,6 +496,161 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       ghi_chu:
         "'con_lai_tco2e' đã trừ phần đã bán, nhưng đơn đang chờ thanh toán cũng giữ chỗ, " +
         "nên số thực đặt được có thể thấp hơn.",
+    };
+  },
+
+  /* ---------------------------------------------------------- nền tảng dự án */
+
+  async liet_ke_du_an({ supabase, profile }) {
+    const db = projectTables(supabase);
+
+    // RLS `projects_read` (0013:887) chỉ trả dự án mà người hỏi là thành viên, nên không
+    // cần và không được lọc thêm theo vai trò toàn cục ở đây.
+    const { data: projects, error } = await db
+      .from("projects")
+      .select("id, name, description, deleted_at, standard_id, methodology_id, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(MAX_ROWS_PER_TOOL);
+    fail(error);
+
+    const rows = (projects ?? []) as ProjectRow[];
+    if (rows.length === 0)
+      return { du_an: [], ghi_chu: "Người hỏi chưa là thành viên của dự án carbon nào." };
+
+    const [{ data: members }, { data: stages }, { data: standards }, { data: methodologies }] =
+      await Promise.all([
+        db.from("project_members").select("project_id, user_id, role"),
+        db.from("project_stages").select("project_id, approved_at"),
+        db.from("standards").select("id, code"),
+        db.from("methodologies").select("id, code, version, is_sample"),
+      ]);
+
+    const myRole = new Map<string, string>();
+    for (const m of (members ?? []) as MemberRow[])
+      if (m.user_id === profile.id) myRole.set(m.project_id, m.role);
+
+    const approved = new Map<string, number>();
+    for (const st of (stages ?? []) as StageCountRow[])
+      if (st.approved_at) approved.set(st.project_id, (approved.get(st.project_id) ?? 0) + 1);
+
+    const standardCode = new Map<string, string>(
+      ((standards ?? []) as Array<{ id: string; code: string }>).map((x) => [x.id, x.code]),
+    );
+    const methodology = new Map<string, { ma: string; la_du_lieu_mau: boolean }>(
+      ((methodologies ?? []) as MethodologyRow[]).map((x) => [
+        x.id,
+        { ma: `${x.code} · ${x.version}`, la_du_lieu_mau: x.is_sample },
+      ]),
+    );
+
+    return {
+      du_an: rows.map((p) => ({
+        ten: p.name,
+        mo_ta: p.description || null,
+        vai_tro_trong_du_an: PROJECT_ROLE_VI[myRole.get(p.id) ?? ""] ?? myRole.get(p.id) ?? "—",
+        buoc_da_duyet: `${approved.get(p.id) ?? 0}/7`,
+        standard: p.standard_id ? (standardCode.get(p.standard_id) ?? null) : null,
+        methodology: p.methodology_id ? (methodology.get(p.methodology_id)?.ma ?? null) : null,
+        methodology_la_du_lieu_mau: p.methodology_id
+          ? (methodology.get(p.methodology_id)?.la_du_lieu_mau ?? null)
+          : null,
+        da_xoa: p.deleted_at !== null,
+      })),
+      ghi_chu:
+        "'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. Methodology đánh dấu " +
+        "'methodology_la_du_lieu_mau' là dữ liệu mẫu chưa thẩm định — mọi con số tính từ " +
+        "nó chỉ là ước tính, không phải tín chỉ đã phát hành.",
+    };
+  },
+
+  async tien_do_du_an({ supabase, profile }, args) {
+    const db = projectTables(supabase);
+    const name = str(args.ten_du_an);
+
+    let q = db
+      .from("projects")
+      .select("id, name, standard_id, methodology_id, standard_locked_at, methodology_locked_at, deleted_at")
+      .order("updated_at", { ascending: false })
+      .limit(5);
+    if (name) q = q.ilike("name", `%${safeFilterTerm(tenRieng(name))}%`);
+
+    const { data, error } = await q;
+    fail(error);
+
+    const project = ((data ?? []) as ProjectRow[])[0];
+    if (!project)
+      return {
+        khong_tim_thay: name
+          ? `Không có dự án nào khớp "${name}" trong số dự án của người hỏi.`
+          : "Người hỏi chưa là thành viên của dự án carbon nào.",
+      };
+
+    const [{ data: stages }, { data: tasks }, { data: periods }, { data: reports }, { data: members }] =
+      await Promise.all([
+        db.from("project_stages").select("ordinal, title, approved_at").eq("project_id", project.id),
+        db.from("project_tasks").select("status, stage_id").eq("project_id", project.id).limit(MAX_ROWS_FOR_AGGREGATE),
+        db
+          .from("monitoring_periods")
+          .select("id, name, start_date, end_date, status, version, data_revision")
+          .eq("project_id", project.id)
+          .order("start_date", { ascending: false })
+          .limit(MAX_ROWS_PER_TOOL),
+        db
+          .from("mrv_reports")
+          .select("version, status, results, generated_at")
+          .eq("project_id", project.id)
+          .order("generated_at", { ascending: false })
+          .limit(1),
+        db.from("project_members").select("user_id, role").eq("project_id", project.id),
+      ]);
+
+    const byStatus: Record<string, number> = {};
+    for (const t of (tasks ?? []) as Array<{ status: string }>)
+      byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
+
+    const myRole =
+      ((members ?? []) as MemberRow[]).find((m) => m.user_id === profile.id)?.role ?? null;
+
+    const latest = ((reports ?? []) as ReportRow[])[0];
+    const credit = latest?.results?.estimated_credit;
+
+    return {
+      du_an: project.name,
+      vai_tro_cua_nguoi_hoi: myRole ? (PROJECT_ROLE_VI[myRole] ?? myRole) : null,
+      da_xoa: project.deleted_at !== null,
+      standard_da_khoa: project.standard_locked_at !== null,
+      methodology_da_khoa: project.methodology_locked_at !== null,
+      bay_buoc: ((stages ?? []) as StageDetailRow[])
+        .slice()
+        .sort((a, b) => a.ordinal - b.ordinal)
+        .map((st) => ({ buoc: st.ordinal, ten: st.title, da_duyet: st.approved_at !== null })),
+      cong_viec: {
+        tong: (tasks ?? []).length,
+        chua_lam: byStatus.todo ?? 0,
+        dang_lam: byStatus.in_progress ?? 0,
+        xong: byStatus.done ?? 0,
+        vuong: byStatus.blocked ?? 0,
+      },
+      ky_giam_sat: ((periods ?? []) as PeriodRow[]).map((pd) => ({
+        ten: pd.name,
+        tu_ngay: pd.start_date,
+        den_ngay: pd.end_date,
+        ban: pd.version,
+        trang_thai: pd.status === "locked" ? "đã khoá" : "đang mở",
+        so_lan_ghi: pd.data_revision,
+      })),
+      bao_cao_gan_nhat: latest
+        ? {
+            ban: latest.version,
+            trang_thai: latest.status === "final" ? "chính thức" : "xem thử",
+            uoc_tinh: credit?.value ?? null,
+            don_vi: credit?.unit ?? null,
+            sinh_luc: latest.generated_at,
+          }
+        : null,
+      ghi_chu:
+        "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
+        "thẩm định độc lập và không phải tín chỉ đã được phát hành.",
     };
   },
 

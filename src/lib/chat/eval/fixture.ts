@@ -22,6 +22,7 @@ export const FIXTURE_COOP = "HTX Nông nghiệp Tân Phú";
 /** Tên các mùa vụ có thật trong dữ liệu mẫu, dùng để mô phỏng đúng phép tìm của handler. */
 const SEASON_NAMES = ["Vụ Xuân 2026", "Vụ Mùa 2025"];
 export const FIXTURE_USER = "Nguyễn Văn Cường";
+export const FIXTURE_PROJECT = "Rừng ngập mặn Cà Mau";
 
 const HE_SO = [
   {
@@ -309,6 +310,79 @@ export const FIXTURE_RESULTS: Record<
       "'con_lai_tco2e' đã trừ phần đã bán, nhưng đơn đang chờ thanh toán cũng giữ chỗ, " +
       "nên số thực đặt được có thể thấp hơn.",
   }),
+
+  liet_ke_du_an: () => ({
+    du_an: [
+      {
+        ten: FIXTURE_PROJECT,
+        mo_ta: "Trồng lại rừng ngập mặn ven biển, giai đoạn 1.",
+        vai_tro_trong_du_an: "chủ dự án",
+        buoc_da_duyet: "4/7",
+        standard: "VCS",
+        methodology: "DEMO-VCS-FOREST · demo-1.0",
+        methodology_la_du_lieu_mau: true,
+        da_xoa: false,
+      },
+      {
+        ten: "Biogas hộ gia đình Đồng Tháp",
+        mo_ta: null,
+        vai_tro_trong_du_an: "đơn vị phát triển",
+        buoc_da_duyet: "2/7",
+        standard: "GS",
+        methodology: "DEMO-GS-BIOGAS · demo-1.0",
+        methodology_la_du_lieu_mau: true,
+        da_xoa: false,
+      },
+    ],
+    ghi_chu:
+      "'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. Methodology đánh dấu " +
+      "'methodology_la_du_lieu_mau' là dữ liệu mẫu chưa thẩm định — mọi con số tính từ " +
+      "nó chỉ là ước tính, không phải tín chỉ đã phát hành.",
+  }),
+
+  tien_do_du_an: (args) => {
+    const name = typeof args.ten_du_an === "string" ? tenRieng(args.ten_du_an).toLowerCase() : "";
+    if (name && !FIXTURE_PROJECT.toLowerCase().includes(name))
+      return { khong_tim_thay: `Không có dự án nào khớp "${args.ten_du_an}".` };
+
+    return {
+      du_an: FIXTURE_PROJECT,
+      vai_tro_cua_nguoi_hoi: "chủ dự án",
+      da_xoa: false,
+      standard_da_khoa: true,
+      methodology_da_khoa: true,
+      bay_buoc: [
+        { buoc: 1, ten: "Project Idea", da_duyet: true },
+        { buoc: 2, ten: "Feasibility Assessment", da_duyet: true },
+        { buoc: 3, ten: "Chọn Standard", da_duyet: true },
+        { buoc: 4, ten: "Chọn Methodology", da_duyet: true },
+        { buoc: 5, ten: "Baseline", da_duyet: false },
+        { buoc: 6, ten: "Additionality", da_duyet: false },
+        { buoc: 7, ten: "Project Design/PDD", da_duyet: false },
+      ],
+      cong_viec: { tong: 9, chua_lam: 3, dang_lam: 2, xong: 3, vuong: 1 },
+      ky_giam_sat: [
+        {
+          ten: "Kỳ 2026-1",
+          tu_ngay: "2026-01-01",
+          den_ngay: "2026-06-30",
+          ban: 1,
+          trang_thai: "đã khoá",
+          so_lan_ghi: 3,
+        },
+      ],
+      bao_cao_gan_nhat: {
+        ban: 1,
+        trang_thai: "xem thử",
+        uoc_tinh: "128.4200",
+        don_vi: "tCO2e",
+        sinh_luc: "2026-08-15T02:10:00.000Z",
+      },
+      ghi_chu:
+        "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
+        "thẩm định độc lập và không phải tín chỉ đã được phát hành.",
+    };
+  },
 
   don_hang_cua_toi: () => ({
     don_hang: [
