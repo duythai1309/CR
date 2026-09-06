@@ -5,14 +5,13 @@ import { missingConfigMessage, readSupabaseConfig } from "@/lib/supabase/config"
 /**
  * Các nhánh đường dẫn bắt buộc đăng nhập.
  *
- * `/du-an` là nền tảng dự án mới. Bốn nhánh còn lại là module cũ, GIỮ NGUYÊN cho tới
- * bước 6 của `PLAN.md` §6 — trang chủ đang liên kết tới `/cho` và `/don-hang`, gỡ sớm là
- * tạo 404 ngay trên trang công khai.
+ * `/du-an` là nền tảng sản phẩm. Giữ `/quan-tri` được bảo vệ vì
+ * `/quan-tri/tro-ly` vẫn là màn hình quản trị cấu hình khoá API của trợ lý.
  *
  * `/`, `/dang-nhap`, `/dang-ky` cố ý KHÔNG có ở đây: trang giới thiệu phải xem được khi
  * chưa đăng nhập.
  */
-const PROTECTED = ["/du-an", "/htx", "/cho", "/don-hang", "/thiet-lap", "/quan-tri"];
+const PROTECTED = ["/du-an", "/quan-tri"];
 
 const needsAuth = (path: string) =>
   PROTECTED.some((p) => path === p || path.startsWith(`${p}/`));

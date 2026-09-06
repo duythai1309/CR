@@ -4,97 +4,96 @@ import { getProfile, homePathFor } from "@/lib/auth";
 import { SiteHeader } from "@/components/site-header";
 import { HeroCarousel, type HeroSlide } from "@/components/hero-carousel";
 import { LazyVideo } from "@/components/lazy-video";
-import { ACTIVE_REGION_FACTORS, IPCC_GLOBAL_DEFAULT } from "@/lib/region";
 
 const SLIDES: HeroSlide[] = [
   {
     video: "/video/ruong-bac-thang.mp4",
     poster: "/anh/poster-hero.jpg",
-    media: "Flycam ruộng bậc thang vùng cao phía Bắc lúc lúa chín",
-    headline: "Nhật ký canh tác của nông hộ nhỏ,",
-    accent: "trở thành tín chỉ carbon bán được.",
+    media: "Flycam cảnh quan dự án carbon tại vùng núi phía Bắc",
+    headline: "Từ ý tưởng đến hồ sơ đăng ký,",
+    accent: "một vòng đời dự án liền mạch.",
     body:
-      "Thuê tư vấn quốc tế kiểm định cho một mảnh ruộng vài sào tốn hàng chục nghìn đô la — đắt hơn cả giá trị tín chỉ thu về. Agri-Carbon Pass gom hàng trăm nông hộ thành một dự án tập thể để chi phí đó chia được cho hàng nghìn hecta.",
+      "Agri-Carbon Pass giúp đơn vị phát triển dự án điều phối bảy bước thiết kế, phân công công việc và tập trung bằng chứng trên cùng một không gian làm việc.",
   },
   {
     video: "/video/thua-ruong-flycam.mp4",
     poster: "/anh/poster-thua-ruong.jpg",
-    media: "Flycam toàn cảnh vùng ruộng bậc thang chia thành nhiều thửa nhỏ",
-    headline: "Một mảnh ruộng",
-    accent: "chỉ được tính tín chỉ một lần.",
+    media: "Flycam toàn cảnh một vùng dự án carbon",
+    headline: "Methodology có phiên bản,",
+    accent: "dữ liệu luôn đúng ngữ cảnh.",
     body:
-      "Ranh thửa vẽ trên ảnh vệ tinh, diện tích tính từ hình học chứ không lấy số khai báo. Hệ thống đối chiếu với toàn bộ thửa đã có — kể cả của hợp tác xã khác — và chặn lại nếu chồng lấn.",
+      "Mỗi dự án chọn Standard và đúng phiên bản methodology. Schema chỉ số, bộ hệ số và biểu mẫu báo cáo đi cùng phiên bản để đội ngũ không dùng nhầm tài liệu.",
   },
   {
     poster: "/anh/lua-chin.jpg",
-    media: "Bông lúa chín ngược nắng hoàng hôn",
-    headline: "Phần lớn doanh thu",
-    accent: "về tay người trực tiếp làm ruộng.",
+    media: "Cảnh quan thiên nhiên trong một vùng dự án carbon",
+    headline: "Mỗi con số MRV",
+    accent: "đều có thể lần ngược nguồn.",
     body:
-      "Mỗi đơn hàng thanh toán xong được tách tự động, và phần của nông hộ chia theo đúng tỷ lệ đóng góp giảm phát thải của từng thửa trong lô — không chia đều, không thương lượng lại.",
+      "Dữ liệu giám sát, phiên bản hệ số, kết quả tính và báo cáo được nối thành một vết kiểm toán rõ ràng, sẵn sàng cho rà soát nội bộ và làm việc với VVB.",
   },
 ];
 
-/**
- * Số liệu bối cảnh thị trường và tham số thật của hệ thống. Đây không phải quy
- * mô của nền tảng — nền tảng còn ở giai đoạn thử nghiệm — mà là độ lớn của bài
- * toán. Nguồn trích ở chân trang.
- */
 const STEPS = [
   {
     n: "01",
-    title: "Ghi nhật ký canh tác",
+    title: "Khởi tạo & đánh giá",
     body:
-      "Cán bộ hợp tác xã nhập ngày cấy, lịch tháo nước, lượng phân bón và cách xử lý rơm rạ cho từng thửa. Nông hộ không cần tài khoản, không cần điện thoại thông minh.",
+      "Ghi nhận Project Idea, tổ chức đánh giá khả thi và giao đầu việc có người phụ trách, hạn hoàn thành, bình luận và tệp đính kèm.",
   },
   {
     n: "02",
-    title: "Tính lượng giảm phát thải",
+    title: "Chọn Standard & Methodology",
     body:
-      "Hệ thống áp công thức IPCC với hệ số đo tại chính vùng canh tác. Chế độ nước suy ra từ số lần tháo nước đã ghi, không để ai tự khai.",
+      "Chọn Verra hoặc Gold Standard, sau đó khóa đúng methodology và phiên bản làm nền cho thiết kế, chỉ số giám sát và phép tính.",
   },
   {
     n: "03",
-    title: "Xác minh ranh thửa",
+    title: "Baseline, additionality & PDD",
     body:
-      "Mỗi thửa vẽ thành vùng trên ảnh vệ tinh, diện tích tính từ hình học. Hệ thống báo ngay nếu hai hộ cùng khai một mảnh ruộng.",
+      "Điều phối ba bước chuyên môn còn lại của giai đoạn thiết kế; lưu phiên bản tài liệu và toàn bộ trao đổi ngay trong dự án.",
   },
   {
     n: "04",
-    title: "Gộp lô và kết nối bên mua",
+    title: "Giám sát MRV & báo cáo",
     body:
-      "Hàng nghìn hecta gộp thành một báo cáo phát thải tập trung, đủ quy mô để làm việc với đơn vị kiểm định quốc tế và doanh nghiệp cần bù đắp.",
+      "Tạo kỳ giám sát, nhập tay hoặc import dữ liệu theo schema, khóa snapshot tính toán và sinh báo cáo với vết tính tái lập được.",
   },
 ];
 
 const STORIES = [
   {
     img: "/anh/nong-ho-ruong-xanh.jpg",
-    alt: "Nông dân và trâu trên cánh đồng lúa xanh, núi mờ phía xa",
-    title: "Nông hộ không phải đổi cách làm ruộng",
+    alt: "Cảnh quan xanh trong khu vực triển khai dự án carbon",
+    title: "Bảy bước thiết kế có cùng một trạng thái",
     body:
-      "Quy trình bám theo tập quán canh tác sẵn có. Việc duy nhất phát sinh là ghi lại những gì vẫn đang làm — và người ghi là cán bộ hợp tác xã.",
+      "Owner và developer cùng nhìn thấy tiến độ, đầu việc bị chặn, người phụ trách và hồ sơ còn thiếu trước khi chuyển bước.",
     href: "#cach-lam",
   },
   {
     img: "/anh/ruong-ngap-nuoc.jpg",
-    alt: "Ruộng lúa mới cấy đang ngập nước lúc hoàng hôn",
-    title: "Rút nước đúng lúc là nguồn tín chỉ lớn nhất",
+    alt: "Cảnh quan vùng dự án được theo dõi theo kỳ",
+    title: "Dữ liệu giám sát tuân theo methodology",
     body:
-      "Ruộng ngập liên tục phát thải methane mạnh nhất. Tưới ngập khô xen kẽ cắt được phần lớn lượng đó, nhưng phải có nhật ký thì mới quy ra tín chỉ.",
+      "Biểu mẫu và import CSV được sinh từ schema chỉ số có đơn vị, kiểu dữ liệu và quy tắc kiểm tra rõ ràng.",
     href: "#phuong-phap",
   },
   {
     img: "/anh/ruong-bac-thang.jpg",
-    alt: "Ruộng bậc thang có kênh nước, núi phía xa",
-    title: "Con số phải tái lập lại được sau nhiều năm",
+    alt: "Cảnh quan dự án carbon tại vùng núi phía Bắc",
+    title: "Báo cáo giữ nguyên vết tính",
     body:
-      "Mỗi phép tính lưu đủ dữ liệu đầu vào và bộ hệ số đã dùng. Nhật ký khoá lại ngay khi con số phát hành thành tín chỉ.",
+      "Mỗi kết quả gắn với dữ liệu nguồn, phiên bản methodology, bộ hệ số và mẫu báo cáo đã dùng tại thời điểm tạo.",
     href: "#cong-cu",
   },
 ];
 
-const MAX_FACTOR = Math.max(...ACTIVE_REGION_FACTORS.map((f) => f.value), IPCC_GLOBAL_DEFAULT);
+const METHOD_VERSIONS = [
+  { key: "standard", label: "Standard", status: "Đã chọn", value: 100 },
+  { key: "methodology", label: "Methodology", status: "Có version", value: 100 },
+  { key: "factors", label: "Bộ hệ số & schema chỉ số", status: "Đã khóa", value: 100 },
+];
+const MAX_FACTOR = 100;
 
 export default async function Home() {
   const profile = await getProfile();
@@ -107,15 +106,15 @@ export default async function Home() {
       <main>
         <HeroCarousel
           slides={SLIDES}
-          primary={{ href: "/dang-ky", label: "Tôi là hợp tác xã" }}
-          secondary={{ href: "/cho", label: "Tôi là doanh nghiệp" }}
+          primary={{ href: "/dang-ky", label: "Bắt đầu một dự án" }}
+          secondary={{ href: "/du-an", label: "Mở không gian dự án" }}
         />
 
         {/* ------------------------------------------------------------- cơ hội */}
         <section id="co-hoi" className="bg-mint-100">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-forest-900 sm:text-5xl lg:text-6xl">
-              Cơ hội carbon lớn nhất của nông nghiệp Việt Nam
+              Hạ tầng vận hành cho đội ngũ phát triển dự án carbon
             </h2>
 
             <div className="mt-10 flex max-w-4xl gap-5">
@@ -124,13 +123,12 @@ export default async function Home() {
               </span>
               <div className="space-y-3 text-lg leading-relaxed text-forest-700">
                 <p>
-                  Canh tác lúa thải khoảng <strong>49,6 triệu tấn CO₂e mỗi năm</strong> ở
-                  Việt Nam, chiếm <strong>48%</strong> tổng phát thải nhà kính của ngành
-                  nông nghiệp.
+                  Một dự án carbon chuyên nghiệp đi qua <strong>bảy bước thiết kế</strong>,
+                  nhiều vòng tài liệu và các kỳ giám sát kéo dài trong nhiều năm.
                 </p>
                 <p>
-                  Agri-Carbon Pass số hoá khâu đo đạc và kiểm chứng để phần giảm phát thải
-                  đó trở thành thu nhập của chính nông hộ đã tạo ra nó.
+                  Agri-Carbon Pass giữ công việc, methodology, dữ liệu MRV và báo cáo trong
+                  một cấu trúc thống nhất để đội ngũ tập trung vào chất lượng hồ sơ.
                 </p>
               </div>
             </div>
@@ -139,7 +137,7 @@ export default async function Home() {
               <div className="relative aspect-[16/7] w-full">
                 <Image
                   src="/anh/nong-ho-ruong-xanh.jpg"
-                  alt="Cánh đồng lúa xanh trải rộng dưới chân núi"
+                  alt="Cảnh quan xanh minh hoạ cho một vùng dự án carbon"
                   fill
                   sizes="(min-width: 1280px) 1280px, 100vw"
                   className="object-cover"
@@ -147,11 +145,10 @@ export default async function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-forest-950/85 via-forest-950/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-8 sm:p-12">
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-mint-300">
-                    Vùng triển khai
+                    Một nguồn dữ liệu dự án
                   </p>
                   <p className="mt-3 max-w-2xl text-2xl font-bold leading-snug text-white sm:text-3xl">
-                    Đồng bằng sông Hồng và trung du miền núi phía Bắc, khoảng 950 nghìn
-                    hecta lúa gieo trồng mỗi năm
+                    Từ Project Idea, PDD đến từng kỳ Monitoring và báo cáo MRV
                   </p>
                 </div>
               </div>
@@ -164,95 +161,94 @@ export default async function Home() {
           <div className="mx-auto grid max-w-7xl auto-rows-[minmax(220px,auto)] gap-5 px-6 md:grid-cols-2 lg:grid-cols-3">
             <PhotoTile
               src="/anh/lua-chin.jpg"
-              eyebrow="Bối cảnh bài toán"
-              title="Vì sao nông hộ nhỏ đứng ngoài thị trường carbon"
+              eyebrow="Bối cảnh vận hành"
+              title="Dự án phức tạp cần nhiều hơn một thư mục tài liệu"
             />
 
             <div className="rounded-3xl bg-white p-8">
-              <h3 className="text-xl font-bold text-forest-900">Hệ số phát thải nền</h3>
+              <h3 className="text-xl font-bold text-forest-900">Chuỗi phiên bản có kiểm soát</h3>
               <dl className="mt-6 space-y-4">
-                {ACTIVE_REGION_FACTORS.map((f) => (
-                  <div key={f.seasonType} className="flex items-baseline justify-between gap-4">
+                {METHOD_VERSIONS.map((f) => (
+                  <div key={f.key} className="flex items-baseline justify-between gap-4">
                     <dt className="text-forest-700">{f.label}</dt>
                     <dd className="text-2xl font-bold tabular-nums text-forest-900">
-                      {f.value.toString().replace(".", ",")}
+                      {f.status}
                     </dd>
                   </div>
                 ))}
                 <div className="flex items-baseline justify-between gap-4 border-t border-mint-200 pt-4">
-                  <dt className="text-forest-600">Mặc định IPCC toàn cầu</dt>
+                  <dt className="text-forest-600">Snapshot báo cáo</dt>
                   <dd className="text-lg font-semibold tabular-nums text-forest-600">
-                    {IPCC_GLOBAL_DEFAULT.toString().replace(".", ",")}
+                    Bất biến
                   </dd>
                 </div>
               </dl>
-              <p className="mt-5 text-sm text-forest-600">kg CH₄/ha/ngày</p>
+              <p className="mt-5 text-sm text-forest-600">Không ghi đè lịch sử đã phát hành</p>
             </div>
 
             <StatTile
               tone="dark"
-              value="80%"
-              title="Doanh thu về tay nông hộ"
-              note="Chia theo tỷ trọng giảm phát thải của từng thửa, không chia đều"
+              value="7"
+              title="Bước thiết kế dự án được quản lý thống nhất"
+              note="Từ ý tưởng, khả thi, lựa chọn chuẩn đến baseline, additionality và PDD"
               badge
             />
 
             <div className="flex flex-col justify-between rounded-3xl bg-white p-8">
               <p className="text-center text-sm font-semibold text-forest-700">
-                Phương pháp luận dựa trên
+                Đa Standard ngay từ thiết kế
               </p>
               <ul className="my-6 space-y-4 text-center">
                 <li className="text-lg font-bold leading-tight text-forest-900">
-                  IPCC 2019 Refinement
+                  Verra
                   <span className="mt-1 block text-sm font-normal text-forest-600">
-                    Vol.4, Chương 5.5 — canh tác lúa nước
+                    Methodology và bộ hệ số có phiên bản
                   </span>
                 </li>
                 <li className="text-lg font-bold leading-tight text-forest-900">
-                  Vo và cộng sự, 2020
+                  Gold Standard
                   <span className="mt-1 block text-sm font-normal text-forest-600">
-                    <em>Climate</em> 8(6):74 — đo tại 36 điểm ở Việt Nam
+                    Schema chỉ số và mẫu báo cáo riêng
                   </span>
                 </li>
               </ul>
               <p className="text-center text-xs text-forest-600">
-                Không dùng hệ số tự đặt
+                Mỗi dự án khóa đúng phiên bản áp dụng
               </p>
             </div>
 
             <PhotoTile
               src="/anh/ruong-ngap-nuoc.jpg"
-              eyebrow="Diện tích gieo trồng"
-              title="≈950 nghìn ha"
-              subtitle="Lúa mỗi năm ở Đồng bằng sông Hồng"
+              eyebrow="Monitoring"
+              title="Nhiều kỳ, một cấu trúc"
+              subtitle="Nhập tay hoặc import CSV theo schema methodology"
               align="bottom"
             />
 
             <StatTile
               tone="carbon"
-              value="49,6"
-              unit="triệu tấn CO₂e"
-              title="Phát thải mỗi năm từ canh tác lúa cả nước"
+              value="MRV"
+              title="Dữ liệu, phép tính và báo cáo nối liền nhau"
             />
 
             <StatTile
               tone="light"
-              value="48%"
-              title="Tỷ trọng của lúa trong phát thải nhà kính nông nghiệp"
+              value="100%"
+              title="Kết quả có nguồn dữ liệu và phiên bản hệ số đi kèm"
             />
 
             <PhotoTile
               src="/anh/ruong-bac-thang.jpg"
-              eyebrow="Chống khai trùng"
-              title="Ranh thửa đối chiếu bằng PostGIS trước khi lưu"
+              eyebrow="Cộng tác"
+              title="Owner, developer và viewer đúng quyền trong từng dự án"
               align="bottom"
             />
 
             <StatTile
               tone="light"
-              value="45%"
-              title="Mức cắt giảm methane khi áp dụng tưới ngập khô xen kẽ"
-              note="Theo hệ số điều chỉnh chế độ nước của IPCC"
+              value="1"
+              title="Nguồn sự thật cho toàn bộ hồ sơ dự án"
+              note="Không còn phiên bản rời rạc giữa bảng tính, email và thư mục dùng chung"
             />
           </div>
         </section>
@@ -261,11 +257,11 @@ export default async function Home() {
         <section id="cach-lam" className="bg-forest-800">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
-              Bốn bước, <span className="text-mint-400">từ bờ ruộng đến hợp đồng</span>
+              Bảy bước, <span className="text-mint-400">từ ý tưởng đến hồ sơ dự án</span>
             </h2>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
-              Nông dân Việt Nam đã biết cách tưới ngập khô xen kẽ và ngừng đốt rơm. Cái
-              thiếu là bằng chứng — thứ mà thị trường carbon đòi hỏi trước khi trả tiền.
+              Mỗi bước có đầu việc, người phụ trách, thời hạn, bình luận và tài liệu. Tiến
+              độ luôn hiện rõ để đội ngũ xử lý điểm nghẽn trước khi hồ sơ sang vòng kế tiếp.
             </p>
 
             <figure className="mt-14">
@@ -273,12 +269,12 @@ export default async function Home() {
                 <LazyVideo
                   src="/video/thua-ruong-flycam.mp4"
                   poster="/anh/poster-thua-ruong.jpg"
-                  label="Flycam toàn cảnh vùng ruộng bậc thang chia thành nhiều thửa nhỏ"
+                  label="Flycam cảnh quan minh hoạ cho vùng triển khai dự án carbon"
                   className="aspect-video w-full bg-forest-900 object-cover"
                 />
               </div>
               <figcaption className="mt-5 text-center text-mint-400">
-                Vùng canh tác bậc thang phía Bắc — mỗi bậc là một thửa cần ranh giới riêng
+                Mỗi địa bàn dự án đều cần một hồ sơ nhất quán từ thiết kế đến giám sát
               </figcaption>
             </figure>
 
@@ -308,22 +304,22 @@ export default async function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/70 to-forest-950/40" />
           <div className="relative mx-auto max-w-7xl px-6 py-32 sm:py-44">
             <span className="inline-block rounded-md bg-white/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-white backdrop-blur">
-              Công cụ cho hợp tác xã
+              Công cụ cho project developer
             </span>
             <h2 className="mt-8 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl">
-              Không tính được thì nói rõ còn thiếu gì
+              Dữ liệu chưa đạt thì chỉ rõ còn thiếu gì
             </h2>
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-mint-100">
-              Phần lớn phần mềm MRV cho ra một con số bất kể dữ liệu đầu vào ra sao. Chúng
-              tôi làm ngược lại: thiếu dữ liệu thì engine từ chối tính và nêu đích danh
-              trường còn trống, để cán bộ hợp tác xã biết phải bổ sung gì.
+              Engine kiểm tra dữ liệu theo schema của methodology trước khi tính. Trường
+              thiếu, sai đơn vị hay ngoài khoảng hợp lệ được chỉ ra ngay, thay vì âm thầm
+              đi vào báo cáo cuối kỳ.
             </p>
 
             <ul className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
               {[
-                "Vẽ ranh thửa trên ảnh vệ tinh",
-                "Cảnh báo khi hai hộ khai trùng ruộng",
-                "Khoá nhật ký sau khi phát hành tín chỉ",
+                "Form giám sát sinh từ metric schema",
+                "Import CSV có bước map và kiểm tra cột",
+                "Khoá snapshot trước khi sinh báo cáo",
                 "Lưu đủ tham số để tái lập phép tính",
               ].map((t) => (
                 <li key={t} className="flex gap-3 text-mint-100">
@@ -338,13 +334,13 @@ export default async function Home() {
                 href="/dang-ky"
                 className="rounded-full bg-mint-500 px-8 py-4 font-semibold text-forest-950 transition hover:bg-mint-400"
               >
-                Dùng thử công cụ
+                Tạo tài khoản
               </Link>
               <Link
-                href="/cho"
+                href="/du-an"
                 className="rounded-full border border-white/70 px-8 py-4 font-semibold text-white transition hover:bg-white hover:text-forest-900"
               >
-                Xem tín chỉ đang chào bán
+                Mở danh sách dự án
               </Link>
             </div>
           </div>
@@ -354,7 +350,7 @@ export default async function Home() {
         <section id="cau-chuyen" className="bg-forest-800">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Ba điều quyết định con số có đáng tin không
+              Ba lớp giữ hồ sơ luôn sẵn sàng để rà soát
             </h2>
 
             <div className="mt-14 grid gap-10 md:grid-cols-3">
@@ -387,18 +383,18 @@ export default async function Home() {
             <div className="mt-20 flex flex-col items-start justify-between gap-8 rounded-3xl bg-mint-100 p-10 sm:p-12 lg:flex-row lg:items-center">
               <div className="max-w-2xl">
                 <h3 className="text-3xl font-bold leading-tight tracking-tight text-forest-900">
-                  Hợp tác xã của bạn đã có vùng canh tác — phần còn lại là hồ sơ
+                  Đội ngũ của bạn có chuyên môn — nền tảng giữ phần vận hành liền mạch
                 </h3>
                 <p className="mt-4 leading-relaxed text-forest-700">
-                  Tạo tài khoản, khai vùng canh tác và bắt đầu ghi nhật ký mùa vụ. Nông hộ
-                  không cần tài khoản riêng, mọi dữ liệu do cán bộ hợp tác xã nhập.
+                  Tạo dự án, mời developer và bắt đầu từ Project Idea. Mọi quyết định,
+                  bằng chứng và dữ liệu giám sát đi cùng dự án suốt vòng đời.
                 </p>
               </div>
               <Link
                 href="/dang-ky"
                 className="shrink-0 rounded-full border-2 border-forest-800 px-8 py-4 font-semibold text-forest-900 transition hover:bg-forest-800 hover:text-white"
               >
-                Đăng ký hợp tác xã
+                Đăng ký đơn vị
               </Link>
             </div>
           </div>
@@ -415,38 +411,37 @@ export default async function Home() {
                 className="aspect-[9/16] w-full rounded-[2rem] bg-mint-100 object-cover"
               />
               <figcaption className="mt-4 text-center text-sm leading-relaxed text-forest-600">
-                Tín chỉ carbon là khoản thu thêm trên chính mảnh ruộng đang canh tác,
-                không bắt nông hộ đổi nghề.
+                Một dự án carbon tốt bắt đầu từ hiện trường và kết thúc bằng hồ sơ có thể
+                kiểm tra lại từng giả định.
               </figcaption>
             </figure>
 
             <div>
               <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-forest-900 sm:text-5xl">
-                Phần lớn doanh thu <span className="text-mint-600">về tay nông dân</span>
+                Một không gian làm việc <span className="text-mint-600">cho cả đội dự án</span>
               </h2>
               <p className="mt-8 text-lg leading-relaxed text-forest-700">
-                Mỗi đơn hàng thanh toán xong được tách tự động, và phần của nông hộ chia
-                theo đúng tỷ lệ đóng góp giảm phát thải của từng hộ trong lô — không chia
-                đều, không thương lượng lại.
+                Project Owner kiểm soát cấu hình và phê duyệt; Project Developer xử lý đầu
+                việc và dữ liệu MRV; Viewer theo dõi hồ sơ mà không làm thay đổi nguồn dữ liệu.
               </p>
 
               <div className="mt-10 flex h-16 overflow-hidden rounded-2xl">
                 <div className="flex w-[80%] items-center justify-center bg-forest-800 font-semibold text-white">
-                  Nông hộ 80%
+                  Thiết kế 80%
                 </div>
                 <div className="flex w-[12%] items-center justify-center bg-mint-500 text-sm font-semibold text-forest-950">
-                  12%
+                  MRV
                 </div>
                 <div className="flex w-[8%] items-center justify-center bg-mint-300 text-sm font-semibold text-forest-950">
-                  8%
+                  Báo cáo
                 </div>
               </div>
 
               <dl className="mt-8 grid gap-5 sm:grid-cols-3">
                 {[
-                  ["bg-forest-800", "Nông hộ", "Theo tỷ trọng giảm phát thải của từng thửa"],
-                  ["bg-mint-500", "Phí nền tảng", "Duy trì hệ thống và kết nối bên mua"],
-                  ["bg-mint-300", "Phí quản lý HTX", "Chi phí vận hành của đơn vị"],
+                  ["bg-forest-800", "Thiết kế dự án", "Bảy bước có task, tài liệu và phê duyệt"],
+                  ["bg-mint-500", "Giám sát MRV", "Kỳ theo dõi, dữ liệu và validation"],
+                  ["bg-mint-300", "Báo cáo", "Snapshot bất biến với vết tính đầy đủ"],
                 ].map(([color, name, desc]) => (
                   <div key={name}>
                     <span aria-hidden className={`block h-1.5 w-10 rounded-full ${color}`} />
@@ -464,44 +459,43 @@ export default async function Home() {
           <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 sm:py-32 lg:grid-cols-[1fr_1.15fr]">
             <div>
               <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
-                Hệ số đo tại <span className="text-mint-400">chính vùng canh tác</span>
+                Methodology đúng <span className="text-mint-400">phiên bản dự án</span>
               </h2>
               <p className="mt-8 leading-relaxed text-mint-100">
-                Mặc định toàn cầu của IPCC là 1,19 kg CH₄/ha/ngày. Số đo thực địa ở Đồng
-                bằng sông Hồng cho thấy cao hơn nhiều, và hai vụ trong năm chênh nhau rõ
-                rệt — Vụ Mùa phát thải nền gần gấp đôi Vụ Xuân.
+                Verra và Gold Standard tổ chức phương pháp luận, chỉ số giám sát và biểu
+                mẫu theo cách khác nhau. Nền tảng lưu quan hệ này thành dữ liệu có phiên bản,
+                không chỉ là tên tài liệu trong một ô nhập liệu.
               </p>
               <p className="mt-4 leading-relaxed text-mint-100/80">
-                Dùng mặc định toàn cầu ở miền Bắc nghĩa là tính thiếu cho nông hộ phần lớn
-                lượng giảm phát thải họ thực sự tạo ra. Hệ thống vì thế chọn hệ số theo
-                vùng và loại vụ, và lưu lại phiên bản bộ hệ số đã dùng cho từng phép tính.
+                Khi methodology được cập nhật, dự án và báo cáo cũ vẫn trỏ về đúng schema,
+                hệ số và template đã áp dụng. Đội ngũ có thể tái lập kết quả nhiều năm sau.
               </p>
             </div>
 
             <div className="rounded-3xl bg-forest-900 p-8 sm:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.15em] text-mint-400">
-                Hệ số phát thải nền · kg CH₄/ha/ngày
+                Chuỗi cấu hình được đóng dấu phiên bản
               </p>
               <div className="mt-10 space-y-8">
                 <FactorBar
-                  label="Mặc định IPCC toàn cầu"
-                  value={IPCC_GLOBAL_DEFAULT}
+                  label="Standard đã chọn"
+                  value={100}
                   max={MAX_FACTOR}
                 />
-                {ACTIVE_REGION_FACTORS.map((f) => (
+                {METHOD_VERSIONS.slice(1).map((f) => (
                   <FactorBar
-                    key={f.seasonType}
+                    key={f.key}
                     label={f.label}
                     value={f.value}
                     max={MAX_FACTOR}
                     highlight
-                    delta={`+${Math.round((f.value / IPCC_GLOBAL_DEFAULT - 1) * 100)}%`}
+                    delta="Đã khóa"
                   />
                 ))}
               </div>
               <p className="mt-10 text-sm leading-relaxed text-mint-100/60">
-                Nguồn: Vo và cộng sự, 2020, <em>Climate</em> 8(6):74 — đo theo đúng điều
-                kiện nền mà IPCC quy định.
+                Cùng phiên bản này được lưu trong dữ liệu giám sát, kết quả tính và báo cáo
+                để tạo thành một vết kiểm toán xuyên suốt.
               </p>
             </div>
           </div>
@@ -511,28 +505,28 @@ export default async function Home() {
         <section className="bg-forest-900">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Cùng biến ruộng lúa miền Bắc thành tài sản carbon
+              Vận hành dự án carbon chuyên nghiệp trên một nền tảng thống nhất
             </h2>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
-              Agri-Carbon Pass kết nối hợp tác xã với doanh nghiệp cần bù đắp phát thải,
-              trên nền một hồ sơ MRV truy xuất được tới từng thửa ruộng và từng nông hộ.
+              Agri-Carbon Pass giúp đơn vị tư vấn xây dựng hồ sơ Verra và Gold Standard
+              quản lý công việc, methodology, Monitoring và báo cáo MRV có vết tính.
             </p>
 
             <h3 className="mt-16 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Bạn đến từ phía nào?
+              Bắt đầu với không gian dự án của bạn
             </h3>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 href="/dang-ky"
                 className="rounded-full bg-mint-100 px-10 py-4 font-semibold text-forest-900 transition hover:bg-white"
               >
-                Hợp tác xã
+                Tạo tài khoản
               </Link>
               <Link
-                href="/cho"
+                href="/du-an"
                 className="rounded-full border border-white/70 px-10 py-4 font-semibold text-white transition hover:bg-white hover:text-forest-900"
               >
-                Doanh nghiệp
+                Xem dự án
               </Link>
             </div>
           </div>
@@ -545,22 +539,22 @@ export default async function Home() {
             <div>
               <div className="text-lg font-bold text-white">Agri-Carbon Pass</div>
               <p className="mt-3 max-w-sm leading-relaxed text-mint-100/70">
-                Nền tảng số hoá MRV và kết nối tín chỉ carbon cho nông hộ nhỏ.
+                Nền tảng quản lý vòng đời dự án carbon cho đội ngũ phát triển chuyên nghiệp.
               </p>
             </div>
             <div className="flex gap-16 text-sm">
               <div>
-                <div className="font-semibold text-white">Hợp tác xã</div>
+                <div className="font-semibold text-white">Nền tảng</div>
                 <ul className="mt-4 space-y-2.5 text-mint-100/70">
                   <li><Link href="/dang-ky" className="hover:text-mint-400">Đăng ký</Link></li>
                   <li><Link href="/dang-nhap" className="hover:text-mint-400">Đăng nhập</Link></li>
                 </ul>
               </div>
               <div>
-                <div className="font-semibold text-white">Doanh nghiệp</div>
+                <div className="font-semibold text-white">Dự án carbon</div>
                 <ul className="mt-4 space-y-2.5 text-mint-100/70">
-                  <li><Link href="/cho" className="hover:text-mint-400">Chợ tín chỉ</Link></li>
-                  <li><Link href="/don-hang" className="hover:text-mint-400">Đơn hàng</Link></li>
+                  <li><Link href="/du-an" className="hover:text-mint-400">Danh sách dự án</Link></li>
+                  <li><Link href="/dang-ky" className="hover:text-mint-400">Bắt đầu</Link></li>
                 </ul>
               </div>
             </div>
@@ -568,26 +562,24 @@ export default async function Home() {
 
           <div className="mt-14 border-t border-white/10 pt-8">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-mint-400">
-              Nguồn số liệu trích dẫn
+              Nguyên tắc sản phẩm
             </p>
             <ul className="mt-4 space-y-2 text-xs leading-relaxed text-mint-100/50">
               <li>
-                Diện tích gieo trồng lúa Đồng bằng sông Hồng: Tổng cục Thống kê, số liệu
-                sản xuất lúa 2022 và vụ đông xuân 2024.
+                Quản lý xuyên suốt bảy bước thiết kế dự án, từ Project Idea đến Project
+                Design Document.
               </li>
               <li>
-                Tỷ trọng phát thải của lúa trong nông nghiệp và lượng phát thải hằng năm:
-                Viện Khoa học Nông nghiệp Việt Nam.
+                Hỗ trợ nhiều Standard; methodology, metric schema, bộ hệ số và template
+                báo cáo đều có phiên bản.
               </li>
               <li>
-                Hệ số phát thải nền theo vùng và mùa vụ: Vo và cộng sự, 2020,{" "}
-                <em>Climate</em> 8(6):74 — đo tại 36 điểm trên cả nước theo điều kiện nền
-                của IPCC.
+                Dữ liệu Monitoring được kiểm tra trước khi lưu và được khóa thành snapshot
+                khi sinh báo cáo MRV.
               </li>
-              <li>Công thức và hệ số điều chỉnh: IPCC 2019 Refinement, Vol.4 Chương 5.</li>
+              <li>Mỗi báo cáo giữ đủ dữ liệu nguồn và vết tính để tái lập kết quả.</li>
               <li>
-                Ảnh và video trên trang là tư liệu minh hoạ, không phải ảnh chụp tại vùng
-                dự án.
+                Ảnh và video trên trang là tư liệu minh hoạ cho bối cảnh dự án carbon.
               </li>
             </ul>
           </div>

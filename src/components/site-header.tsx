@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const LEFT = [
-  { href: "#cach-lam", label: "Hợp tác xã" },
-  { href: "#doanh-thu", label: "Doanh nghiệp" },
-  { href: "#cong-cu", label: "Công cụ" },
+  { href: "#cach-lam", label: "Vòng đời dự án" },
+  { href: "#doanh-thu", label: "Không gian làm việc" },
+  { href: "#cong-cu", label: "MRV & báo cáo" },
 ];
 
 const RIGHT = [
-  { href: "#phuong-phap", label: "Phương pháp luận" },
-  { href: "#cau-chuyen", label: "Cách vận hành" },
+  { href: "#phuong-phap", label: "Methodology" },
+  { href: "#cau-chuyen", label: "Truy xuất" },
 ];
 
 type Props = {
@@ -51,7 +51,7 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
           href="#phuong-phap"
           className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-mint-100 transition hover:text-white"
         >
-          Hệ số phát thải đo tại đồng bằng sông Hồng, không dùng mặc định toàn cầu
+          Quản lý trọn vòng đời dự án carbon trên một nguồn dữ liệu có vết tính
           <span aria-hidden className="text-mint-400">→</span>
         </a>
       </div>
