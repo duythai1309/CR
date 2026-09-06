@@ -36,8 +36,8 @@ export function ChatSettingsForm({
   return (
     <div className="space-y-6">
       <Card
-        title="Nhà cung cấp và model"
-        description="Áp dụng cho toàn nền tảng. Đổi xong có hiệu lực ngay, không cần deploy lại."
+        title="Provider, model & credential"
+        description="Áp dụng cho toàn workspace. Thay đổi có hiệu lực ngay, không cần deploy lại."
       >
         <form action={formAction} className="space-y-4">
           <Field label="Nhà cung cấp">
@@ -125,6 +125,11 @@ export function ChatSettingsForm({
               }
             />
           </Field>
+
+          <Alert tone="warn" title="Credential handling">
+            Khoá mới được gửi tới server khi lưu và không bao giờ được hiển thị lại. Sau khi
+            đổi provider, hãy lưu trước rồi chạy kiểm tra kết nối bằng một request riêng.
+          </Alert>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" disabled={saving}>

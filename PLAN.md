@@ -1,5 +1,29 @@
 # PLAN.md — Chuyển đổi CR sang nền tảng quản lý dự án Carbon Credit
 
+## Trạng thái hiện tại — 06/09/2026
+
+Bảy bước thực hiện ở §6 đã hoàn thành ở mức triển khai và kiểm chứng được ghi lại trong
+`docs/design/`: audit; schema; auth/role; Module A; Module B; tích hợp; và e2e. Đây không
+phải tuyên bố production-ready: giao diện chưa được người dùng thật chạy thử đầu-cuối,
+đường sinh MRV report từng bị skip khi thiếu service role key, export theo template chính
+thức và import `.xlsx` chưa có, TUS/resumable upload chưa được kiểm.
+
+Sau khi PLAN này được viết, phạm vi sản phẩm đã đổi dứt điểm thành **chỉ nền tảng quản lý
+dự án Carbon cho đơn vị phát triển dự án chuyên nghiệp**. Module HTX, MRV lúa nước và mua
+bán tín chỉ được đưa vào kế hoạch gỡ; `profiles`/auth và nền tảng dự án phải được giữ.
+
+Hai giả định ban đầu dưới đây đã bị thay thế:
+
+- §0/§1 định giữ chatbot nguyên trạng. Thực tế chatbot phụ thuộc sâu vào dữ liệu HTX và
+  marketplace, nên đã phải gỡ toàn bộ công cụ nghiệp vụ cũ và tái công cụ hóa thành trợ lý
+  cho bảy bước lập kế hoạch dự án Carbon. Xem `docs/design/chat-carbon-only.md`.
+- §1 định giữ landing page nguyên trạng. Concept art, carousel, ảnh/video, hiệu ứng, bảng
+  màu và nhịp thị giác được giữ, nhưng toàn bộ nội dung chữ và CTA phải viết lại cho đúng
+  project developer; các lối vào legacy đã bị bỏ.
+
+Các mục §0–§7 bên dưới được giữ nguyên như **tài liệu quyết định ban đầu**. Khi có mâu
+thuẫn, phần trạng thái này và quyết định carbon-only mới hơn là nguồn hiện hành.
+
 ## 0. Bối cảnh
 
 CR hiện là một web app (React/Next/Vue). Yêu cầu: **giữ nguyên** chatbot và landing page hiện có,

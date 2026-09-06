@@ -40,9 +40,22 @@ export default async function AssistantSettingsPage() {
       <AppNav profile={profile} />
       <main className="mx-auto max-w-3xl px-6 py-8">
         <PageHeader
-          title="Cấu hình trợ lý"
-          description="Chọn nhà cung cấp model và khoá API cho trợ lý ảo của toàn nền tảng."
+          title="Assistant operations"
+          description="Quản trị provider, model và API credential cho trợ lý dự án Carbon của toàn workspace."
         />
+
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          {[
+            ["Access", "Platform admin only"],
+            ["Scope", "Toàn bộ workspace"],
+            ["Data boundary", "Project RLS enforced"],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-soil-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-soil-500">{label}</p>
+              <p className="mt-1 text-sm font-medium text-soil-900">{value}</p>
+            </div>
+          ))}
+        </div>
 
         {!resolved && (
           <div className="mb-6">
@@ -54,7 +67,7 @@ export default async function AssistantSettingsPage() {
         )}
 
         <div className="mb-6">
-          <Card title="Đang dùng gì">
+          <Card title="Runtime configuration" description="Giá trị đã resolve mà trợ lý sẽ dùng cho request kế tiếp.">
             {resolved ? (
               <dl className="grid gap-3 text-sm sm:grid-cols-3">
                 <div>

@@ -63,8 +63,8 @@ export async function saveChatSettings(
 }
 
 /**
- * Gọi thử một lượt thật. Không có bước này thì sai khoá chỉ lộ ra lúc cán bộ hợp
- * tác xã hỏi trợ lý và nhận về một lỗi khó hiểu.
+ * Gọi thử một lượt thật để lỗi credential/model được phát hiện ở màn hình vận hành,
+ * trước khi thành viên dự án gửi câu hỏi trong workspace.
  */
 export async function testChatConnection(): Promise<ActionResult> {
   const profile = await requireAdmin();
