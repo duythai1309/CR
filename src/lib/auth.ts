@@ -24,18 +24,6 @@ export async function getProfile(): Promise<Profile | null> {
   return data ?? null;
 }
 
-/**
- * Dùng trong trang của hợp tác xã. Người dùng chưa gắn với HTX nào sẽ được đưa
- * sang bước thiết lập thay vì thấy trang trống không rõ vì sao.
- */
-export async function requireCoopProfile(): Promise<Profile & { cooperative_id: string }> {
-  const profile = await getProfile();
-  if (!profile) redirect("/dang-nhap");
-  if (profile.role === "buyer") redirect("/cho");
-  if (!profile.cooperative_id) redirect("/thiet-lap");
-  return profile as Profile & { cooperative_id: string };
-}
-
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
   if (!profile) redirect("/dang-nhap");
@@ -49,21 +37,20 @@ export async function requireProfile(): Promise<Profile> {
  * này, và đổi chữ ký ở đây mà quên sửa ở đó là đúng rủi ro R9 trong
  * `docs/audit/audit-keep.md`. Chỉ đích trả về thay đổi, nên không caller nào phải sửa.
  *
- * Điều hướng theo TRẠNG THÁI chứ không theo vai trò toàn cục, vì `user_role` cố ý không
- * có giá trị riêng cho nền tảng dự án (xem `docs/design/auth-role-design.md` §1):
+ * Mọi tài khoản sản phẩm đi vào danh sách dự án. Quản trị viên là ngoại lệ duy
+ * nhất vì còn cần màn hình cấu hình trợ lý.
  *
- *   - `coop_staff` CÓ hợp tác xã  → cán bộ HTX thật, vào module cũ.
- *   - `coop_staff` KHÔNG có HTX   → tài khoản nền tảng dự án, vào /du-an.
+ * Đích của quản trị viên trỏ THẲNG tới `/quan-tri/tro-ly`: `/quan-tri` từng là bảng
+ * điều khiển hợp tác xã / lô tín chỉ / doanh thu và đã bị xoá cùng module cũ, nên trả
+ * về `/quan-tri` bây giờ là đưa quản trị viên vào một trang 404.
  *
- * Luồng của module cũ giữ nguyên từng đích một: buyer → /cho, platform_admin →
- * /quan-tri, coop_manager chưa có HTX → /thiet-lap.
+ * `cooperativeId` được giữ trong chữ ký để các caller cũ tiếp tục build trong
+ * lượt chuyển tiếp; giá trị này không còn quyết định đích điều hướng.
  */
 export function homePathFor(role: UserRole, cooperativeId: string | null): string {
-  if (role === "platform_admin") return "/quan-tri";
-  if (role === "buyer") return "/cho";
-  if (cooperativeId) return "/htx";
-  // Người tạo hợp tác xã đi tiếp vào luồng cũ; còn lại là tài khoản nền tảng dự án.
-  return role === "coop_manager" ? "/thiet-lap" : "/du-an";
+  void cooperativeId;
+  if (role === "platform_admin") return "/quan-tri/tro-ly";
+  return "/du-an";
 }
 
 /* ------------------------------------------------------------------ nền tảng dự án */

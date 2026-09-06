@@ -13,8 +13,8 @@ import {
   summariseObservations,
 } from "@/components/monitoring/summary";
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
-import { getProject } from "../../../data";
-import { getPeriod, getPeriodData, listImports } from "../data";
+import { getMethodology, getProject, getStandard } from "../../../data";
+import { getPeriod, getPeriodData, listImports, listProjectActors } from "../data";
 import { ImportPanel, LockPeriodForm, ObservationForm, ObservationRow } from "./forms";
 
 export const metadata: Metadata = { title: "Kỳ giám sát" };
@@ -30,7 +30,14 @@ export default async function PeriodPage({
   const [project, period] = await Promise.all([getProject(id), getPeriod(id, periodId)]);
   if (!project || !period) notFound();
 
-  const [records, imports] = await Promise.all([getPeriodData(periodId), listImports(periodId)]);
+  const [records, imports, standard, methodology, actors] = await Promise.all([
+    getPeriodData(periodId),
+    listImports(periodId),
+    getStandard(period.standard_id),
+    getMethodology(period.methodology_id),
+    listProjectActors(id),
+  ]);
+  const actorName = new Map(actors.map((actor) => [actor.userId, actor.fullName]));
 
   const abilities = abilitiesFor(role, project.deleted_at !== null);
   const open = period.status === "open";
@@ -93,6 +100,34 @@ export default async function PeriodPage({
         <Alert tone="ok" title="Kỳ đã khoá">
           Dữ liệu đã đóng băng. Báo cáo sinh từ kỳ này sẽ không đổi số kể cả khi dữ liệu ở
           nơi khác thay đổi. Cần hiệu chỉnh thì tạo kỳ bản mới.
+        </Alert>
+      )}
+
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Định danh kỳ giám sát">
+        {[
+          ["Standard", standard?.code ?? "—"],
+          ["Methodology", `${methodology?.code ?? "—"} · ${methodology?.version ?? "—"}`],
+          ["Schema hash", period.schema_hash],
+          ["Data revision", String(period.data_revision)],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-soil-200 bg-white p-4 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-soil-500">{label}</p>
+            <p className="mt-1 break-all font-mono text-xs text-soil-900">{value}</p>
+          </div>
+        ))}
+      </section>
+
+      <p className="text-xs text-soil-500">
+        Tạo bởi <strong>{actorName.get(period.created_by) ?? "Thành viên dự án"}</strong>{" "}
+        (<span className="font-mono">{period.created_by}</span>) lúc{" "}
+        {new Date(period.created_at).toLocaleString("vi-VN")}
+        {period.locked_at ? ` · khoá lúc ${new Date(period.locked_at).toLocaleString("vi-VN")}` : ""}.
+      </p>
+
+      {methodology?.is_sample && (
+        <Alert tone="warn" title="Methodology SAMPLE — chưa thẩm định">
+          Đây là dữ liệu mẫu do nhóm sản phẩm tự soạn, không phải methodology đã được Verra
+          hoặc Gold Standard công nhận. Kết quả chỉ dùng để thử workflow và ước tính nội bộ.
         </Alert>
       )}
 
@@ -203,6 +238,11 @@ export default async function PeriodPage({
               unit: f.unit,
               required: f.required,
               options: f.options,
+              group: f.group,
+              constraints: f.constraints,
+              requiredIf: f.required_if,
+              aliases: f.aliases,
+              acceptedUnits: f.accepted_units,
             }))}
             startDate={period.start_date}
             endDate={period.end_date}
@@ -230,6 +270,7 @@ export default async function PeriodPage({
                 "Ngày",
                 ...form.observation.map((f) => f.label),
                 "Nguồn",
+                "Actor / phiên bản",
                 ...(canEdit ? [""] : []),
               ]}
             >
@@ -246,6 +287,10 @@ export default async function PeriodPage({
                   })}
                   fromImport={r.import_id !== null}
                   sourceRow={r.source_row}
+                  enteredBy={r.entered_by}
+                  enteredByName={actorName.get(r.entered_by) ?? "Thành viên dự án"}
+                  recordRevision={r.revision}
+                  updatedAt={r.updated_at}
                   expectedRevision={period.data_revision}
                   canEdit={canEdit}
                 />
@@ -257,11 +302,15 @@ export default async function PeriodPage({
 
       {imports.length > 0 && (
         <Card title="Lần nhập tệp" description="Mỗi lần nhập được ghi lại để truy nguồn số liệu.">
-          <Table head={["Thời điểm", "Mã lần nhập"]}>
+          <Table head={["Thời điểm", "Người nhập", "Mã lần nhập"]}>
             {imports.map((i) => (
               <tr key={i.id} className="border-b border-soil-100 last:border-0">
                 <td className="px-3 py-2 text-soil-700">
                   {new Date(i.created_at).toLocaleString("vi-VN")}
+                </td>
+                <td className="px-3 py-2 text-xs text-soil-600">
+                  <span className="block font-medium text-soil-800">{actorName.get(i.imported_by) ?? "Thành viên dự án"}</span>
+                  <span className="block font-mono">{i.imported_by}</span>
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-soil-600">{i.id}</td>
               </tr>
@@ -284,6 +333,7 @@ export default async function PeriodPage({
           />
         </Card>
       )}
+
     </div>
   );
 }

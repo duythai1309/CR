@@ -4,36 +4,46 @@ import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
 
 /**
  * Bước 3 chốt: KHÔNG thêm giá trị vào enum `user_role`; vai trò dự án là trục thứ hai
- * (`docs/design/auth-role-design.md` §1). Hệ quả là `coop_staff` mang hai nghĩa, phân
- * biệt bằng `cooperative_id` — chính chỗ dễ hồi quy nhất, nên khoá lại bằng test.
+ * (`docs/design/auth-role-design.md` §1).
+ *
+ * Sau khi gỡ module HTX và mua bán tín chỉ, `cooperative_id` không còn phân nhánh điều
+ * hướng nữa: mọi vai trò đều về `/du-an`, trừ quản trị nền tảng. Bộ test này khoá đúng
+ * hợp đồng đó — trước đây nó khoá ba đích cũ `/htx`, `/cho`, `/thiet-lap`, những đường
+ * dẫn giờ không còn tồn tại.
  */
 
 describe("homePathFor — điều hướng theo trạng thái", () => {
-  it("người dùng nền tảng dự án (coop_staff chưa có HTX) vào /du-an", () => {
+  it("người dùng nền tảng dự án vào /du-an", () => {
     expect(homePathFor("coop_staff", null)).toBe("/du-an");
   });
 
-  it("cán bộ HTX thật (coop_staff đã gia nhập bằng mã) vẫn vào /htx", () => {
-    expect(homePathFor("coop_staff", "coop-uuid")).toBe("/htx");
+  it("cooperative_id không còn phân nhánh điều hướng", () => {
+    expect(homePathFor("coop_staff", "coop-uuid")).toBe("/du-an");
+    expect(homePathFor("coop_manager", "coop-uuid")).toBe("/du-an");
+    expect(homePathFor("buyer", "coop-uuid")).toBe("/du-an");
   });
 
-  it("giữ nguyên ba đích của module cũ", () => {
-    expect(homePathFor("coop_manager", null)).toBe("/thiet-lap");
-    expect(homePathFor("coop_manager", "coop-uuid")).toBe("/htx");
-    expect(homePathFor("buyer", null)).toBe("/cho");
-    expect(homePathFor("platform_admin", null)).toBe("/quan-tri");
+  it("mọi vai trò không phải quản trị đều về /du-an", () => {
+    expect(homePathFor("coop_manager", null)).toBe("/du-an");
+    expect(homePathFor("buyer", null)).toBe("/du-an");
   });
 
-  it("vai trò quản trị thắng cả khi đã gắn hợp tác xã", () => {
-    expect(homePathFor("platform_admin", "coop-uuid")).toBe("/quan-tri");
-    expect(homePathFor("buyer", "coop-uuid")).toBe("/cho");
+  /**
+   * Sau khi gỡ module cũ, `/quan-tri` không còn trang nào: dashboard HTX đã bị xoá và
+   * thứ duy nhất còn sống dưới nhánh đó là màn hình cấu hình trợ lý. Nên đích của quản
+   * trị nền tảng là `/quan-tri/tro-ly` chứ không phải `/quan-tri` — trỏ vào `/quan-tri`
+   * là dẫn người dùng tới 404.
+   */
+  it("quản trị nền tảng về thẳng màn hình cấu hình trợ lý", () => {
+    expect(homePathFor("platform_admin", null)).toBe("/quan-tri/tro-ly");
+    expect(homePathFor("platform_admin", "coop-uuid")).toBe("/quan-tri/tro-ly");
   });
 
   it("không đích nào rơi vào chuỗi rỗng hay undefined", () => {
     const roles = ["platform_admin", "coop_manager", "coop_staff", "buyer"] as const;
     for (const role of roles)
       for (const coop of [null, "coop-uuid"])
-        expect(homePathFor(role, coop)).toMatch(/^\/[a-z-]+$/);
+        expect(homePathFor(role, coop)).toMatch(/^(\/[a-z-]+)+$/);
   });
 });
 

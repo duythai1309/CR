@@ -13,9 +13,9 @@ export default function SignupPage() {
         src: "/anh/dong-lua-hoang-hon.jpg",
         alt: "Cánh đồng lúa chín trải rộng dưới trời hoàng hôn",
       }}
-      caption="Một vụ lúa được ghi lại đầy đủ là một hồ sơ giảm phát thải kiểm chứng được."
-      title="Tạo tài khoản"
-      subtitle="Nông hộ không cần tài khoản riêng — cán bộ hợp tác xã nhập liệu hộ."
+      caption="Khởi tạo workspace để tổ chức Project concept, Methodology, baseline, evidence và monitoring data theo một chuỗi phiên bản rõ ràng."
+      title="Tạo workspace dự án"
+      subtitle="Tài khoản dành cho đơn vị tư vấn hoặc doanh nghiệp phát triển dự án Carbon chuyên nghiệp."
       footer={
         <>
           Đã có tài khoản?{" "}

@@ -299,3 +299,51 @@ export async function attachFileToTask(_prev: Result, formData: FormData): Promi
   revalidate(projectId);
   return null;
 }
+
+/**
+ * Thao tác hàng loạt trên nhiều công việc — đổi trạng thái hoặc chuyển bước một lượt.
+ *
+ * Một câu UPDATE với `in (...)` chứ không phải vòng lặp gọi lại action: một lần kiểm tư
+ * cách thành viên, một lần đi mạng, và RLS đánh giá `app_project_can_write` đúng một lần
+ * cho cả mẻ. Việc nằm ngoài dự án bị `eq('project_id')` loại, không cần lọc ở đây.
+ *
+ * `position` cố ý KHÔNG đổi khi chuyển bước: card giữ nguyên thứ tự tương đối trong cột
+ * mới, và `groupTasksByStage` đã có `title` làm khoá phụ khi hai card trùng `position`.
+ */
+export async function bulkUpdateTasks(
+  projectId: string,
+  taskIds: string[],
+  patch: { status?: string; stageId?: string },
+): Promise<Result> {
+  const configError = formConfigError();
+  if (configError) return configError;
+
+  if (!projectId) return "Thiếu thông tin dự án.";
+  const ids = [...new Set(taskIds.filter((id) => typeof id === "string" && id.length > 0))];
+  if (ids.length === 0) return "Chưa chọn công việc nào.";
+  if (ids.length > 200) return "Mỗi lượt chỉ đổi được tối đa 200 công việc.";
+
+  const update: { status?: string; stage_id?: string } = {};
+  if (patch.status !== undefined) {
+    if (!isTaskStatus(patch.status)) return "Trạng thái không hợp lệ.";
+    update.status = patch.status;
+  }
+  if (patch.stageId !== undefined) {
+    if (!patch.stageId) return "Bước không hợp lệ.";
+    update.stage_id = patch.stageId;
+  }
+  if (Object.keys(update).length === 0) return "Chưa chọn thay đổi nào.";
+
+  await requireProjectMember(projectId, "developer");
+
+  const db = await projectClient();
+  const { error } = await db
+    .from("project_tasks")
+    .update(update)
+    .eq("project_id", projectId)
+    .in("id", ids);
+
+  if (error) return taskError(error.message);
+  revalidate(projectId);
+  return null;
+}

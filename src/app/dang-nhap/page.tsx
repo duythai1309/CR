@@ -18,9 +18,9 @@ export default async function LoginPage({
         src: "/anh/ruong-bac-thang-ha-giang.jpg",
         alt: "Ruộng bậc thang Hà Giang mùa lúa chín",
       }}
-      caption="Mỗi bậc ruộng là một thửa riêng, có ranh giới riêng trong hồ sơ tín chỉ."
-      title="Đăng nhập"
-      subtitle="Dành cho cán bộ hợp tác xã và doanh nghiệp mua tín chỉ."
+      caption="Quản lý cấu trúc hồ sơ, bằng chứng và phiên bản dữ liệu trong một không gian làm việc có thể truy xuất."
+      title="Đăng nhập workspace"
+      subtitle="Dành cho đội ngũ phát triển dự án Carbon theo Verra, Gold Standard và các Standard tương tự."
       footer={
         <>
           Chưa có tài khoản?{" "}

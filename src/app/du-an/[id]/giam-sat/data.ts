@@ -68,6 +68,23 @@ export async function listReports(projectId: string): Promise<MrvReport[]> {
   return (data ?? []) as MrvReport[];
 }
 
+export interface ProjectActor {
+  userId: string;
+  fullName: string;
+  role: string;
+}
+
+/** Danh tính hẹp trong phạm vi dự án qua RPC 0015; không mở quyền đọc bảng profiles. */
+export async function listProjectActors(projectId: string): Promise<ProjectActor[]> {
+  const db = await projectClient();
+  const { data } = await db.rpc("project_member_directory", { p_project_id: projectId });
+  return ((data ?? []) as Array<{ user_id: string; full_name: string; role: string }>).map((row) => ({
+    userId: row.user_id,
+    fullName: row.full_name,
+    role: row.role,
+  }));
+}
+
 export async function getReport(
   projectId: string,
   reportId: string,

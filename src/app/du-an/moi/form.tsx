@@ -10,12 +10,28 @@ export function NewProjectForm() {
 
   return (
     <form action={action} className="space-y-4">
-      <Field label="Tên dự án" hint="Tối đa 200 ký tự.">
-        <Input name="name" required maxLength={200} autoFocus placeholder="Ví dụ: Rừng ngập mặn Cà Mau" />
+      <Field
+        label="Tên dự án"
+        hint="Tối đa 200 ký tự. Tên này đi vào mọi màn hình và mọi báo cáo — đặt như bạn sẽ trích dẫn nó trong hồ sơ."
+      >
+        <Input
+          name="name"
+          required
+          maxLength={200}
+          autoFocus
+          placeholder="Ví dụ: Mangrove restoration — Cà Mau"
+        />
       </Field>
 
-      <Field label="Mô tả sơ bộ" hint="Bước 1 của quy trình. Sửa lại sau lúc nào cũng được.">
-        <Textarea name="description" rows={4} placeholder="Ý tưởng dự án, địa bàn, quy mô dự kiến…" />
+      <Field
+        label="Project concept"
+        hint="Nội dung của stage 1: phạm vi, địa điểm, ranh giới dự án và quy mô dự kiến. Sửa lại lúc nào cũng được."
+      >
+        <Textarea
+          name="description"
+          rows={5}
+          placeholder="Loại hình dự án, ranh giới địa lý, quy mô dự kiến, crediting period nhắm tới…"
+        />
       </Field>
 
       {error && <Alert tone="error">{error}</Alert>}

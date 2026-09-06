@@ -300,11 +300,9 @@ export function ApproveStageForm({
         </Button>
       </form>
       {blocked && (
-        <ul className="mt-1.5 max-w-xs text-xs text-soil-600">
-          {blockers.map((b) => (
-            <li key={b}>{b}</li>
-          ))}
-        </ul>
+        <p className="mt-1.5 max-w-xs text-xs text-soil-600">
+          Còn {blockers.length} điều kiện chưa đạt — xem danh sách bên trái.
+        </p>
       )}
       {result && !result.ok && (
         <p className="mt-1.5 max-w-xs text-xs text-red-700">{result.message}</p>

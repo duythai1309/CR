@@ -34,7 +34,18 @@ export function ProjectTopBar({
             href="/du-an"
             className="rounded-lg px-3 py-1.5 text-sm text-soil-600 transition hover:bg-soil-100 hover:text-soil-900"
           >
-            Dự án của tôi
+            Danh mục dự án
+          </Link>
+          {/*
+            Đường vào trang trợ lý toàn màn hình. Trước đây nó nằm ở `/htx/tro-ly` và
+            được `AppNav` của module hợp tác xã dẫn tới; module đó đã bị gỡ nên link
+            phải chuyển về đây, nếu không trang chỉ vào được bằng cách gõ tay URL.
+          */}
+          <Link
+            href="/du-an/tro-ly"
+            className="rounded-lg px-3 py-1.5 text-sm text-soil-600 transition hover:bg-soil-100 hover:text-soil-900"
+          >
+            Trợ lý
           </Link>
           {projectName && (
             <span className="px-2 text-sm text-soil-400" aria-hidden>

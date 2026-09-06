@@ -82,6 +82,20 @@ export function CsvImport({
       <input type="hidden" name="decimal_separator" value={decimalSeparator} />
       <input type="hidden" name="thousands_separator" value={thousandsSeparator} />
 
+      <ol className="grid gap-2 text-xs sm:grid-cols-3" aria-label="Quy trình nhập CSV">
+        {[
+          ["1", "Map cột", "Theo mã field hoặc alias trong schema"],
+          ["2", "Preview & validate", "Kiểm từng dòng, cột, unit và bounds"],
+          ["3", "Ghi nguyên tử", "Hoặc toàn bộ tệp, hoặc không dòng nào"],
+        ].map(([step, title, detail]) => (
+          <li key={step} className="rounded-lg border border-soil-200 bg-soil-50 p-3">
+            <span className="font-mono text-soil-500">{step}</span>{" "}
+            <strong className="text-soil-900">{title}</strong>
+            <span className="mt-1 block text-soil-600">{detail}</span>
+          </li>
+        ))}
+      </ol>
+
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Dấu ngăn cột">
           <Select
@@ -144,8 +158,12 @@ export function CsvImport({
         <>
           {preview.mapping.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-soil-900">Cột đã khớp</h4>
-              <ul className="mt-1 flex flex-wrap gap-1.5">
+              <h4 className="text-sm font-semibold text-soil-900">1. Mapping cột CSV → metric schema</h4>
+              <p className="mt-1 text-xs text-soil-600">
+                Hệ thống khớp chính xác theo mã field hoặc alias đã khai trong Methodology;
+                không suy đoán theo tên gần giống.
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
                 {preview.mapping.map((m) => (
                   <li
                     key={`${m.column}-${m.field}`}
@@ -159,9 +177,34 @@ export function CsvImport({
             </div>
           )}
 
+          {preview.records.length > 0 && (
+            <div>
+              <h4 className="mb-2 text-sm font-semibold text-soil-900">
+                2. Preview dữ liệu · {preview.records.length} dòng
+              </h4>
+              <div className="max-h-64 overflow-auto">
+                <Table head={["Dòng", "record_key", "observed_on", "Giá trị đã chuẩn hoá"]}>
+                  {preview.records.slice(0, 5).map((record) => (
+                    <tr key={`${record.source_row}-${record.record_key}`} className="border-b border-soil-100 last:border-0">
+                      <td className="px-3 py-1.5 text-soil-600">{record.source_row}</td>
+                      <td className="px-3 py-1.5 font-mono text-xs text-soil-900">{record.record_key || "—"}</td>
+                      <td className="px-3 py-1.5 text-soil-700">{record.observed_on || "—"}</td>
+                      <td className="px-3 py-1.5 font-mono text-xs text-soil-600">
+                        {Object.entries(record.metric_values).map(([key, value]) => `${key}=${String(value)}`).join(" · ") || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </Table>
+              </div>
+              {preview.records.length > 5 && (
+                <p className="mt-1 text-xs text-soil-500">Hiện 5 dòng đầu; toàn bộ tệp vẫn được validate.</p>
+              )}
+            </div>
+          )}
+
           {errors.length > 0 ? (
             <div>
-              <Alert tone="error" title={`Còn ${errors.length} lỗi — chưa nhập được dòng nào`}>
+              <Alert tone="error" title={`2. Còn ${errors.length} lỗi — chưa nhập được dòng nào`}>
                 Sửa hết lỗi trong tệp rồi chọn lại. Hệ thống không nhập một phần.
               </Alert>
               <div className="mt-3 max-h-72 overflow-y-auto">
@@ -183,8 +226,8 @@ export function CsvImport({
               </div>
             </div>
           ) : (
-            <Alert tone="ok" title={`Sẵn sàng nhập ${preview.records.length} dòng`}>
-              {fileName} — không có lỗi nào. Bấm xác nhận để ghi vào kỳ.
+            <Alert tone="ok" title={`3. Sẵn sàng ghi ${preview.records.length} dòng`}>
+              {fileName} — mapping và validation đều đạt. Bấm xác nhận để ghi nguyên tử vào kỳ.
             </Alert>
           )}
         </>

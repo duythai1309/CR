@@ -1,6 +1,8 @@
-import { projectClient } from "@/lib/auth";
+import { projectClient, requireProfile } from "@/lib/auth";
+import { taskFlags, toTaskCard, type PortfolioRow } from "@/components/project/rules";
 import type {
   Methodology,
+  MonitoringPeriod,
   Project,
   ProjectDocument,
   ProjectFile,
@@ -27,69 +29,135 @@ import type {
  * import từ Server Component và server action, không từ tệp nào có `"use client"`.
  */
 
-export interface ProjectSummary {
-  id: string;
-  name: string;
-  description: string;
-  role: ProjectRole;
-  deletedAt: string | null;
-  standardCode: string | null;
-  methodologyCode: string | null;
-  methodologyVersion: string | null;
-  methodologySchemaHash: string | null;
-  approvedStages: number;
-  updatedAt: string;
-}
-
-/** Danh sách dự án của người đang đăng nhập. RLS đã lọc theo membership. */
-export async function listMyProjects(): Promise<ProjectSummary[]> {
+/**
+ * Danh mục dự án của người đang đăng nhập — một dòng cho mỗi dự án, đủ để trả lời bốn
+ * câu mà người làm nhiều dự án hỏi trước tiên: đang ở bước mấy, Standard/Methodology
+ * nào, kỳ giám sát gần nhất ra sao, cái gì đang chặn.
+ *
+ * Sáu truy vấn, không truy vấn nào theo từng dự án: PostgREST trả về mọi dòng mà RLS cho
+ * phép, và việc gom nhóm làm ở đây. Với vài chục dự án thì rẻ hơn hẳn N+1.
+ *
+ * `assignee_id` được đối chiếu với `profile.id` để đếm "việc của tôi"; vai trò của tôi
+ * cũng lọc theo `user_id` chứ không lấy dòng `project_members` đầu tiên — policy cho
+ * thấy cả đồng đội, nên "dòng đầu tiên" hoàn toàn có thể là vai trò của người khác.
+ */
+export async function listPortfolio(): Promise<PortfolioRow[]> {
+  const profile = await requireProfile();
   const db = await projectClient();
+  const now = new Date();
 
-  const [{ data: projects }, { data: members }, { data: stages }] = await Promise.all([
-    db.from("projects").select("*").order("updated_at", { ascending: false }),
-    db.from("project_members").select("project_id, user_id, role"),
-    db.from("project_stages").select("project_id, approved_at"),
-  ]);
+  const [{ data: projects }, { data: members }, { data: stages }, { data: tasks }, { data: periods }] =
+    await Promise.all([
+      db.from("projects").select("*").order("updated_at", { ascending: false }),
+      db.from("project_members").select("project_id, user_id, role").eq("user_id", profile.id),
+      db.from("project_stages").select("project_id, id, ordinal, title, approved_at").order("ordinal"),
+      db
+        .from("project_tasks")
+        .select("id, project_id, stage_id, title, status, assignee_id, due_at, position"),
+      db
+        .from("monitoring_periods")
+        .select("project_id, name, start_date, end_date, version, status")
+        .order("start_date", { ascending: false })
+        .order("version", { ascending: false }),
+    ]);
 
   const rows = (projects ?? []) as Project[];
   if (rows.length === 0) return [];
 
-  const { data: standards } = await db.from("standards").select("id, code");
-  const { data: methodologies } = await db.from("methodologies").select("id, code, version, schema_hash");
+  const [{ data: standards }, { data: methodologies }] = await Promise.all([
+    db.from("standards").select("id, code"),
+    db.from("methodologies").select("id, code, version, schema_hash, is_sample"),
+  ]);
 
-  const standardCode = new Map(
-    ((standards ?? []) as Pick<Standard, "id" | "code">[]).map((s) => [s.id, s.code]),
+  const standardById = new Map(
+    ((standards ?? []) as Pick<Standard, "id" | "code">[]).map((s) => [s.id, s]),
   );
-  const methodologyCode = new Map(
-    ((methodologies ?? []) as Pick<Methodology, "id" | "code" | "version" | "schema_hash">[]).map((m) => [
-      m.id,
-      `${m.code} · ${m.version}`,
-    ]),
+  const methodologyById = new Map(
+    (
+      (methodologies ?? []) as Array<
+        Pick<Methodology, "id" | "code" | "version" | "schema_hash" | "is_sample">
+      >
+    ).map((m) => [m.id, m]),
   );
 
-  // Chỉ có membership của CHÍNH mình đi qua được policy đọc ở đây khi lọc theo user,
-  // nhưng policy cho phép thấy cả đồng đội — nên lọc lại theo dự án là đủ và rẻ.
   const myRole = new Map<string, ProjectRole>();
-  for (const m of (members ?? []) as Array<{ project_id: string; user_id: string; role: ProjectRole }>)
-    if (!myRole.has(m.project_id)) myRole.set(m.project_id, m.role);
+  for (const m of (members ?? []) as Array<{ project_id: string; role: ProjectRole }>)
+    myRole.set(m.project_id, m.role);
 
-  const approved = new Map<string, number>();
-  for (const s of (stages ?? []) as Array<{ project_id: string; approved_at: string | null }>)
-    if (s.approved_at) approved.set(s.project_id, (approved.get(s.project_id) ?? 0) + 1);
+  const stagesByProject = new Map<string, Array<Pick<ProjectStage, "ordinal" | "title" | "approved_at">>>();
+  for (const s of (stages ?? []) as Array<
+    Pick<ProjectStage, "project_id" | "ordinal" | "title" | "approved_at">
+  >) {
+    const list = stagesByProject.get(s.project_id) ?? [];
+    list.push(s);
+    stagesByProject.set(s.project_id, list);
+  }
 
-  return rows.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    role: myRole.get(p.id) ?? "viewer",
-    deletedAt: p.deleted_at,
-    standardCode: p.standard_id ? (standardCode.get(p.standard_id) ?? null) : null,
-    methodologyCode: p.methodology_id ? (methodologyCode.get(p.methodology_id) ?? null) : null,
-    methodologyVersion: p.methodology_id ? ((methodologies ?? []) as Array<Pick<Methodology, "id" | "version">>).find((m) => m.id === p.methodology_id)?.version ?? null : null,
-    methodologySchemaHash: p.methodology_id ? ((methodologies ?? []) as Array<Pick<Methodology, "id" | "schema_hash">>).find((m) => m.id === p.methodology_id)?.schema_hash ?? null : null,
-    approvedStages: approved.get(p.id) ?? 0,
-    updatedAt: p.updated_at,
-  }));
+  const counts = new Map<string, { open: number; blocked: number; overdue: number; mine: number }>();
+  for (const row of (tasks ?? []) as ProjectTask[]) {
+    const card = toTaskCard(row);
+    const flags = taskFlags(card, now);
+    const entry = counts.get(row.project_id) ?? { open: 0, blocked: 0, overdue: 0, mine: 0 };
+    if (card.status !== "done") {
+      entry.open += 1;
+      if (card.assigneeId === profile.id) entry.mine += 1;
+    }
+    if (flags.blocked) entry.blocked += 1;
+    if (flags.overdue) entry.overdue += 1;
+    counts.set(row.project_id, entry);
+  }
+
+  // Kỳ đã sắp xếp giảm dần theo `start_date` rồi `version`, nên dòng đầu tiên gặp được
+  // của mỗi dự án là kỳ mới nhất. "Mới nhất" KHÔNG phải "đang có hiệu lực": schema chưa
+  // có `supersedes`, xem `docs/design/pages-module-a.md`.
+  const latestPeriod = new Map<string, PortfolioRow["latestPeriod"]>();
+  for (const p of (periods ?? []) as Array<
+    Pick<MonitoringPeriod, "project_id" | "name" | "start_date" | "end_date" | "version" | "status">
+  >)
+    if (!latestPeriod.has(p.project_id))
+      latestPeriod.set(p.project_id, {
+        name: p.name,
+        startDate: p.start_date,
+        endDate: p.end_date,
+        version: p.version,
+        status: p.status,
+      });
+
+  return rows.map((p) => {
+    const projectStages = (stagesByProject.get(p.id) ?? []).slice().sort((a, b) => a.ordinal - b.ordinal);
+    const approved = projectStages.filter((s) => s.approved_at);
+    const pending = projectStages.find((s) => !s.approved_at) ?? null;
+    const methodology = p.methodology_id ? methodologyById.get(p.methodology_id) : undefined;
+    const count = counts.get(p.id) ?? { open: 0, blocked: 0, overdue: 0, mine: 0 };
+
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      role: myRole.get(p.id) ?? "viewer",
+      deletedAt: p.deleted_at,
+      standardCode: p.standard_id ? (standardById.get(p.standard_id)?.code ?? null) : null,
+      methodologyCode: methodology ? methodology.code : null,
+      methodologyVersion: methodology?.version ?? null,
+      methodologySchemaHash: methodology?.schema_hash ?? null,
+      methodologyIsSample: methodology?.is_sample ?? false,
+      standardLockedAt: p.standard_locked_at,
+      methodologyLockedAt: p.methodology_locked_at,
+      approvedStages: approved.length,
+      currentStage: pending ? { ordinal: pending.ordinal, title: pending.title } : null,
+      lastApprovedAt:
+        approved.reduce<string | null>(
+          (max, s) => (s.approved_at && (!max || s.approved_at > max) ? s.approved_at : max),
+          null,
+        ) ?? null,
+      openTasks: count.open,
+      blockedTasks: count.blocked,
+      overdueTasks: count.overdue,
+      myOpenTasks: count.mine,
+      latestPeriod: latestPeriod.get(p.id) ?? null,
+      updatedAt: p.updated_at,
+    } satisfies PortfolioRow;
+  });
 }
 
 export async function getStandard(id: string | null): Promise<Standard | null> {
@@ -151,6 +219,10 @@ export interface AttachmentView {
   fileId: string;
   originalName: string;
   sizeBytes: number;
+  /** SHA-256 do server tính lúc tải lên — thứ cần trích dẫn khi đối chiếu bằng chứng. */
+  checksum: string;
+  mimeType: string;
+  uploadedBy: string | null;
   createdAt: string;
 }
 
@@ -158,12 +230,17 @@ export async function getTaskAttachments(taskId: string): Promise<AttachmentView
   const db = await projectClient();
   const { data } = await db
     .from("task_attachments")
-    .select("id, file_id, created_at, project_files ( original_name, size_bytes )")
+    .select(
+      "id, file_id, created_at, project_files ( original_name, size_bytes, checksum, mime_type, uploaded_by )",
+    )
     .eq("task_id", taskId)
     .order("created_at");
 
   return ((data ?? []) as Array<Record<string, unknown>>).flatMap((row): AttachmentView[] => {
-    const file = row.project_files as Pick<ProjectFile, "original_name" | "size_bytes"> | null;
+    const file = row.project_files as Pick<
+      ProjectFile,
+      "original_name" | "size_bytes" | "checksum" | "mime_type" | "uploaded_by"
+    > | null;
     if (typeof row.id !== "string" || typeof row.file_id !== "string") return [];
     return [
       {
@@ -171,6 +248,9 @@ export async function getTaskAttachments(taskId: string): Promise<AttachmentView
         fileId: row.file_id,
         originalName: file?.original_name ?? "(không rõ tên tệp)",
         sizeBytes: file?.size_bytes ?? 0,
+        checksum: file?.checksum ?? "",
+        mimeType: file?.mime_type ?? "",
+        uploadedBy: file?.uploaded_by ?? null,
         createdAt: typeof row.created_at === "string" ? row.created_at : "",
       },
     ];

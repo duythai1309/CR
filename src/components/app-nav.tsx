@@ -3,34 +3,14 @@ import { signOut } from "@/app/auth-actions";
 import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
 import type { Profile, ProjectRole } from "@/lib/auth";
 
-/** Lối vào nền tảng dự án, thêm vào cả ba menu cũ để người dùng hiện tại tìm thấy nó. */
 const PROJECT_LINK = { href: "/du-an", label: "Dự án carbon" };
 
-const COOP_LINKS = [
-  { href: "/htx", label: "Tổng quan" },
-  { href: "/htx/nong-ho", label: "Nông hộ" },
-  { href: "/htx/thua-ruong", label: "Thửa ruộng" },
-  { href: "/htx/mua-vu", label: "Mùa vụ" },
-  { href: "/htx/lo-tin-chi", label: "Lô tín chỉ" },
-  { href: "/htx/he-so", label: "Hệ số phát thải" },
-  { href: "/htx/tro-ly", label: "Trợ lý" },
-  PROJECT_LINK,
-];
-
-const BUYER_LINKS = [
-  { href: "/cho", label: "Chợ tín chỉ" },
-  { href: "/don-hang", label: "Đơn hàng của tôi" },
-  PROJECT_LINK,
-];
-
 const ADMIN_LINKS = [
-  { href: "/quan-tri", label: "Tổng quan nền tảng" },
-  { href: "/quan-tri/tro-ly", label: "Cấu hình trợ lý" },
   PROJECT_LINK,
+  { href: "/quan-tri/tro-ly", label: "Cấu hình trợ lý" },
 ];
 
-/** Nền tảng dự án. Chỉ dùng khi đang ở trong ngữ cảnh một dự án. */
-const PROJECT_LINKS = [{ href: "/du-an", label: "Dự án của tôi" }];
+const PROJECT_LINKS = [PROJECT_LINK];
 
 /**
  * Dòng chú thích dưới tên người dùng.
@@ -41,9 +21,9 @@ const PROJECT_LINKS = [{ href: "/du-an", label: "Dự án của tôi" }];
  * thì không nói gì về hợp tác xã cả.
  */
 function accountLabel(profile: Profile, coopName?: string): string {
-  if (coopName) return coopName;
   if (profile.company_name) return profile.company_name;
-  if (profile.role === "coop_staff" && !profile.cooperative_id) return "Tài khoản nền tảng";
+  if (profile.role !== "platform_admin") return "Tài khoản nền tảng";
+  if (coopName) return coopName;
   return ROLE_LABEL[profile.role];
 }
 
@@ -57,13 +37,7 @@ export function AppNav({
   /** Có mặt khi đang mở một dự án: thanh điều hướng chuyển sang nền tảng dự án. */
   projectRole?: ProjectRole;
 }) {
-  const links = projectRole
-    ? PROJECT_LINKS
-    : profile.role === "buyer"
-      ? BUYER_LINKS
-      : profile.role === "platform_admin"
-        ? ADMIN_LINKS
-        : COOP_LINKS;
+  const links = profile.role === "platform_admin" && !projectRole ? ADMIN_LINKS : PROJECT_LINKS;
 
   return (
     <header className="border-b border-soil-200 bg-white">

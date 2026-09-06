@@ -142,34 +142,179 @@ export interface ProjectGate {
 }
 
 /**
+ * Danh sách kiểm điều kiện duyệt — CHÉP TỪ `approve_project_stage`, không thêm gì.
+ *
+ * RPC ở `0013_project_platform.sql:696-714` kiểm đúng bảy điều và không kiểm gì khác.
+ * Đặc biệt: tài liệu đã tải lên và công việc đã xong KHÔNG phải điều kiện duyệt. Màn
+ * hình bảy bước hiện nguyên danh sách này để người dùng biết chính xác cái gì chặn mình,
+ * thay vì bấm rồi nhận một thông báo lỗi thô từ Postgres.
+ */
+export type CheckState = "pass" | "fail" | "unknown" | "not_applicable";
+
+export interface ApprovalCheck {
+  id: string;
+  /** Điều kiện, diễn đạt đúng như RPC cưỡng chế. */
+  requirement: string;
+  /** Dòng trong `0013_project_platform.sql` để đối chiếu. */
+  source: string;
+  state: CheckState;
+  /** Cụ thể đang thiếu gì, hoặc vì sao không áp dụng. */
+  detail?: string;
+}
+
+export interface ApprovalContext extends ProjectGate {
+  /** `app_project_role(project) = 'owner'` — vế thứ hai của dòng 701. */
+  isOwner?: boolean;
+  /** `deleted_at is null` — vế `for update` ở dòng 700. */
+  projectDeleted?: boolean;
+  /**
+   * Lỗi baseline, đã lọc về đúng những phép kiểm mà `project_validate_values` thực hiện.
+   * Dùng `baselineGateErrors()` để lọc. Bỏ trống nghĩa là chưa kiểm được → `unknown`.
+   */
+  baselineErrors?: Array<{ field: string; message: string }>;
+}
+
+export function approvalChecklist(
+  stages: StageView[],
+  ordinal: number,
+  ctx: ApprovalContext,
+): ApprovalCheck[] {
+  const pendingBefore = stages
+    .filter((s) => s.ordinal < ordinal && !s.approvedAt)
+    .map((s) => s.ordinal);
+
+  const checks: ApprovalCheck[] = [
+    {
+      id: "project_active",
+      requirement: "Dự án còn hoạt động (`deleted_at is null`)",
+      source: "0013:700",
+      state: ctx.projectDeleted ? "fail" : "pass",
+      detail: ctx.projectDeleted ? "Dự án đã bị xoá mềm; mọi đường ghi đóng lại." : undefined,
+    },
+    {
+      id: "owner",
+      requirement: "Người bấm duyệt là chủ dự án (`app_project_role = 'owner'`)",
+      source: "0013:701",
+      state: ctx.isOwner === undefined ? "unknown" : ctx.isOwner ? "pass" : "fail",
+      detail:
+        ctx.isOwner === false ? "Vai trò của bạn trong dự án này không phải chủ dự án." : undefined,
+    },
+    {
+      id: "ordinal_range",
+      requirement: "Bước nằm trong 1..7",
+      source: "0013:702",
+      state: ordinal >= 1 && ordinal <= 7 ? "pass" : "fail",
+    },
+    {
+      id: "sequence",
+      requirement: "Mọi bước trước đã được duyệt",
+      source: "0013:703-705",
+      state: pendingBefore.length === 0 ? "pass" : "fail",
+      detail:
+        pendingBefore.length > 0 ? `Bước ${pendingBefore.join(", ")} chưa duyệt.` : undefined,
+    },
+    {
+      id: "standard_locked",
+      requirement: "Standard đã khoá",
+      source: "0013:706",
+      state: ordinal < 3 ? "not_applicable" : ctx.standardLockedAt ? "pass" : "fail",
+      detail:
+        ordinal < 3
+          ? "Chỉ áp dụng từ bước 3 trở đi."
+          : ctx.standardLockedAt
+            ? undefined
+            : ctx.standardId
+              ? "Đã chọn Standard nhưng chưa bấm khoá ở bước 3."
+              : "Chưa chọn Standard ở bước 3.",
+    },
+    {
+      id: "methodology_locked",
+      requirement: "Methodology đã khoá",
+      source: "0013:707",
+      state: ordinal < 4 ? "not_applicable" : ctx.methodologyLockedAt ? "pass" : "fail",
+      detail:
+        ordinal < 4
+          ? "Chỉ áp dụng từ bước 4 trở đi."
+          : ctx.methodologyLockedAt
+            ? undefined
+            : ctx.methodologyId
+              ? "Đã chọn Methodology nhưng chưa bấm khoá ở bước 4."
+              : "Chưa chọn Methodology ở bước 4.",
+    },
+    {
+      id: "baseline_valid",
+      requirement: "Baseline qua được `project_validate_values(metric_schema, baseline, 'baseline')`",
+      source: "0013:708-710",
+      state:
+        ordinal < 5
+          ? "not_applicable"
+          : ctx.baselineErrors === undefined
+            ? "unknown"
+            : ctx.baselineErrors.length === 0
+              ? "pass"
+              : "fail",
+      detail:
+        ordinal < 5
+          ? "Chỉ áp dụng từ bước 5 trở đi."
+          : ctx.baselineErrors === undefined
+            ? "Chưa đọc được metric schema để kiểm trước."
+            : ctx.baselineErrors.length > 0
+              ? ctx.baselineErrors.map((e) => `${e.field || "(giá trị)"}: ${e.message}`).join("; ")
+              : undefined,
+    },
+  ];
+
+  return checks;
+}
+
+/**
+ * Lọc lỗi của `validateValues` (TypeScript) về đúng tập mà SQL thực sự cưỡng chế.
+ *
+ * `project_validate_values` chỉ đọc `required`; nó KHÔNG cưỡng chế `required_if`, còn bộ
+ * kiểm TypeScript thì có. Giữ nguyên sẽ khoá nút Duyệt ở những trường hợp cơ sở dữ liệu
+ * chấp nhận — sai theo hướng nguy hiểm hơn, vì người dùng không có cách nào đi tiếp.
+ */
+export function baselineGateErrors(
+  errors: Array<{ field: string; message: string }>,
+  fields: Array<{ id: string; required: boolean }>,
+): Array<{ field: string; message: string }> {
+  const conditional = new Set(fields.filter((f) => !f.required).map((f) => f.id));
+  return errors.filter((e) => !(e.message === "Required field" && conditional.has(e.field)));
+}
+
+/**
  * Vì sao chưa duyệt được một bước — trả về danh sách rỗng nghĩa là duyệt được.
  *
- * Chép đúng thứ tự kiểm tra của RPC `approve_project_stage`
- * (`0013_project_platform.sql:696-715`): bước trước phải xong, bước ≥3 cần Standard đã
- * khoá, bước ≥4 cần Methodology đã khoá. Mục đích là NÓI TRƯỚC lý do thay vì để người
- * dùng bấm rồi nhận một thông báo lỗi từ cơ sở dữ liệu.
+ * Dạng rút gọn của `approvalChecklist` cho những chỗ chỉ cần một dòng lý do. Chỉ tính
+ * những điều kiện đã kết luận được (`fail`); `unknown` không bị coi là rào.
  */
 export function approvalBlockers(
   stages: StageView[],
   ordinal: number,
-  project: ProjectGate,
+  project: ApprovalContext,
 ): string[] {
-  const blockers: string[] = [];
   const target = stages.find((s) => s.ordinal === ordinal);
-
   if (!target) return ["Không tìm thấy bước này."];
   if (target.approvedAt) return ["Bước này đã được duyệt."];
 
-  const pending = stages
-    .filter((s) => s.ordinal < ordinal && !s.approvedAt)
-    .map((s) => s.ordinal);
-  if (pending.length > 0) blockers.push(`Cần duyệt bước ${pending.join(", ")} trước.`);
+  const failed = approvalChecklist(stages, ordinal, project).filter((c) => c.state === "fail");
+  const label: Record<string, string> = {
+    project_active: "Dự án đã bị xoá.",
+    owner: "Chỉ chủ dự án được duyệt bước.",
+    ordinal_range: "Bước không hợp lệ.",
+    standard_locked: "Chưa khoá Standard (bước 3).",
+    methodology_locked: "Chưa khoá Methodology (bước 4).",
+    baseline_valid: "Baseline chưa hợp lệ theo metric schema (bước 5).",
+  };
 
-  if (ordinal >= 3 && !project.standardLockedAt) blockers.push("Chưa khoá Standard (bước 3).");
-  if (ordinal >= 4 && !project.methodologyLockedAt)
-    blockers.push("Chưa khoá Methodology (bước 4).");
-
-  return blockers;
+  return failed.map((c) =>
+    c.id === "sequence"
+      ? `Cần duyệt bước ${stages
+          .filter((s) => s.ordinal < ordinal && !s.approvedAt)
+          .map((s) => s.ordinal)
+          .join(", ")} trước.`
+      : (label[c.id] ?? c.requirement),
+  );
 }
 
 /** Bước kế tiếp cần duyệt, hoặc null nếu đã duyệt hết. */
@@ -309,4 +454,334 @@ export function toTaskCard(row: {
     dueAt: row.due_at,
     position: row.position,
   };
+}
+
+/* ------------------------------------------------------------ cờ và bộ lọc công việc */
+
+/**
+ * Cờ suy ra từ một card, không đọc gì ngoài chính card và mốc thời gian truyền vào.
+ *
+ * `now` là tham số chứ không phải `Date.now()` bên trong: hàm phải thuần để kiểm thử
+ * được, và server/client phải tính ra cùng một kết quả cho cùng một lần render.
+ */
+export interface TaskFlags {
+  overdue: boolean;
+  overdueDays: number;
+  dueSoon: boolean;
+  unassigned: boolean;
+  blocked: boolean;
+  /** Việc đang cản tiến độ: `blocked`, hoặc quá hạn mà chưa xong. */
+  blocking: boolean;
+}
+
+const DAY = 86_400_000;
+
+/** Nửa đêm UTC của ngày chứa `at` — `due_at` được lưu đúng ở mốc đó (xem `parseDueDate`). */
+function startOfUtcDay(at: Date): number {
+  return Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+}
+
+export function taskFlags(task: TaskCard, now: Date): TaskFlags {
+  const today = startOfUtcDay(now);
+  const due = task.dueAt ? startOfUtcDay(new Date(task.dueAt)) : null;
+  const open = task.status !== "done";
+  const overdue = open && due !== null && due < today;
+  const blocked = task.status === "blocked";
+  return {
+    overdue,
+    overdueDays: overdue && due !== null ? Math.round((today - due) / DAY) : 0,
+    dueSoon: open && !overdue && due !== null && due - today <= 7 * DAY,
+    unassigned: task.assigneeId === null,
+    blocked,
+    blocking: blocked || overdue,
+  };
+}
+
+export interface TaskFilter {
+  text: string;
+  /** `""` là không lọc. */
+  assigneeId: string;
+  status: string;
+  stageId: string;
+  onlyMine: boolean;
+  onlyBlocking: boolean;
+}
+
+export const EMPTY_TASK_FILTER: TaskFilter = {
+  text: "",
+  assigneeId: "",
+  status: "",
+  stageId: "",
+  onlyMine: false,
+  onlyBlocking: false,
+};
+
+export function isFilterActive(filter: TaskFilter): boolean {
+  return (
+    filter.text.trim() !== "" ||
+    filter.assigneeId !== "" ||
+    filter.status !== "" ||
+    filter.stageId !== "" ||
+    filter.onlyMine ||
+    filter.onlyBlocking
+  );
+}
+
+/** Khớp không phân biệt hoa thường và dấu tổ hợp, để gõ "bang" tìm được "bằng". */
+function normalize(value: string): string {
+  return value
+    .toLocaleLowerCase("vi")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .replace(/\u0111/gu, "d");
+}
+
+export function filterTasks(
+  tasks: TaskCard[],
+  filter: TaskFilter,
+  context: { viewerId: string | null; now: Date },
+): TaskCard[] {
+  const needle = normalize(filter.text.trim());
+  return tasks.filter((task) => {
+    if (needle && !normalize(task.title).includes(needle)) return false;
+    if (filter.assigneeId && task.assigneeId !== filter.assigneeId) return false;
+    if (filter.status && task.status !== filter.status) return false;
+    if (filter.stageId && task.stageId !== filter.stageId) return false;
+    if (filter.onlyMine && task.assigneeId !== context.viewerId) return false;
+    if (filter.onlyBlocking && !taskFlags(task, context.now).blocking) return false;
+    return true;
+  });
+}
+
+export const TASK_SORTS = ["stage", "status", "due", "assignee", "title"] as const;
+export type TaskSort = (typeof TASK_SORTS)[number];
+
+export const TASK_SORT_LABEL: Record<TaskSort, string> = {
+  stage: "Bước",
+  status: "Trạng thái",
+  due: "Hạn",
+  assignee: "Người nhận",
+  title: "Tên việc",
+};
+
+const STATUS_ORDER: Record<TaskStatus, number> = {
+  blocked: 0,
+  in_progress: 1,
+  todo: 2,
+  done: 3,
+};
+
+/**
+ * Sắp xếp cho chế độ danh sách. Việc không có hạn luôn xuống cuối khi sắp theo hạn —
+ * "chưa đặt hạn" không phải "hạn xa vô cùng", nhưng đẩy nó lên đầu thì che mất việc trễ.
+ */
+export function sortTasks(
+  tasks: TaskCard[],
+  sort: TaskSort,
+  context: { stageOrdinal: (stageId: string) => number; memberName: (id: string | null) => string },
+): TaskCard[] {
+  const byTitle = (a: TaskCard, b: TaskCard) => a.title.localeCompare(b.title, "vi");
+  const copy = [...tasks];
+  switch (sort) {
+    case "status":
+      return copy.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || byTitle(a, b));
+    case "due":
+      return copy.sort((a, b) => {
+        if (a.dueAt === b.dueAt) return byTitle(a, b);
+        if (!a.dueAt) return 1;
+        if (!b.dueAt) return -1;
+        return a.dueAt.localeCompare(b.dueAt);
+      });
+    case "assignee":
+      return copy.sort(
+        (a, b) =>
+          context.memberName(a.assigneeId).localeCompare(context.memberName(b.assigneeId), "vi") ||
+          byTitle(a, b),
+      );
+    case "title":
+      return copy.sort(byTitle);
+    default:
+      return copy.sort(
+        (a, b) =>
+          context.stageOrdinal(a.stageId) - context.stageOrdinal(b.stageId) ||
+          a.position - b.position ||
+          byTitle(a, b),
+      );
+  }
+}
+
+/* ------------------------------------------------------------ danh mục nhiều dự án */
+
+/**
+ * Một dòng của `/du-an`. Mọi trường ở đây đọc được từ những bảng `0013` đã có; không có
+ * trường nào cần schema mới.
+ */
+export interface PortfolioRow {
+  id: string;
+  name: string;
+  description: string;
+  role: ProjectRole;
+  deletedAt: string | null;
+  standardCode: string | null;
+  methodologyCode: string | null;
+  methodologyVersion: string | null;
+  methodologySchemaHash: string | null;
+  methodologyIsSample: boolean;
+  standardLockedAt: string | null;
+  methodologyLockedAt: string | null;
+  approvedStages: number;
+  /** Bước đang chờ duyệt — `ordinal` nhỏ nhất chưa có `approved_at`. */
+  currentStage: { ordinal: number; title: string } | null;
+  lastApprovedAt: string | null;
+  openTasks: number;
+  blockedTasks: number;
+  overdueTasks: number;
+  myOpenTasks: number;
+  latestPeriod: {
+    name: string;
+    startDate: string;
+    endDate: string;
+    version: number;
+    status: "open" | "locked";
+  } | null;
+  updatedAt: string;
+}
+
+/**
+ * Vì sao dự án này cần chú ý — gộp ba nguồn CÓ THẬT trong cơ sở dữ liệu: việc `blocked`,
+ * việc quá hạn, và điều kiện khoá còn thiếu của bước đang chờ. Không suy đoán thêm.
+ */
+export function projectAttention(row: PortfolioRow): string[] {
+  if (row.deletedAt) return [];
+  const reasons: string[] = [];
+  if (row.blockedTasks > 0) reasons.push(`${row.blockedTasks} việc đang vướng`);
+  if (row.overdueTasks > 0) reasons.push(`${row.overdueTasks} việc quá hạn`);
+
+  const ordinal = row.currentStage?.ordinal ?? null;
+  if (ordinal !== null) {
+    if (ordinal >= 3 && !row.standardLockedAt) reasons.push("Chưa khoá Standard");
+    else if (ordinal >= 4 && !row.methodologyLockedAt) reasons.push("Chưa khoá Methodology");
+  }
+  return reasons;
+}
+
+export const PORTFOLIO_SORTS = ["updated", "name", "progress", "attention", "period"] as const;
+export type PortfolioSort = (typeof PORTFOLIO_SORTS)[number];
+
+export const PORTFOLIO_SORT_LABEL: Record<PortfolioSort, string> = {
+  updated: "Cập nhật gần nhất",
+  name: "Tên dự án",
+  progress: "Tiến độ bảy bước",
+  attention: "Việc đang chặn",
+  period: "Kỳ giám sát gần nhất",
+};
+
+export interface PortfolioFilter {
+  text: string;
+  /** `""` là không lọc. */
+  role: string;
+  standard: string;
+  /** `""` | `"planning"` (chưa duyệt hết) | `"designed"` (đủ 7/7). */
+  progress: string;
+  onlyAttention: boolean;
+  includeDeleted: boolean;
+}
+
+export const EMPTY_PORTFOLIO_FILTER: PortfolioFilter = {
+  text: "",
+  role: "",
+  standard: "",
+  progress: "",
+  onlyAttention: false,
+  includeDeleted: false,
+};
+
+export function filterProjects(rows: PortfolioRow[], filter: PortfolioFilter): PortfolioRow[] {
+  const needle = normalize(filter.text.trim());
+  return rows.filter((row) => {
+    if (!filter.includeDeleted && row.deletedAt) return false;
+    if (needle && !normalize(`${row.name} ${row.description}`).includes(needle)) return false;
+    if (filter.role && row.role !== filter.role) return false;
+    if (filter.standard && (row.standardCode ?? "") !== filter.standard) return false;
+    if (filter.progress === "planning" && row.approvedStages >= 7) return false;
+    if (filter.progress === "designed" && row.approvedStages < 7) return false;
+    if (filter.onlyAttention && projectAttention(row).length === 0) return false;
+    return true;
+  });
+}
+
+export function sortProjects(rows: PortfolioRow[], sort: PortfolioSort): PortfolioRow[] {
+  const copy = [...rows];
+  const byName = (a: PortfolioRow, b: PortfolioRow) => a.name.localeCompare(b.name, "vi");
+  switch (sort) {
+    case "name":
+      return copy.sort(byName);
+    case "progress":
+      return copy.sort((a, b) => b.approvedStages - a.approvedStages || byName(a, b));
+    case "attention":
+      return copy.sort(
+        (a, b) =>
+          b.blockedTasks + b.overdueTasks - (a.blockedTasks + a.overdueTasks) ||
+          projectAttention(b).length - projectAttention(a).length ||
+          byName(a, b),
+      );
+    case "period":
+      return copy.sort((a, b) => {
+        const av = a.latestPeriod?.endDate ?? "";
+        const bv = b.latestPeriod?.endDate ?? "";
+        if (av === bv) return byName(a, b);
+        if (!av) return 1;
+        if (!bv) return -1;
+        return bv.localeCompare(av);
+      });
+    default:
+      return copy.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || byName(a, b));
+  }
+}
+
+/* ------------------------------------------------------------ khối lượng theo người */
+
+export interface MemberWorkload {
+  todo: number;
+  inProgress: number;
+  blocked: number;
+  overdue: number;
+  done: number;
+  open: number;
+}
+
+/** Việc đang giữ của từng `assignee_id`, kể cả người đã rời dự án (khoá là `assignee_id`). */
+export function workloadByAssignee(
+  tasks: TaskCard[],
+  now: Date,
+): Map<string, MemberWorkload> {
+  const result = new Map<string, MemberWorkload>();
+  for (const task of tasks) {
+    if (!task.assigneeId) continue;
+    const entry =
+      result.get(task.assigneeId) ??
+      { todo: 0, inProgress: 0, blocked: 0, overdue: 0, done: 0, open: 0 };
+    if (task.status === "todo") entry.todo += 1;
+    if (task.status === "in_progress") entry.inProgress += 1;
+    if (task.status === "blocked") entry.blocked += 1;
+    if (task.status === "done") entry.done += 1;
+    else entry.open += 1;
+    if (taskFlags(task, now).overdue) entry.overdue += 1;
+    result.set(task.assigneeId, entry);
+  }
+  return result;
+}
+
+/**
+ * Việc còn giao cho người KHÔNG còn trong `project_members`.
+ *
+ * Xảy ra được vì `set_project_member` gỡ thành viên mà không đụng `project_tasks`; khoá
+ * ngoại ba cột chỉ chặn lúc GHI. Những việc này không ai nhận, nên phải nói ra.
+ */
+export function orphanedAssignments(
+  tasks: TaskCard[],
+  memberIds: Iterable<string>,
+): TaskCard[] {
+  const known = new Set(memberIds);
+  return tasks.filter((t) => t.assigneeId !== null && !known.has(t.assigneeId));
 }

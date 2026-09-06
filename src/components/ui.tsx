@@ -181,3 +181,102 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ primitive bổ sung
+ *
+ * Chỉ THÊM, không đổi thứ đã có ở trên: `giam-sat`/`bao-cao` đang dùng `Card`, `Alert`,
+ * `Badge`, `Table`, `Empty` nguyên trạng.
+ */
+
+/** Phím tắt hiển thị trong hướng dẫn — dùng thẻ `<kbd>` thật để trình đọc màn hình hiểu. */
+export function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="rounded border border-soil-300 bg-white px-1.5 py-0.5 font-mono text-[11px] font-medium text-soil-700 shadow-[0_1px_0_var(--color-soil-300)]">
+      {children}
+    </kbd>
+  );
+}
+
+/** Thanh tiến độ bảy bước. `label` bắt buộc vì thanh này mang thông tin, không trang trí. */
+export function ProgressBar({
+  value,
+  max,
+  label,
+  tone = "leaf",
+}: {
+  value: number;
+  max: number;
+  label: string;
+  tone?: "leaf" | "carbon" | "soil";
+}) {
+  const tones = { leaf: "bg-leaf-600", carbon: "bg-carbon-500", soil: "bg-soil-400" };
+  const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  return (
+    <div
+      className="h-1.5 overflow-hidden rounded-full bg-soil-200"
+      role="img"
+      aria-label={label}
+      title={label}
+    >
+      <div className={`h-full rounded-full ${tones[tone]}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+/**
+ * Cặp nhãn/giá trị dùng lại ở đầu trang dự án, thẻ công việc và trang thành viên.
+ * `mono` cho những giá trị phải chép nguyên văn khi trích dẫn: hash, version, mã bước.
+ */
+export function Meta({
+  label,
+  children,
+  mono = false,
+}: {
+  label: ReactNode;
+  children: ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] uppercase tracking-wide text-soil-500">{label}</dt>
+      <dd className={`mt-0.5 truncate text-sm text-soil-900 ${mono ? "font-mono text-xs" : ""}`}>
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * Trạng thái một điều kiện: đạt / chưa đạt / không áp dụng / chưa kết luận được.
+ *
+ * Bốn trạng thái chứ không phải hai, vì "chưa đọc được dữ liệu để kiểm" khác hẳn "kiểm
+ * rồi và không đạt" — gộp hai thứ đó lại là nói dối người dùng.
+ */
+export function CheckMark({ state }: { state: "pass" | "fail" | "unknown" | "not_applicable" }) {
+  const marks = {
+    pass: { glyph: "✓", className: "bg-leaf-100 text-leaf-800", label: "Đạt" },
+    fail: { glyph: "✕", className: "bg-red-100 text-red-700", label: "Chưa đạt" },
+    unknown: { glyph: "?", className: "bg-carbon-100 text-carbon-700", label: "Chưa kết luận được" },
+    not_applicable: { glyph: "–", className: "bg-soil-100 text-soil-500", label: "Không áp dụng" },
+  } as const;
+  const mark = marks[state];
+  return (
+    <span
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${mark.className}`}
+      title={mark.label}
+    >
+      <span aria-hidden>{mark.glyph}</span>
+      <span className="sr-only">{mark.label}</span>
+    </span>
+  );
+}
+
+/** Khung thanh công cụ lọc/sắp xếp — giữ cùng một hình dạng ở mọi màn hình có bộ lọc. */
+export function Toolbar({ children, note }: { children: ReactNode; note?: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-soil-200 bg-white px-3 py-2.5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      {note && <div className="mt-2 border-t border-soil-100 pt-2 text-xs text-soil-600">{note}</div>}
+    </div>
+  );
+}

@@ -6,7 +6,8 @@ import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import { Alert, Badge } from "@/components/ui";
 import { getMethodology, getProject, getStages, getStandard } from "../data";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
-import { approvedCount, toStageView } from "@/components/project/rules";
+import { ProjectTabs } from "@/components/project/project-tabs";
+import { approvalBlockers, approvedCount, toStageView } from "@/components/project/rules";
 
 /**
  * Khung của MỘT dự án: kiểm tư cách thành viên một lần, rồi dựng tiêu đề và các tab.
@@ -14,9 +15,14 @@ import { approvedCount, toStageView } from "@/components/project/rules";
  * Mọi trang con — kể cả `giam-sat` và `bao-cao` của Module B — nằm bên trong layout này,
  * nên chúng được thừa hưởng lớp chặn ở đây mà không phải tự kiểm lại. Lớp chặn thật vẫn
  * là RLS: layout hỏng thì Postgres vẫn trả rỗng.
+ *
+ * Dòng "việc cần làm tiếp theo" ở đầu trang trả lời câu mà người quay lại một dự án sau
+ * hai tuần hỏi trước tiên. Nó chỉ nêu rào ĐẦU TIÊN; danh sách đủ bảy điều kiện nằm ở tab
+ * Bảy bước, nơi có chỗ để trích dẫn nguồn cho từng điều.
  */
 const TABS = [
   { slug: "", label: "Bảng công việc" },
+  { slug: "thiet-lap", label: "Khởi tạo" },
   { slug: "quy-trinh", label: "Bảy bước" },
   { slug: "thanh-vien", label: "Thành viên" },
   { slug: "giam-sat", label: "Giám sát" },
@@ -40,35 +46,60 @@ export default async function ProjectLayout({
     getMethodology(project.methodology_id),
   ]);
 
+  const views = stages.map(toStageView);
+  const approved = approvedCount(views);
+  const current = views.find((s) => !s.approvedAt) ?? null;
+  const firstBlocker = current
+    ? (approvalBlockers(views, current.ordinal, {
+        standardId: project.standard_id,
+        methodologyId: project.methodology_id,
+        standardLockedAt: project.standard_locked_at,
+        methodologyLockedAt: project.methodology_locked_at,
+        isOwner: role === "owner",
+        projectDeleted: project.deleted_at !== null,
+      })[0] ?? null)
+    : null;
+
   return (
     <>
-      <div className="mb-6">
+      <div className="mb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold text-soil-900">{project.name}</h1>
               <Badge tone={role === "owner" ? "leaf" : "soil"}>{PROJECT_ROLE_LABEL[role]}</Badge>
+              {methodology?.is_sample && <Badge tone="carbon">Methodology MẪU</Badge>}
             </div>
             {project.description && (
               <p className="mt-1 max-w-3xl text-sm text-soil-600">{project.description}</p>
             )}
           </div>
-          <p className="text-sm text-soil-600">
-            <span className="font-semibold text-soil-900">{approvedCount(stages.map(toStageView))}/7</span> bước đã duyệt
-          </p>
+
+          <div className="text-right text-sm">
+            <p className="text-soil-600">
+              <span className="font-semibold tabular-nums text-soil-900">{approved}/7</span> bước đã
+              duyệt
+            </p>
+            {current ? (
+              <p className="mt-0.5 text-xs text-soil-600">
+                Tiếp theo:{" "}
+                <Link
+                  href={`/du-an/${id}/quy-trinh#buoc-${current.ordinal}`}
+                  className="font-medium text-leaf-800 hover:underline"
+                >
+                  {current.ordinal}. {current.title}
+                </Link>
+                {firstBlocker && (
+                  <span className="mt-0.5 block text-carbon-700">{firstBlocker}</span>
+                )}
+              </p>
+            ) : (
+              <p className="mt-0.5 text-xs text-leaf-800">Bảy bước thiết kế đã duyệt xong.</p>
+            )}
+          </div>
         </div>
 
-        <nav className="mt-5 flex flex-wrap gap-1 border-b border-soil-200">
-          {TABS.map((tab) => (
-            <Link
-              key={tab.slug}
-              href={`/du-an/${id}${tab.slug ? `/${tab.slug}` : ""}`}
-              className="-mb-px rounded-t-lg border-b-2 border-transparent px-4 py-2 text-sm text-soil-600 transition hover:border-leaf-500 hover:text-soil-900"
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
+        <ProjectTabs projectId={id} tabs={TABS} />
       </div>
 
       {project.deleted_at && (

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
+import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { getMethodology, getProject, getStandard } from "../../../../data";
-import { getPeriod, getReport } from "../../../giam-sat/data";
+import { getPeriod, getReport, listProjectActors } from "../../../giam-sat/data";
 
 export const metadata: Metadata = { title: "Bản in báo cáo" };
 
@@ -28,11 +29,13 @@ export default async function PrintableReportPage({
   const [project, report] = await Promise.all([getProject(id), getReport(id, reportId)]);
   if (!project || !report) notFound();
 
-  const [period, standard, methodology] = await Promise.all([
+  const [period, standard, methodology, actors] = await Promise.all([
     getPeriod(id, report.period_id),
     getStandard(report.standard_id),
     getMethodology(report.methodology_id),
+    listProjectActors(id),
   ]);
+  const requester = actors.find((actor) => actor.userId === report.requested_by);
   const results = report.results as {
     estimated_credit?: { calculation_id?: string; value?: string; unit?: string };
     calculations?: Record<string, { value: string; unit: string; aggregation: string }>;
@@ -45,8 +48,18 @@ export default async function PrintableReportPage({
   const metricKeys = [...new Set(snapshot.flatMap((r) => Object.keys(r.metric_values ?? {})))].sort();
 
   return (
-    <article className="mx-auto max-w-3xl bg-white p-8 text-soil-900 print:p-0">
-      <style>{`@media print { .no-print { display: none !important; } body { background: white; } }`}</style>
+    <article className="mx-auto max-w-4xl bg-white p-8 text-soil-900 print:p-0">
+      <style>{`
+        @page { size: A4 portrait; margin: 14mm; }
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+          article { width: auto; max-width: none; }
+          section, tr, dl > div { break-inside: avoid; }
+          thead { display: table-header-group; }
+          h1, h2, h3, h4 { break-after: avoid; }
+        }
+      `}</style>
 
       <div className="no-print mb-6 rounded-lg border border-carbon-100 bg-carbon-100/40 px-4 py-3 text-sm text-carbon-700">
         Dùng chức năng in của trình duyệt (Ctrl/Cmd + P) rồi chọn “Lưu thành PDF”.
@@ -74,6 +87,12 @@ export default async function PrintableReportPage({
           theo mẫu chính thức của Verra hay Gold Standard — kho mã hiện chưa có tệp mẫu thật
           của các tổ chức đó. Số liệu chưa qua thẩm định độc lập.
         </p>
+        {methodology?.is_sample && (
+          <p className="mt-2 text-sm font-semibold">
+            Methodology SAMPLE do nhóm sản phẩm tự soạn, chưa thẩm định và không được Verra
+            hay Gold Standard công nhận. Báo cáo final từ dữ liệu mẫu bị từ chối.
+          </p>
+        )}
       </section>
 
       <section className="mt-6">
@@ -119,6 +138,7 @@ export default async function PrintableReportPage({
               ["Standard / Methodology", `${standard?.code ?? "—"} / ${methodology?.code ?? "—"} ${methodology?.version ?? ""}`],
               ["Mã băm lược đồ chỉ số", report.schema_hash],
               ["Số quan sát", String(snapshot.length)],
+              ["Người yêu cầu", requester ? `${requester.fullName} · ${report.requested_by}` : report.requested_by],
               ["Sinh lúc", new Date(report.generated_at).toLocaleString("vi-VN")],
             ].map(([label, value]) => (
               <tr key={label} className="border-b border-soil-100">
@@ -162,12 +182,20 @@ export default async function PrintableReportPage({
 
       <section className="mt-6 break-before-page">
         <h2 className="text-base font-bold">4. Calculation trace — vết tính toán</h2>
-        <p className="mt-1 text-sm text-soil-600">Bản nguyên bản để đối chiếu; không định dạng lại hoặc làm tròn thêm.</p>
-        <pre className="mt-2 max-h-none whitespace-pre-wrap break-words border border-soil-200 p-3 font-mono text-[9px] leading-relaxed">{JSON.stringify(report.calculation_trace, null, 2)}</pre>
+        <p className="mt-1 text-sm text-soil-600">
+          Trình bày theo thứ tự engine thực thi; giá trị giữ nguyên, không làm tròn thêm ở giao diện.
+        </p>
+        <div className="mt-3">
+          <TraceView
+            trace={report.calculation_trace as TraceData}
+            limit={Number.MAX_SAFE_INTEGER}
+            expandAll
+          />
+        </div>
       </section>
 
       <footer className="mt-8 border-t border-soil-300 pt-3 text-xs text-soil-600">
-        Agri-Carbon Pass · Báo cáo ước tính MRV · Không phải tín chỉ đã phát hành
+        Nền tảng quản lý dự án Carbon · Báo cáo ước tính MRV · Không phải tín chỉ đã phát hành
       </footer>
     </article>
   );

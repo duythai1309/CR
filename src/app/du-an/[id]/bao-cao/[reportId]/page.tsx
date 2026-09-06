@@ -6,7 +6,7 @@ import { Alert, Badge, Card, Table } from "@/components/ui";
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
 import { getMethodology, getProject, getStandard } from "../../../data";
-import { getPeriod, getReport } from "../../giam-sat/data";
+import { getPeriod, getReport, listProjectActors } from "../../giam-sat/data";
 
 export const metadata: Metadata = { title: "Báo cáo MRV" };
 
@@ -26,11 +26,13 @@ export default async function ReportPage({
   const [project, report] = await Promise.all([getProject(id), getReport(id, reportId)]);
   if (!project || !report) notFound();
 
-  const [period, standard, methodology] = await Promise.all([
+  const [period, standard, methodology, actors] = await Promise.all([
     getPeriod(id, report.period_id),
     getStandard(report.standard_id),
     getMethodology(report.methodology_id),
+    listProjectActors(id),
   ]);
+  const requester = actors.find((actor) => actor.userId === report.requested_by);
   const results = report.results as ReportResults;
   const credit = results?.estimated_credit;
 
@@ -44,7 +46,7 @@ export default async function ReportPage({
           {period?.name ?? "Kỳ giám sát"} — bản {report.version}
         </h2>
         <Badge tone={report.status === "final" ? "leaf" : "carbon"}>
-          {report.status === "final" ? "Chính thức" : "Xem thử"}
+          {report.status === "final" ? "Final" : "Preview"}
         </Badge>
       </div>
 
@@ -52,6 +54,14 @@ export default async function ReportPage({
         Con số dưới đây tính từ ảnh chụp dữ liệu của kỳ đã khoá, theo công thức của
         Methodology đã chọn. Chưa qua thẩm định độc lập.
       </Alert>
+
+      {methodology?.is_sample && (
+        <Alert tone="warn" title="Methodology SAMPLE do nhóm sản phẩm tự soạn">
+          Methodology này chưa được thẩm định chuyên môn và không phải methodology được
+          Verra hoặc Gold Standard công nhận. Hệ thống không cho xuất bản báo cáo final từ
+          dữ liệu mẫu.
+        </Alert>
+      )}
 
       <MethodologyIdentity standard={standard} methodology={methodology} />
 
@@ -121,6 +131,7 @@ export default async function ReportPage({
             ["Phiên bản engine", report.engine_version],
             ["Mã băm lược đồ", report.schema_hash],
             ["Số quan sát", String((report.input_snapshot as unknown[])?.length ?? 0)],
+            ["Người yêu cầu", requester ? `${requester.fullName} · ${report.requested_by}` : report.requested_by],
             ["Sinh lúc", new Date(report.generated_at).toLocaleString("vi-VN")],
           ].map(([label, value]) => (
             <div key={label} className="flex gap-3">
@@ -132,7 +143,7 @@ export default async function ReportPage({
       </Card>
 
       <Card title="Calculation trace — vết tính toán" description="Dùng trace để đối chiếu từng phép tính với VVB. Có thể mở rộng toàn bộ quan sát.">
-        <TraceView trace={report.calculation_trace as TraceData} limit={Number.MAX_SAFE_INTEGER} />
+        <TraceView trace={report.calculation_trace as TraceData} limit={Number.MAX_SAFE_INTEGER} expandAll />
       </Card>
     </div>
   );

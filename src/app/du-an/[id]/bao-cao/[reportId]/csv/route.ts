@@ -1,5 +1,6 @@
 import { requireProjectMember } from "@/lib/auth";
-import { getPeriod, getReport } from "../../../giam-sat/data";
+import { getMethodology, getStandard } from "../../../../data";
+import { getPeriod, getReport, listProjectActors } from "../../../giam-sat/data";
 
 /**
  * Tải số liệu của báo cáo dưới dạng CSV.
@@ -29,7 +30,13 @@ export async function GET(
   const report = await getReport(id, reportId);
   if (!report) return new Response("Không tìm thấy báo cáo.", { status: 404 });
 
-  const period = await getPeriod(id, report.period_id);
+  const [period, standard, methodology, actors] = await Promise.all([
+    getPeriod(id, report.period_id),
+    getStandard(report.standard_id),
+    getMethodology(report.methodology_id),
+    listProjectActors(id),
+  ]);
+  const requester = actors.find((actor) => actor.userId === report.requested_by);
   const results = report.results as {
     estimated_credit?: { calculation_id?: string; value?: string; unit?: string };
     calculations?: Record<string, { value: string; unit: string; aggregation: string }>;
@@ -48,8 +55,14 @@ export async function GET(
   lines.push([cell("Khoảng thời gian"), cell(`${period?.start_date} → ${period?.end_date}`)].join(","));
   lines.push([cell("Bản báo cáo"), cell(report.version)].join(","));
   lines.push([cell("Trạng thái"), cell(report.status)].join(","));
+  lines.push([cell("Standard"), cell(standard?.code ?? "")].join(","));
+  lines.push([cell("Methodology"), cell(methodology?.code ?? "")].join(","));
+  lines.push([cell("Methodology version"), cell(methodology?.version ?? "")].join(","));
+  lines.push([cell("Methodology SAMPLE"), cell(methodology?.is_sample ? "Có — tự soạn, chưa thẩm định" : "Không")].join(","));
   lines.push([cell("Phiên bản engine"), cell(report.engine_version)].join(","));
   lines.push([cell("Số hiệu bản dữ liệu"), cell(report.data_revision)].join(","));
+  lines.push([cell("Người yêu cầu"), cell(requester?.fullName ?? ""), cell(report.requested_by)].join(","));
+  lines.push([cell("Sinh lúc"), cell(report.generated_at)].join(","));
   lines.push([cell("Mã băm lược đồ"), cell(report.schema_hash)].join(","));
   lines.push("");
 

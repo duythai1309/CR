@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Alert, Badge, Button, Field, Input, Select } from "@/components/ui";
 import { PROJECT_ROLE_LABEL } from "@/lib/labels";
+import type { MemberWorkload } from "@/components/project/rules";
 import type { ProjectMemberEntry } from "@/lib/auth";
 import { changeMemberRole, inviteMember, removeMember } from "./actions";
 
@@ -34,11 +36,14 @@ export function InviteForm({ projectId }: { projectId: string }) {
 }
 
 /**
- * Một dòng thành viên.
+ * Một dòng thành viên: danh tính, vai trò, và khối lượng việc đang giữ.
  *
  * Luôn hiện HỌ TÊN, không bao giờ hiện UUID trần — đó là mục C5 trong
  * `docs/design/schema-review-findings.md`, và là lý do `0015_project_identity.sql` tồn
  * tại. Email chỉ có khi người đang xem là chủ dự án, vì RPC chỉ trả email cho owner.
+ *
+ * Cột khối lượng liên kết thẳng sang bảng công việc đã lọc sẵn theo người này, để câu
+ * "ai đang gánh gì" không phải trả lời bằng cách mở bảng rồi tự chọn lại bộ lọc.
  */
 export function MemberRow({
   projectId,
@@ -46,16 +51,19 @@ export function MemberRow({
   canManage,
   isSelf,
   isLastOwner,
+  workload,
 }: {
   projectId: string;
   member: ProjectMemberEntry;
   canManage: boolean;
   isSelf: boolean;
   isLastOwner: boolean;
+  workload: MemberWorkload | null;
 }) {
   const [roleResult, roleAction, rolePending] = useActionState(changeMemberRole, null);
   const [removeResult, removeAction, removePending] = useActionState(removeMember, null);
   const message = roleResult ?? removeResult;
+  const columns = canManage ? 4 : 3;
 
   return (
     <>
@@ -65,11 +73,10 @@ export function MemberRow({
             {member.fullName || "(chưa đặt họ tên)"}
           </span>
           {isSelf && <span className="ml-2 text-xs text-soil-500">— bạn</span>}
+          {canManage && (
+            <span className="mt-0.5 block text-xs text-soil-600">{member.email ?? "—"}</span>
+          )}
         </td>
-
-        {canManage && (
-          <td className="px-3 py-2.5 text-soil-600">{member.email ?? "—"}</td>
-        )}
 
         <td className="px-3 py-2.5">
           {canManage ? (
@@ -97,6 +104,10 @@ export function MemberRow({
           )}
         </td>
 
+        <td className="px-3 py-2.5">
+          <Workload projectId={projectId} userId={member.userId} workload={workload} role={member.role} />
+        </td>
+
         {canManage && (
           <td className="px-3 py-2.5 text-right">
             <form action={removeAction}>
@@ -112,7 +123,7 @@ export function MemberRow({
 
       {(message || isLastOwner) && canManage && (
         <tr>
-          <td colSpan={4} className="px-3 pb-3">
+          <td colSpan={columns} className="px-3 pb-3">
             {isLastOwner && !message && (
               <p className="text-xs text-soil-600">
                 Đây là chủ dự án duy nhất. Chỉ định thêm một chủ dự án nữa trước khi đổi
@@ -126,5 +137,55 @@ export function MemberRow({
         </tr>
       )}
     </>
+  );
+}
+
+function Workload({
+  projectId,
+  userId,
+  workload,
+  role,
+}: {
+  projectId: string;
+  userId: string;
+  workload: MemberWorkload | null;
+  role: ProjectMemberEntry["role"];
+}) {
+  if (!workload || workload.open + workload.done === 0)
+    return (
+      <span className="text-xs text-soil-500">
+        {role === "developer" ? "Chưa nhận việc nào" : "Không nhận việc (vai trò này không được giao)"}
+      </span>
+    );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+      <Link
+        href={`/du-an/${projectId}?assignee=${userId}`}
+        className="font-medium text-leaf-800 hover:underline"
+      >
+        {workload.open} việc đang mở
+      </Link>
+      {workload.inProgress > 0 && (
+        <span className="rounded-full bg-carbon-100 px-2 py-0.5 text-carbon-700">
+          {workload.inProgress} đang làm
+        </span>
+      )}
+      {workload.blocked > 0 && (
+        <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
+          {workload.blocked} vướng
+        </span>
+      )}
+      {workload.overdue > 0 && (
+        <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
+          {workload.overdue} quá hạn
+        </span>
+      )}
+      {workload.done > 0 && (
+        <span className="rounded-full bg-soil-100 px-2 py-0.5 text-soil-600">
+          {workload.done} xong
+        </span>
+      )}
+    </div>
   );
 }

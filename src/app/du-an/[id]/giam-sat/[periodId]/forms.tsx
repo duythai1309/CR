@@ -27,6 +27,12 @@ export function ObservationForm({
   endDate: string;
 }) {
   const [result, action, pending] = useActionState(saveObservation, null);
+  const groups = fields.reduce<Array<{ name: string; fields: MetricFieldView[] }>>((all, field) => {
+    const found = all.find((group) => group.name === field.group);
+    if (found) found.fields.push(field);
+    else all.push({ name: field.group, fields: [field] });
+    return all;
+  }, []);
 
   return (
     <form action={action} className="space-y-4">
@@ -45,13 +51,16 @@ export function ObservationForm({
         </Field>
       </div>
 
-      {fields.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {fields.map((f) => (
-            <MetricFieldInput key={f.id} field={f} />
-          ))}
-        </div>
-      )}
+      {groups.map((group) => (
+        <fieldset key={group.name} className="rounded-xl border border-soil-200 bg-soil-50/60 p-4">
+          <legend className="px-2 text-sm font-semibold text-soil-900">{group.name}</legend>
+          <div className="grid gap-4 md:grid-cols-2">
+            {group.fields.map((field) => (
+              <MetricFieldInput key={field.id} field={field} />
+            ))}
+          </div>
+        </fieldset>
+      ))}
 
       <Feedback result={result} />
 
@@ -70,6 +79,10 @@ export function ObservationRow({
   values,
   fromImport,
   sourceRow,
+  enteredBy,
+  enteredByName,
+  recordRevision,
+  updatedAt,
   expectedRevision,
   canEdit,
 }: {
@@ -80,6 +93,10 @@ export function ObservationRow({
   values: string[];
   fromImport: boolean;
   sourceRow: number | null;
+  enteredBy: string;
+  enteredByName: string;
+  recordRevision: number;
+  updatedAt: string;
   expectedRevision: number;
   canEdit: boolean;
 }) {
@@ -97,6 +114,11 @@ export function ObservationRow({
         ))}
         <td className="px-3 py-2 text-xs text-soil-600">
           {fromImport ? `tệp, dòng ${sourceRow ?? "?"}` : "nhập tay"}
+        </td>
+        <td className="px-3 py-2 text-xs text-soil-600">
+          <span className="block font-medium text-soil-800">{enteredByName}</span>
+          <span className="block font-mono">{enteredBy}</span>
+          <span className="block">rev {recordRevision} · {new Date(updatedAt).toLocaleString("vi-VN")}</span>
         </td>
         {canEdit && (
           <td className="px-3 py-2 text-right">
@@ -121,7 +143,7 @@ export function ObservationRow({
       </tr>
       {result && !result.ok && (
         <tr>
-          <td colSpan={values.length + 4} className="px-3 pb-2">
+          <td colSpan={values.length + 5} className="px-3 pb-2">
             <Alert tone="error">{result.message}</Alert>
           </td>
         </tr>
@@ -180,9 +202,9 @@ export function LockPeriodForm({
         <Alert tone="warn">Kỳ chưa có quan sát nào — nhập dữ liệu trước khi khoá.</Alert>
       )}
       {incompleteCount > 0 && (
-        <Alert tone="warn">
-          Còn {incompleteCount} quan sát thiếu chỉ số bắt buộc. Khoá bây giờ thì báo cáo sinh
-          từ kỳ này sẽ tính trên dữ liệu chưa đầy đủ.
+        <Alert tone="error">
+          Còn {incompleteCount} quan sát thiếu chỉ số bắt buộc. Hoàn tất dữ liệu trước khi
+          khoá để snapshot báo cáo không chứa quan sát thiếu.
         </Alert>
       )}
 
@@ -190,7 +212,7 @@ export function LockPeriodForm({
 
       <Button
         type="submit"
-        disabled={pending || recordCount === 0}
+        disabled={pending || recordCount === 0 || incompleteCount > 0}
         onClick={(e) => {
           if (!confirm("Khoá kỳ là một chiều, không mở lại được. Tiếp tục?")) e.preventDefault();
         }}

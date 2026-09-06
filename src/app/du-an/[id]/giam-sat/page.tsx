@@ -4,8 +4,11 @@ import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
 import { Alert, Badge, Card, Empty, Table } from "@/components/ui";
 import { abilitiesFor } from "@/components/project/rules";
+import { incompleteRecords } from "@/components/monitoring/summary";
+import { buildMethodologyForm } from "@/lib/methodology/form";
+import type { MetricValues } from "@/lib/methodology/schema";
 import { getProject } from "../../data";
-import { listPeriods } from "./data";
+import { getPeriodData, listPeriods } from "./data";
 import { CreatePeriodForm } from "./forms";
 
 export const metadata: Metadata = { title: "Giám sát" };
@@ -19,6 +22,22 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
 
   const abilities = abilitiesFor(role, project.deleted_at !== null);
   const ready = project.methodology_locked_at !== null;
+  const periodReadiness = new Map(
+    await Promise.all(
+      periods.map(async (period) => {
+        const rows = await getPeriodData(period.id);
+        const fields = buildMethodologyForm(period.schema_snapshot, "vi").observation;
+        const incomplete = incompleteRecords(
+          fields,
+          rows.map((row) => ({
+            record_key: row.record_key,
+            metric_values: row.metric_values as MetricValues,
+          })),
+        );
+        return [period.id, { records: rows.length, incomplete: incomplete.length }] as const;
+      }),
+    ),
+  );
 
   return (
     <div className="space-y-6">
@@ -48,8 +67,15 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
             hint="Tạo kỳ đầu tiên để bắt đầu nhập observation data."
           />
         ) : (
-          <Table head={["Kỳ", "Khoảng thời gian", "Bản", "Trạng thái", "Số lần ghi", ""]}>
-            {periods.map((p) => (
+          <Table head={["Kỳ", "Khoảng thời gian", "Bản", "Trạng thái", "Quan sát", "Data revision", "Sẵn sàng khoá", ""]}>
+            {periods.map((p) => {
+              const readiness = periodReadiness.get(p.id) ?? { records: 0, incomplete: 0 };
+              const blockers = readiness.records === 0
+                ? "Chưa có dữ liệu"
+                : readiness.incomplete > 0
+                  ? `${readiness.incomplete} dòng thiếu field`
+                  : "Đủ dữ liệu bắt buộc";
+              return (
               <tr key={p.id} className="border-b border-soil-100 last:border-0">
                 <td className="px-3 py-2.5 font-medium text-soil-900">{p.name}</td>
                 <td className="px-3 py-2.5 text-soil-700">
@@ -61,7 +87,9 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
                     {p.status === "locked" ? "Đã khoá" : "Đang mở"}
                   </Badge>
                 </td>
+                <td className="px-3 py-2.5 text-soil-700">{readiness.records}</td>
                 <td className="px-3 py-2.5 text-soil-700">{p.data_revision}</td>
+                <td className="px-3 py-2.5 text-xs text-soil-700">{p.status === "locked" ? "Snapshot đã đóng băng" : blockers}</td>
                 <td className="px-3 py-2.5 text-right">
                   <Link
                     href={`/du-an/${id}/giam-sat/${p.id}`}
@@ -71,7 +99,8 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
                   </Link>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </Table>
         )}
       </Card>

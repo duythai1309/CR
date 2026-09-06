@@ -26,7 +26,15 @@ export interface TraceData {
   output_scale?: number;
 }
 
-export function TraceView({ trace, limit = 3 }: { trace: TraceData; limit?: number }) {
+export function TraceView({
+  trace,
+  limit = 3,
+  expandAll = false,
+}: {
+  trace: TraceData;
+  limit?: number;
+  expandAll?: boolean;
+}) {
   const records = trace.records ?? [];
   const shown = records.slice(0, limit);
 
@@ -52,15 +60,19 @@ export function TraceView({ trace, limit = 3 }: { trace: TraceData; limit?: numb
       </dl>
 
       {trace.order && trace.order.length > 0 && (
-        <p className="text-sm text-soil-700">
-          Thứ tự tính:{" "}
-          {trace.order.map((id, i) => (
-            <span key={id}>
-              {i > 0 && " → "}
-              <code className="rounded bg-soil-100 px-1 py-0.5 text-xs">{id}</code>
-            </span>
-          ))}
-        </p>
+        <div className="rounded-lg border border-soil-200 bg-soil-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-soil-500">Lập luận tính toán</p>
+          <p className="mt-1 text-sm text-soil-700">
+            Với từng quan sát, engine giải các chỉ số theo thứ tự{" "}
+            {trace.order.map((id, i) => (
+              <span key={id}>
+                {i > 0 && " → "}
+                <code className="rounded bg-soil-100 px-1 py-0.5 text-xs">{id}</code>
+              </span>
+            ))}
+            . Sau đó các kết quả được aggregation cho toàn kỳ như bảng dưới.
+          </p>
+        </div>
       )}
 
       {trace.aggregation && trace.aggregation.length > 0 && (
@@ -98,7 +110,7 @@ export function TraceView({ trace, limit = 3 }: { trace: TraceData; limit?: numb
           )}
 
           {Object.entries(record.calculations ?? {}).map(([id, calc]) => (
-            <details key={id} className="mb-1.5 rounded-lg border border-soil-200 bg-white">
+            <details open={expandAll} key={id} className="mb-1.5 rounded-lg border border-soil-200 bg-white print:break-inside-avoid">
               <summary className="cursor-pointer px-3 py-2 text-sm">
                 <code className="text-xs">{id}</code>{" "}
                 <span className="font-medium text-soil-900">= {calc.value}</span>
@@ -124,7 +136,7 @@ export function TraceView({ trace, limit = 3 }: { trace: TraceData; limit?: numb
       ))}
 
       {records.length > limit && (
-        <p className="text-xs text-soil-600">
+        <p className="text-xs text-soil-600 print:hidden">
           Đang hiện {limit} trên {records.length} quan sát. Vết đầy đủ được lưu trong báo cáo.
         </p>
       )}
