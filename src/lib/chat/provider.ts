@@ -35,6 +35,8 @@ export interface StreamOptions {
   system: string;
   contents: ProviderTurn[];
   tools: ToolSpec[];
+  /** Vòng này phải gọi một tool trong tập này; bỏ trống thì provider tự quyết định. */
+  requiredToolNames?: string[];
 }
 
 export interface ChatProvider {

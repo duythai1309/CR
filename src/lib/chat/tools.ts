@@ -20,202 +20,245 @@ export interface ToolSpec {
   parameters: ToolParamSchema;
   /** Vai trò được phép gọi. Đây là lớp phòng thủ thứ hai — RLS mới là lớp chặn thật. */
   roles: UserRole[];
-  /**
-   * Công cụ chỉ có ý nghĩa khi người hỏi thuộc một hợp tác xã.
-   *
-   * Mọi truy vấn của nhóm này lọc theo `app_coop_id()`; người dùng nền tảng dự án mang
-   * vai trò toàn cục `coop_staff` nhưng KHÔNG thuộc hợp tác xã nào (xem
-   * `docs/design/auth-role-design.md` §1), nên các công cụ này luôn trả rỗng với họ.
-   * Đưa vào danh sách chỉ khiến trợ lý mời tra cứu thứ chắc chắn không có gì.
-   */
-  needsCooperative?: boolean;
 }
 
-const COOP: UserRole[] = ["coop_manager", "coop_staff"];
+/**
+ * Mọi công cụ mở cho cả bốn vai trò toàn cục.
+ *
+ * `user_role` là trục quyền của module cũ (hợp tác xã / chợ tín chỉ) và cố ý KHÔNG có
+ * giá trị riêng cho nền tảng dự án — xem `docs/design/auth-role-design.md` §1. Quyền
+ * thật trên dữ liệu dự án nằm ở `project_members` và được RLS cưỡng chế
+ * (`projects_read`, `project_tasks_read`… trong `0013_project_platform.sql:887-915`),
+ * nên lọc thêm theo vai trò toàn cục ở đây chỉ chặn nhầm người, không chặn thêm được gì.
+ */
 const ALL: UserRole[] = ["coop_manager", "coop_staff", "buyer", "platform_admin"];
 
 const NO_PARAMS: ToolParamSchema = { type: "object", properties: {} };
 
+/** Tham số tên dự án dùng lại ở nhiều công cụ; luôn không bắt buộc. */
+const TEN_DU_AN = {
+  type: "string" as const,
+  description:
+    "CHỈ tên riêng của dự án, không kèm từ 'dự án'. Bỏ trống thì lấy dự án vừa cập nhật " +
+    "gần nhất. Tên không khớp dự án nào thì hàm báo không tìm thấy, KHÔNG tự lấy dự án " +
+    "khác thay thế.",
+};
+
 export const TOOLS: ToolSpec[] = [
-  {
-    name: "tra_cuu_he_so",
-    description:
-      "Tra hệ số phát thải đang dùng trong bộ hệ số hiện hành, kèm đơn vị, mô tả và " +
-      "nguồn trích dẫn. Dùng khi người hỏi muốn biết một hệ số bằng bao nhiêu hoặc " +
-      "lấy từ đâu. Luôn gọi hàm này thay vì nhớ con số.",
-    parameters: {
-      type: "object",
-      properties: {
-        tu_khoa: {
-          type: "string",
-          description:
-            "Lọc theo khoá hệ số, ví dụ 'ef_c', 'sfw', 'gwp', 'burn'. Bỏ trống thì trả về tất cả.",
-        },
-      },
-    },
-    roles: ALL,
-  },
-  {
-    name: "liet_ke_mua_vu",
-    description:
-      "Danh sách mùa vụ của hợp tác xã: tên, loại vụ, ngày bắt đầu, số thửa đã đăng ký, " +
-      "đã khoá hay chưa. Gọi trước khi trả lời bất kỳ câu hỏi nào nhắc tới một mùa vụ, " +
-      "để biết tên vụ chính xác trong hệ thống.",
-    parameters: NO_PARAMS,
-    roles: COOP,
-    needsCooperative: true,
-  },
-  {
-    name: "tong_ket_mua_vu",
-    description:
-      "Tổng kết một mùa vụ: tổng diện tích, số thửa đã tính và chưa tính MRV, tổng lượng " +
-      "giảm phát thải đã tính được (tấn CO2e). Con số lấy từ bản tính đang hiệu lực.",
-    parameters: {
-      type: "object",
-      properties: {
-        ten_mua_vu: {
-          type: "string",
-          description:
-            "CHỈ tên riêng của mùa vụ, ví dụ 'Vụ Xuân 2026' — không kèm từ 'mùa vụ'. " +
-            "Bỏ trống thì lấy vụ mới nhất. Tên không khớp vụ nào thì hàm báo không tìm thấy, " +
-            "KHÔNG tự lấy vụ khác thay thế.",
-        },
-      },
-    },
-    roles: COOP,
-    needsCooperative: true,
-  },
-  {
-    name: "thua_thieu_nhat_ky",
-    description:
-      "Các thửa-vụ chưa tính được MRV, kèm danh sách đích danh những mục còn thiếu " +
-      "(ngày cấy, ngày thu hoạch, cách xử lý rơm rạ, ranh thửa...). Dùng khi người hỏi " +
-      "muốn biết còn phải nhập gì.",
-    parameters: {
-      type: "object",
-      properties: {
-        ten_mua_vu: {
-          type: "string",
-          description: "Giới hạn trong một mùa vụ. Bỏ trống thì xét toàn bộ.",
-        },
-      },
-    },
-    roles: COOP,
-    needsCooperative: true,
-  },
-  {
-    name: "chi_tiet_thua_vu",
-    description:
-      "Chi tiết một thửa trong một vụ: nông hộ, diện tích, ngày cấy/gặt, số lần tháo nước, " +
-      "lượng đạm, cách xử lý rơm rạ, và kết quả tính phát thải nếu đã tính.",
-    parameters: {
-      type: "object",
-      properties: {
-        ten_thua: {
-          type: "string",
-          description:
-            "CHỈ tên riêng của thửa, không kèm từ phân loại. Người hỏi nói 'thửa Ruộng Bãi' " +
-            "thì truyền 'Ruộng Bãi'. Khớp gần đúng được, nhưng thừa chữ 'thửa' sẽ không tìm ra.",
-        },
-        ten_mua_vu: {
-          type: "string",
-          description:
-            "CHỈ tên riêng của mùa vụ, ví dụ 'Vụ Xuân 2026' — không kèm từ 'mùa vụ'. " +
-            "Bỏ trống thì lấy vụ gần nhất của thửa đó.",
-        },
-      },
-      required: ["ten_thua"],
-    },
-    roles: COOP,
-    needsCooperative: true,
-  },
-  {
-    name: "liet_ke_nong_ho",
-    description:
-      "Danh sách nông hộ của hợp tác xã kèm số thửa và tổng diện tích đã vẽ ranh.",
-    parameters: {
-      type: "object",
-      properties: {
-        tu_khoa: { type: "string", description: "Lọc theo tên hoặc thôn/xóm." },
-      },
-    },
-    roles: COOP,
-    needsCooperative: true,
-  },
-  {
-    name: "liet_ke_lo_tin_chi",
-    description:
-      "Các lô tín chỉ: mã, tên, trạng thái, lượng gộp, lượng phát hành sau đệm rủi ro, " +
-      "lượng đã bán, giá chào bán.",
-    parameters: {
-      type: "object",
-      properties: {
-        trang_thai: {
-          type: "string",
-          description: "Lọc theo trạng thái lô.",
-          enum: ["draft", "submitted", "verified", "listed", "sold", "retired"],
-        },
-      },
-    },
-    roles: ["coop_manager", "coop_staff", "platform_admin"],
-    needsCooperative: true,
-  },
-  {
-    name: "chia_doanh_thu",
-    description:
-      "Bảng chia doanh thu của một lô tín chỉ đã bán: phần nền tảng, phần hợp tác xã, " +
-      "phần nông hộ, và chi tiết từng hộ nhận bao nhiêu.",
-    parameters: {
-      type: "object",
-      properties: { ma_lo: { type: "string", description: "Mã lô tín chỉ, ví dụ LTC-2026-01." } },
-      required: ["ma_lo"],
-    },
-    roles: ["coop_manager", "platform_admin"],
-  },
-  {
-    name: "lo_dang_chao_ban",
-    description:
-      "Các lô tín chỉ đang chào bán trên chợ: mã, hợp tác xã, lượng còn khả dụng, giá mỗi tấn.",
-    parameters: NO_PARAMS,
-    roles: ["buyer", "platform_admin"],
-  },
   {
     name: "liet_ke_du_an",
     description:
       "Danh sách dự án carbon mà người đang hỏi là thành viên: tên, vai trò trong dự án, " +
-      "số bước thiết kế đã duyệt trên tổng bảy bước, Standard và Methodology đã chọn. " +
-      "Gọi trước khi trả lời bất kỳ câu hỏi nào nhắc tới một dự án, để biết tên dự án " +
-      "chính xác trong hệ thống.",
+      "số bước thiết kế đã duyệt trên tổng bảy bước, Standard và Methodology đã chọn, số " +
+      "thành viên. PHẢI gọi khi hỏi có những dự án nào, dự án tên gì, quy trình có bao " +
+      "nhiêu bước, hoặc cần xác định dự án trước khi gọi tool chi tiết.",
     parameters: NO_PARAMS,
     roles: ALL,
   },
   {
     name: "tien_do_du_an",
     description:
-      "Tiến độ chi tiết của một dự án: bảy bước thiết kế đã duyệt tới đâu, số công việc " +
-      "theo từng trạng thái, các kỳ giám sát và số quan sát đã nhập, cùng ước tính giảm " +
-      "phát thải gần nhất nếu đã sinh báo cáo.",
+      "Tiến độ chi tiết của một dự án: bảy bước thiết kế đã duyệt tới đâu và ai duyệt, " +
+      "bước kế tiếp còn vướng điều kiện gì, số công việc theo từng trạng thái, các kỳ " +
+      "giám sát, và ước tính giảm phát thải gần nhất nếu đã sinh báo cáo. PHẢI gọi trước " +
+      "mọi khẳng định về tiến độ, bước hiện tại/tiếp theo hoặc số lượng việc của dự án.",
+    parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
+    roles: ALL,
+  },
+  {
+    name: "yeu_cau_cua_buoc",
+    description:
+      "Một bước trong bảy bước thiết kế cần thoả điều kiện gì thì chủ dự án mới duyệt " +
+      "được, và hiện đã thoả tới đâu. Điều kiện lấy từ đúng luật mà cơ sở dữ liệu áp " +
+      "khi duyệt, không phải quy trình chung của ngành. PHẢI gọi cho mọi câu hỏi kiểu " +
+      "'làm sao qua được bước này', 'còn thiếu gì để duyệt'.",
     parameters: {
       type: "object",
       properties: {
-        ten_du_an: {
+        buoc: {
+          type: "number",
+          description:
+            "Số thứ tự bước, từ 1 đến 7. Bỏ trống thì lấy bước chưa duyệt gần nhất.",
+        },
+        ten_du_an: TEN_DU_AN,
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "goi_y_methodology",
+    description:
+      "Các methodology CÓ TRONG CATALOG của hệ thống, lọc theo mô tả loại hình dự án. " +
+      "Trả về Standard, mã, version, loại hình và cờ dữ liệu mẫu. PHẢI gọi khi hỏi catalog " +
+      "có bao nhiêu/tên gì, muốn so sánh hoặc chọn Methodology. Catalog chỉ có dữ liệu MẪU tự soạn — " +
+      "hàm trả về cờ đó, phải nói lại cho người dùng mỗi lần gợi ý.",
+    parameters: {
+      type: "object",
+      properties: {
+        mo_ta: {
           type: "string",
           description:
-            "CHỈ tên riêng của dự án, không kèm từ 'dự án'. Bỏ trống thì lấy dự án vừa " +
-            "cập nhật gần nhất. Tên không khớp dự án nào thì hàm báo không tìm thấy, " +
-            "KHÔNG tự lấy dự án khác thay thế.",
+            "Mô tả loại hình dự án hoặc từ khoá, ví dụ 'trồng rừng', 'biogas', 'điện " +
+            "mặt trời'. Bỏ trống thì trả toàn bộ catalog.",
         },
       },
     },
     roles: ALL,
   },
   {
-    name: "don_hang_cua_toi",
+    name: "field_giam_sat_cua_methodology",
     description:
-      "Đơn hàng của chính người đang hỏi: mã đơn, lô, khối lượng, thành tiền, trạng thái " +
-      "đơn và trạng thái thanh toán.",
+      "Các field mà một methodology yêu cầu, tách rõ nhóm baseline (kịch bản cơ sở, khai " +
+      "một lần cho dự án) và nhóm observation (dữ liệu quan sát, nhập theo từng kỳ giám " +
+      "sát), kèm đơn vị, bắt buộc hay không, ràng buộc giá trị và tên cột khi nhập CSV. " +
+      "PHẢI gọi khi câu hỏi nêu tên/mã field, hỏi field cần đo, đơn vị, type, bounds hoặc " +
+      "cột CSV. Nếu chỉ có tên field thì vẫn gọi với args rỗng; không hỏi ngược trước.",
+    parameters: {
+      type: "object",
+      properties: {
+        ma_methodology: {
+          type: "string",
+          description:
+            "Mã methodology trong catalog, ví dụ 'DEMO-VCS-FOREST'. Bỏ trống thì lấy " +
+            "methodology mà dự án ở tham số 'ten_du_an' đang chọn.",
+        },
+        ten_du_an: TEN_DU_AN,
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "kiem_tra_baseline",
+    description:
+      "Đối chiếu baseline (kịch bản cơ sở) đã nhập của một dự án với metric_schema của " +
+      "methodology đã chọn: field nào còn thiếu, field nào sai kiểu hoặc ngoài khoảng " +
+      "cho phép. PHẢI gọi trước khi nói baseline đủ/thiếu/hợp lệ. Dùng đúng bộ luật mà cơ sở dữ liệu áp khi duyệt bước 5 và khi tạo kỳ " +
+      "giám sát, nên trả lời được câu 'baseline của tôi đã đủ chưa'.",
+    parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
+    roles: ALL,
+  },
+  {
+    name: "cong_viec_theo_buoc",
+    description:
+      "Công việc của một dự án gom theo bước thiết kế: tiêu đề, trạng thái, hạn, đã quá " +
+      "hạn chưa, đã giao cho ai. PHẢI gọi khi người hỏi muốn biết đang tồn việc gì, việc nào " +
+      "quá hạn, hay ai đang giữ việc nào.",
+    parameters: {
+      type: "object",
+      properties: {
+        ten_du_an: TEN_DU_AN,
+        trang_thai: {
+          type: "string",
+          description:
+            "Lọc theo trạng thái công việc. Bỏ trống thì lấy các việc CHƯA xong " +
+            "(todo, in_progress, blocked).",
+          enum: ["todo", "in_progress", "done", "blocked"],
+        },
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "liet_ke_ky_giam_sat",
+    description:
+      "Liệt kê monitoring period của một dự án: khoảng ngày, version, trạng thái mở/khoá, " +
+      "data_revision, số record và thời điểm khoá. PHẢI gọi khi hỏi các kỳ đang có hoặc kỳ nào " +
+      "sẵn sàng cho báo cáo.",
+    parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
+    roles: ALL,
+  },
+  {
+    name: "tom_tat_du_lieu_giam_sat",
+    description:
+      "Kiểm một monitoring period theo schema_snapshot: số record, field bắt buộc thiếu/sai " +
+      "theo dòng và những gì thực sự cản RPC khoá kỳ. PHẢI gọi trước khi khẳng định dữ liệu " +
+      "kỳ đủ/thiếu hoặc lý do không khoá được. Không biến cảnh báo chất lượng thành " +
+      "điều kiện DB.",
+    parameters: {
+      type: "object",
+      properties: {
+        ten_du_an: TEN_DU_AN,
+        ten_ky: {
+          type: "string",
+          description: "Tên monitoring period. Bỏ trống thì lấy kỳ mới nhất của dự án.",
+        },
+        phien_ban_ky: {
+          type: "number",
+          description: "Version nguyên của kỳ khi có nhiều kỳ cùng tên. Không bắt buộc.",
+        },
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "liet_ke_bao_cao_mrv",
+    description:
+      "Liệt kê MRV report đã sinh của dự án: kỳ nguồn, version, preview/final, kết quả ước " +
+      "tính, schema_hash, data_revision và thời điểm sinh. PHẢI gọi khi hỏi có báo cáo nào, " +
+      "trạng thái/kết quả bao nhiêu hoặc muốn xác định report trước khi đọc trace. Kết quả " +
+      "không phải tín chỉ đã phát hành.",
+    parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
+    roles: ALL,
+  },
+  {
+    name: "doc_vet_tinh_bao_cao",
+    description:
+      "Đọc calculation_trace đã lưu trong một MRV report: thứ tự tính, factors kèm nguồn, " +
+      "từng phép theo observation và aggregation toàn kỳ. PHẢI gọi khi hỏi báo cáo MRV lấy " +
+      "dữ liệu từ đâu, vì sao ra con số đó, nguồn factor hoặc provenance. Chỉ diễn giải " +
+      "snapshot, không tự tính lại.",
+    parameters: {
+      type: "object",
+      properties: {
+        ten_du_an: TEN_DU_AN,
+        ten_ky: {
+          type: "string",
+          description: "Tên kỳ nguồn để phân biệt các report cùng version. Không bắt buộc.",
+        },
+        phien_ban_bao_cao: {
+          type: "number",
+          description: "Version nguyên của report. Bỏ trống thì lấy report sinh gần nhất.",
+        },
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "thanh_vien_va_phan_cong",
+    description:
+      "Danh sách thành viên dự án và các công việc đang giao cho từng người. Danh tính lấy " +
+      "qua project_member_directory, không đọc trực tiếp profiles. PHẢI gọi trước khi nói " +
+      "ai là thành viên, vai trò/quyền trong dự án hoặc ai đang được giao việc.",
+    parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
+    roles: ALL,
+  },
+  {
+    name: "tai_lieu_theo_buoc",
+    description:
+      "Liệt kê project document đã nộp theo từng bước, gồm kind, version, tên tệp và thời " +
+      "điểm. PHẢI gọi trước khi nói tài liệu nào đã nộp/còn thiếu. Chỉ kết luận thiếu khi " +
+      "hệ thống có rule bắt buộc; không suy diễn checklist Standard.",
+    parameters: {
+      type: "object",
+      properties: {
+        ten_du_an: TEN_DU_AN,
+        buoc: {
+          type: "number",
+          description: "Lọc ordinal từ 1 đến 7. Bỏ trống thì trả cả bảy bước.",
+        },
+      },
+    },
+    roles: ALL,
+  },
+  {
+    name: "liet_ke_standard",
+    description:
+      "Catalog Standard mà tài khoản hiện nhìn thấy trong DB, kèm số Methodology catalog " +
+      "theo từng Standard và số bản SAMPLE. PHẢI gọi khi hỏi hệ thống có Standard nào, " +
+      "bao nhiêu Standard hoặc Methodology được phân theo Standard ra sao. Không mô tả " +
+      "yêu cầu Standard từ trí nhớ.",
     parameters: NO_PARAMS,
-    roles: ["buyer"],
+    roles: ALL,
   },
 ];
 
@@ -227,19 +270,4 @@ export function toolsForRole(role: UserRole): ToolSpec[] {
 
 export function findTool(name: string, role: UserRole): ToolSpec | null {
   return toolsForRole(role).find((t) => t.name === name) ?? null;
-}
-
-/**
- * Bộ công cụ nên GIỚI THIỆU cho người hỏi, hẹp hơn bộ được phép gọi.
- *
- * `toolsForRole` giữ nguyên chữ ký vì nó là lớp chặn ở `/api/chat`; hàm này chỉ dùng khi
- * dựng system prompt. Bỏ bớt công cụ chắc chắn trả rỗng không phải là bảo mật — người
- * dùng vẫn không thấy dữ liệu của hợp tác xã khác nhờ RLS — mà là để trợ lý không mời
- * người ta tra thứ không tồn tại.
- */
-export function toolsForContext(
-  role: UserRole,
-  context: { hasCooperative: boolean },
-): ToolSpec[] {
-  return toolsForRole(role).filter((t) => context.hasCooperative || !t.needsCooperative);
 }

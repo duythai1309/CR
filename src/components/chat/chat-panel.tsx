@@ -11,54 +11,38 @@ export interface ChatMessage {
 
 /** Tên công cụ hiện cho người dùng thấy trong lúc chờ, thay cho tên hàm kỹ thuật. */
 const TOOL_LABEL: Record<string, string> = {
-  tra_cuu_he_so: "Đang tra hệ số phát thải…",
-  liet_ke_mua_vu: "Đang xem danh sách mùa vụ…",
-  tong_ket_mua_vu: "Đang tổng kết mùa vụ…",
-  thua_thieu_nhat_ky: "Đang rà các thửa còn thiếu dữ liệu…",
-  chi_tiet_thua_vu: "Đang mở nhật ký của thửa…",
-  liet_ke_nong_ho: "Đang xem danh sách nông hộ…",
-  liet_ke_lo_tin_chi: "Đang xem các lô tín chỉ…",
-  chia_doanh_thu: "Đang tra bảng chia doanh thu…",
   liet_ke_du_an: "Đang xem danh sách dự án…",
   tien_do_du_an: "Đang xem tiến độ dự án…",
-  lo_dang_chao_ban: "Đang xem chợ tín chỉ…",
-  don_hang_cua_toi: "Đang tra đơn hàng của anh/chị…",
+  yeu_cau_cua_buoc: "Đang tra điều kiện duyệt bước…",
+  goi_y_methodology: "Đang tra catalog methodology…",
+  field_giam_sat_cua_methodology: "Đang mở lược đồ chỉ số của methodology…",
+  kiem_tra_baseline: "Đang đối chiếu baseline với lược đồ…",
+  cong_viec_theo_buoc: "Đang rà công việc theo từng bước…",
 };
 
 /**
- * Gợi ý câu hỏi. Khoá `du_an` KHÔNG đến từ prop `audience` mà suy từ đường dẫn đang mở:
- * cùng một người có thể mở trợ lý ở nền tảng dự án lẫn ở phần lúa nước, và panel vốn đã
- * đọc `usePathname()` để gửi kèm ngữ cảnh màn hình cho máy chủ.
+ * Gợi ý câu hỏi. Một bộ duy nhất: sản phẩm chỉ còn nền tảng dự án Carbon, nên gợi ý
+ * không còn phải rẽ theo vai trò toàn cục nữa.
  */
-const SUGGESTIONS_BY_ROLE: Record<string, string[]> = {
-  du_an: [
-    "Tôi đang có những dự án nào?",
-    "Dự án này đã duyệt tới bước mấy, còn vướng gì?",
-    "Khoá kỳ giám sát rồi có sửa số liệu được nữa không?",
-  ],
-  coop: [
-    "Vụ này còn thửa nào chưa tính được MRV?",
-    "Muốn được hệ số nước tốt hơn thì phải làm gì?",
-    "Hệ số phát thải nền của vụ Mùa là bao nhiêu, lấy từ đâu?",
-  ],
-  buyer: [
-    "Đang có lô nào chào bán?",
-    "Đơn hàng của tôi tới đâu rồi?",
-    "Đệm rủi ro 15% nghĩa là gì?",
-  ],
-  admin: [
-    "Các lô tín chỉ đang ở trạng thái nào?",
-    "Tổng doanh thu đã chia ra sao?",
-    "Quy trình xác minh lô diễn ra thế nào?",
-  ],
-};
+const SUGGESTIONS = [
+  "Tôi đang có những dự án nào?",
+  "Bước hiện tại còn vướng gì thì mới duyệt được?",
+  "Methodology đang chọn đòi những field nào?",
+  "Baseline của dự án đã đủ để duyệt bước 5 chưa?",
+];
 
 export function ChatPanel({
-  audience = "coop",
   initialConversationId = null,
   initialMessages = [],
   className = "",
 }: {
+  /**
+   * Không còn dùng tới. Giữ trong kiểu prop vì bốn điểm gắn của module cũ
+   * (`src/app/htx/layout.tsx:19`, `cho/layout.tsx:17`, `don-hang/layout.tsx:11`,
+   * `quan-tri/page.tsx:94`, `htx/tro-ly/page.tsx:55`) vẫn truyền vào, mà chúng không
+   * nằm trong phạm vi sửa của đợt này — bỏ prop bây giờ là `npm run types` đỏ ở đó.
+   * Xoá cùng lúc với đợt gỡ route cũ.
+   */
   audience?: "coop" | "buyer" | "admin";
   initialConversationId?: string | null;
   initialMessages?: ChatMessage[];
@@ -155,22 +139,18 @@ export function ChatPanel({
     }
   }
 
-  // Đường dẫn thắng prop: trợ lý mở trong nền tảng dự án thì gợi ý theo dự án, bất kể
-  // vai trò toàn cục của người dùng là gì.
-  const context = pathname?.startsWith("/du-an") ? "du_an" : audience;
-  const suggestions = SUGGESTIONS_BY_ROLE[context] ?? SUGGESTIONS_BY_ROLE.coop;
-
   return (
     <div className={`flex min-h-0 flex-col ${className}`}>
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-soil-600">
-              Mình tra được số liệu của hợp tác xã anh/chị và giải thích cách hệ thống tính
-              tín chỉ. Mọi con số mình nói đều lấy từ dữ liệu thật, không tự ước lượng.
+              Mình tra được dữ liệu của các dự án anh/chị tham gia và giải thích cách hệ
+              thống vận hành. Mọi con số mình nói đều lấy từ cơ sở dữ liệu, không tự ước
+              lượng — và bốn methodology trong hệ thống là dữ liệu mẫu chưa thẩm định.
             </p>
             <div className="flex flex-wrap gap-2">
-              {suggestions.map((s) => (
+              {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -230,7 +210,7 @@ export function ChatPanel({
           }}
           rows={1}
           maxLength={2000}
-          placeholder="Hỏi về số liệu hoặc cách dùng hệ thống…"
+          placeholder="Hỏi về dự án, methodology hoặc cách dùng hệ thống…"
           aria-label="Câu hỏi cho trợ lý"
           className="max-h-32 min-h-[2.5rem] flex-1 resize-y rounded-lg border border-soil-200 bg-white px-3 py-2 text-sm text-soil-900 outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100"
         />

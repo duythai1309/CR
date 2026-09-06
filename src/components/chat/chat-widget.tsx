@@ -4,13 +4,25 @@ import { useEffect, useState } from "react";
 import { ChatPanel } from "./chat-panel";
 
 /**
- * Nút trợ lý nổi ở góc phải. Hỏi nhanh ngay tại màn hình đang làm việc; hội thoại
- * dài thì mở trang /htx/tro-ly.
+ * Nút trợ lý nổi ở góc phải. Hỏi nhanh ngay tại màn hình đang làm việc.
+ *
+ * Trang trợ lý toàn màn hình duy nhất hiện nằm ở `/htx/tro-ly`, tức trong module cũ.
+ * Nền tảng dự án chưa có trang tương đương; dựng một trang dưới `/du-an` thuộc đợt gỡ
+ * route cũ, không phải đợt này.
  *
  * Panel chỉ được dựng khi mở lần đầu, nên trang không tốn gì cho tới lúc người dùng
  * thực sự cần tới trợ lý.
  */
-export function ChatWidget({ audience = "coop" }: { audience?: "coop" | "buyer" | "admin" }) {
+export function ChatWidget({
+  audience = "coop",
+}: {
+  /**
+   * Không còn ảnh hưởng tới nội dung trợ lý — sản phẩm chỉ còn nền tảng dự án Carbon.
+   * Giữ prop vì bốn điểm gắn của module cũ vẫn truyền vào và chúng chưa bị xoá; xem
+   * chú thích cùng tên trong `chat-panel.tsx`.
+   */
+  audience?: "coop" | "buyer" | "admin";
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 

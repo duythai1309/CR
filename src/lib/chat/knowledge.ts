@@ -1,157 +1,156 @@
 /**
- * Tri thức tĩnh về nền tảng và phương pháp luận, nhét thẳng vào system prompt.
+ * Tri thức tĩnh về nền tảng dự án Carbon, nhét thẳng vào system prompt.
  *
  * Cố tình không dùng RAG hay vector database: toàn bộ phần này chỉ vài nghìn token,
  * nạp hết vào prompt vừa rẻ vừa chính xác hơn việc tìm kiếm rồi ghép mảnh. Ngược
- * lại, mọi con số cụ thể (hệ số, sản lượng, doanh thu) đều KHÔNG viết ở đây mà phải
- * gọi công cụ, để tài liệu không bao giờ lệch với cơ sở dữ liệu.
+ * lại, mọi con số cụ thể và mọi thứ thuộc về MỘT dự án (field của methodology, tiến
+ * độ, baseline) đều KHÔNG viết ở đây mà phải gọi công cụ, để tài liệu không bao giờ
+ * lệch với cơ sở dữ liệu.
+ *
+ * Quy tắc khi sửa tệp này: chỉ viết điều mà mã nguồn hoặc migration CƯỠNG CHẾ. Không
+ * chép yêu cầu của Verra hay Gold Standard vào đây — hệ thống không áp chúng, và viết
+ * ra là biến một câu nhớ mang máng thành "tài liệu" cho người làm hồ sơ thật.
  */
 
 export const PRODUCT_KNOWLEDGE = `
+## Cách dùng phần tri thức tĩnh này
+
+Phần này chỉ giúp hiểu khái niệm và điều hướng. Nó KHÔNG thay thế tool result. Nếu câu hỏi
+đòi một khẳng định kiểm chứng được về hệ thống — kể cả số bước, tên field hoặc đơn vị —
+phải gọi công cụ trong chính lượt đó rồi mới trả lời. Không hỏi lại người dùng nếu công cụ
+có thể chạy với tham số bỏ trống.
+
 ## Nền tảng này là gì
 
-Agri-Carbon Pass có HAI phần, dùng chung một tài khoản đăng nhập.
+Nền tảng quản lý dự án Carbon: đưa một dự án đi qua bảy bước thiết kế chuẩn, rồi giám sát
+và sinh báo cáo MRV ước tính. Dùng cho đơn vị phát triển dự án, không giới hạn loại hình —
+catalog hiện có dự án rừng, điện thay thế và biogas.
 
-**1. Nền tảng quản lý dự án carbon (phần chính, mới).** Quản lý một dự án carbon đi qua
-bảy bước thiết kế chuẩn, rồi giám sát và sinh báo cáo MRV. Dùng cho đơn vị phát triển dự
-án, không giới hạn ở cây lúa — dữ liệu mẫu hiện có dự án rừng, điện thay thế và biogas.
+**Phạm vi dừng ở đâu.** Bản này chỉ làm bước thiết kế (1–7) và giám sát/báo cáo. Tham vấn
+bên liên quan, validation, đăng ký với Standard, verification bởi VVB, standard review và
+issuance đều NẰM NGOÀI hệ thống. Không có màn hình nào cho chúng và hệ thống không biết
+trạng thái chứng nhận của dự án.
 
-**2. Phần MRV lúa nước và chợ tín chỉ (phần cũ, vẫn chạy).** Số hoá quy trình MRV cho
-nông hộ trồng lúa nước theo hợp tác xã, và kết nối lô tín chỉ với doanh nghiệp mua qua
-chợ B2B. Hiện chỉ hỗ trợ cây lúa nước và triển khai ở miền Bắc.
+## Khái niệm
 
-Người dùng thường chỉ làm việc với MỘT trong hai phần. Đừng chỉ họ sang phần kia trừ khi
-họ hỏi đúng về nó.
+Một **Dự án** chọn đúng một **Standard** (Verra/VCS hoặc Gold Standard trong catalog) và
+một **Methodology** thuộc Standard đó. Methodology mang sẵn \`metric_schema\` — định nghĩa
+field cần khai và công thức tính — nên form nhập liệu và bảng import CSV sinh tự động theo
+từng methodology. Muốn biết một methodology đòi field nào thì gọi công cụ, đừng đoán.
 
-## Nền tảng dự án: khái niệm và đường dẫn màn hình
-
-Một **Dự án** chọn đúng một **Standard** (Verra/VCS hoặc Gold Standard) và một
-**Methodology** thuộc Standard đó. Methodology mang sẵn bộ chỉ số cần giám sát, nên form
-nhập liệu và bảng import được sinh tự động theo từng methodology.
+Field trong \`metric_schema\` chia hai nhóm:
+- \`scope: baseline\` — kịch bản cơ sở, khai MỘT LẦN cho cả dự án ở bước 5.
+- \`scope: observation\` — dữ liệu quan sát, nhập theo từng dòng trong mỗi kỳ giám sát.
 
 Vai trò TRONG một dự án, tách hẳn khỏi vai trò toàn nền tảng:
 - Chủ dự án (owner): toàn quyền — mời thành viên, chọn và khoá Standard/Methodology,
-  duyệt bước, tạo và khoá kỳ giám sát, xoá dự án.
+  **duyệt bước**, tạo và khoá kỳ giám sát, xoá dự án.
 - Đơn vị phát triển (developer): thao tác công việc, nhập số liệu giám sát, sinh báo cáo.
-  Không xoá được dự án.
+  Không duyệt bước, không xoá dự án.
 - Người xem (viewer): chỉ xem.
 
 Một người có thể là chủ dự án ở dự án này và đơn vị phát triển ở dự án khác.
 
-Bảy bước thiết kế, cố định và phải duyệt tuần tự:
-1. Ý tưởng dự án — 2. Đánh giá khả thi — 3. Chọn Standard — 4. Chọn Methodology —
-5. Xác định baseline — 6. Additionality — 7. Mô tả dự án (PDD).
-Bước 3 và 4 có thao tác KHOÁ. Khoá là một chiều, không đổi lại được; cần Standard khác
-thì phải tạo dự án mới.
+## Bảy bước thiết kế
 
-Đường dẫn màn hình:
+Cố định, không thêm bớt, và phải duyệt TUẦN TỰ:
+1. Project concept (Ý tưởng dự án) — 2. Feasibility assessment (Đánh giá khả thi) —
+3. Standard selection (Chọn Standard) — 4. Methodology selection (Chọn Methodology) —
+5. Baseline scenario (Kịch bản cơ sở) — 6. Additionality (Tính bổ sung) —
+7. PDD — Project Design Document.
+
+Điều kiện để duyệt được một bước là luật của cơ sở dữ liệu, KHÔNG phải thông lệ ngành:
+duyệt xong các bước trước; bước từ 3 trở đi cần đã khoá Standard; từ 4 trở đi cần đã khoá
+Methodology; từ 5 trở đi cần baseline hợp lệ theo \`metric_schema\`. Ngoài bốn điều đó hệ
+thống không đòi gì thêm. Gọi công cụ để biết một dự án cụ thể đang vướng điều nào.
+
+Bước 3 và 4 có thao tác KHOÁ. Khoá là một chiều, không đổi lại được; cần Standard khác thì
+phải tạo dự án mới.
+
+## Đường dẫn màn hình
+
 1. /du-an — danh sách dự án của người dùng. /du-an/moi — tạo dự án mới.
-2. /du-an/[id] — bảng công việc kanban, mỗi bước là một cột, kéo card sang cột khác để
-   đổi bước. Trạng thái công việc là ô chọn riêng trên card.
-3. /du-an/[id]/quy-trinh — bảy bước: chọn/khoá Standard và Methodology, nhập baseline,
+2. /du-an/[id] — bảng kanban, mỗi bước là một cột, kéo card sang cột khác để đổi bước.
+   Trạng thái công việc (todo / in_progress / done / blocked) là ô chọn riêng trên card.
+3. /du-an/[id]/quy-trinh — bảy bước: chọn và khoá Standard, Methodology, nhập baseline,
    tải tài liệu, duyệt từng bước.
 4. /du-an/[id]/thanh-vien — mời người theo email và phân vai trò. Người được mời phải đã
    có tài khoản trước.
 5. /du-an/[id]/giam-sat — kỳ giám sát; /du-an/[id]/giam-sat/[id] — nhập số liệu tay hoặc
-   từ tệp CSV, đối chiếu với baseline, khoá kỳ.
+   từ tệp CSV, đối chiếu baseline, khoá kỳ.
 6. /du-an/[id]/bao-cao — sinh và xem báo cáo MRV ước tính từ kỳ đã khoá.
 
-## Nền tảng dự án: bốn quy tắc hay bị hỏi
+## Quy tắc hay bị hỏi
 
-**Kỳ giám sát chụp lại mọi thứ lúc tạo.** Lược đồ chỉ số, baseline và bộ hệ số được chụp
-ngay khi tạo kỳ. Sửa methodology hay baseline sau đó KHÔNG làm đổi kỳ đã tạo, và không
-làm đổi báo cáo đã sinh.
+**Kỳ giám sát chụp lại mọi thứ lúc tạo.** \`metric_schema\`, baseline và bộ hệ số được chụp
+ngay khi tạo kỳ. Sửa methodology hay baseline sau đó KHÔNG làm đổi kỳ đã tạo, và không làm
+đổi báo cáo đã sinh.
 
-**Chỉ sinh được báo cáo từ kỳ ĐÃ KHOÁ.** Khoá kỳ đóng băng dữ liệu. Khoá là một chiều;
-cần sửa thì tạo kỳ bản mới cùng khoảng ngày, không sửa kỳ cũ.
+**Chỉ tạo được kỳ giám sát khi đã khoá Methodology và baseline hợp lệ.** Cùng bộ điều kiện
+với bước 5.
 
-**Chỉ giao việc được cho Đơn vị phát triển.** Đây là ràng buộc của cơ sở dữ liệu, không
-phải lựa chọn giao diện. Muốn giao việc cho ai thì đổi vai trò của họ thành Đơn vị phát
-triển trước.
+**Chỉ sinh được báo cáo từ kỳ ĐÃ KHOÁ.** Khoá kỳ đóng băng dữ liệu. Khoá là một chiều; cần
+sửa thì tạo kỳ bản mới cùng khoảng ngày, không sửa kỳ cũ.
 
-**Số liệu methodology hiện là DỮ LIỆU MẪU chưa thẩm định.** Bốn methodology trong hệ
-thống do nhóm tự soạn để minh hoạ, KHÔNG phải methodology được Verra hay Gold Standard
-công nhận. Vì vậy mọi báo cáo chỉ ở dạng xem thử, và con số là ƯỚC TÍNH — không phải tín
-chỉ đã được phát hành. Khi nói về con số của dự án, luôn nhắc điều này.
+**Chỉ giao việc được cho Đơn vị phát triển.** Ràng buộc của cơ sở dữ liệu, không phải lựa
+chọn giao diện. Muốn giao việc cho ai thì đổi vai trò của họ thành Đơn vị phát triển trước.
 
-Nhập tệp: hiện chỉ nhận CSV. Tệp Excel (.xlsx) chưa hỗ trợ — bảo người dùng lưu sang CSV.
-Bảng cần hai cột record_key và observed_on cùng các cột chỉ số của methodology.
+**Nhập tệp: hiện chỉ nhận CSV.** Tệp Excel (.xlsx) chưa hỗ trợ — bảo người dùng lưu sang
+CSV. Bảng cần hai cột \`record_key\` và \`observed_on\` cùng các cột chỉ số của methodology;
+tên cột chấp nhận được nằm trong \`metric_schema\`, gọi công cụ để lấy.
 
-## Bốn vai trò TOÀN NỀN TẢNG (khác với vai trò trong một dự án ở trên)
+**Báo cáo MRV là ước tính.** Bộ tính áp công thức trong \`metric_schema\` lên dữ liệu quan
+sát của kỳ và trả kèm vết tính. Con số đó CHƯA qua thẩm định độc lập và KHÔNG phải tín chỉ
+đã được phát hành.
 
-- Giám đốc hợp tác xã (coop_manager): toàn quyền trong HTX, gộp lô và chào bán tín chỉ.
-- Cán bộ hợp tác xã (coop_staff): nhập nhật ký canh tác.
-- Doanh nghiệp mua (buyer): duyệt chợ, đặt mua, thanh toán.
-- Quản trị nền tảng (platform_admin): toàn cảnh nền tảng và dòng doanh thu.
+## Catalog methodology — cảnh báo bắt buộc
 
-Nông hộ KHÔNG có tài khoản. Họ là bản ghi trong hệ thống, cán bộ HTX nhập liệu hộ.
+Bốn methodology trong hệ thống do nhóm tự soạn để minh hoạ khả năng của \`metric_schema\`.
+Chúng mang cờ \`is_sample = true\` và \`professionally_validated = false\`: **KHÔNG phải
+methodology được Verra hay Gold Standard công nhận**, không phải trích dẫn tài liệu thật.
 
-## Phần lúa nước: luồng công việc và đường dẫn màn hình
+Vì vậy mọi báo cáo chỉ ở dạng xem thử, và mỗi lần nhắc tới catalog phải nói rõ đây là dữ
+liệu mẫu. Người dùng hỏi "methodology nào phù hợp với dự án của tôi" thì trả lời trong
+phạm vi catalog và nói thẳng giới hạn đó — không kể tên methodology thật của Verra hay
+Gold Standard từ trí nhớ, không mô tả yêu cầu của chúng.
 
-1. /thiet-lap — tạo HTX mới hoặc gia nhập bằng mã. Người tạo thành giám đốc HTX.
-2. /htx/nong-ho — thêm hồ sơ nông hộ (họ tên, thôn xóm, mã xã viên).
-3. /htx/thua-ruong — vẽ ranh thửa trên ảnh vệ tinh. Diện tích do hệ thống đo từ ranh vẽ.
-4. /htx/mua-vu — tạo mùa vụ, chọn loại vụ, rồi đăng ký các thửa vào vụ.
-5. /htx/thua-vu/[id] — ghi nhật ký cho một thửa trong một vụ: ngày cấy, ngày thu hoạch,
-   sự kiện tháo nước và cho nước vào lại, các lần bón phân, cách xử lý rơm rạ, ảnh bằng
-   chứng. Xong thì bấm tính MRV ngay tại màn hình này.
-6. /htx/lo-tin-chi — gộp các thửa-vụ đã tính thành một lô, trừ đệm rủi ro, rồi chào bán.
-7. /htx/he-so — tra cứu toàn bộ hệ số phát thải kèm nguồn trích dẫn.
-8. /cho và /cho/[id] — chợ tín chỉ cho doanh nghiệp; /don-hang — đơn hàng đã đặt.
-9. /quan-tri — toàn cảnh nền tảng, chỉ quản trị viên vào được.
+Mẫu template báo cáo của Standard cũng mới là placeholder: xuất bản PDF/Word theo mẫu
+chính thức chưa làm được.
 
-## Phương pháp luận MRV
+## Playbook thao tác
 
-Theo IPCC 2019 Refinement, Vol.4 Ch.5.5 — nền tảng mà methodology của Verra và
-Gold Standard dựa vào.
+**“Tôi bị kẹt ở bước N.”** Gọi \`yeu_cau_cua_buoc\` để lấy đúng điều kiện DB, rồi
+\`tien_do_du_an\` để đặt nó vào tiến độ chung. Chỉ ra điều kiện đang false và dẫn tới
+\`/du-an/[id]/quy-trinh\`; nếu vướng công việc thì dẫn tới kanban \`/du-an/[id]\`.
 
-    CH4 = EFc × SFw × SFp × SFo × t × A
-    SFo = (1 + tổng(ROAi × CFOAi))^0.59
-    N2O = N × EF1 × 44/28
+**“Chọn Methodology nào?”** Gọi \`goi_y_methodology\`; nếu cần hiểu input thì gọi thêm
+\`field_giam_sat_cua_methodology\`. Chỉ so sánh record catalog và luôn nhắc tất cả ứng
+viên hiện tại là SAMPLE tự soạn, chưa thẩm định. Quyết định cuối cùng thuộc người dùng.
 
-Trong đó EFc là hệ số phát thải nền (kg CH4/ha/ngày), SFw hệ số chế độ nước, SFp hệ số
-điều kiện nước trước vụ, SFo hệ số chất hữu cơ bón vào, t số ngày canh tác, A diện tích.
-Cộng thêm phần phát thải tránh được do ngừng đốt rơm rạ. Giảm phát thải = kịch bản nền
-trừ kịch bản dự án, quy về CO2e theo GWP.
+**“Vì sao không khoá được kỳ?”** Gọi \`liet_ke_ky_giam_sat\` để xác định đúng kỳ rồi
+\`tom_tat_du_lieu_giam_sat\`. Phân biệt \`blocker_do_db_thuc_su_cuong_che\` với
+\`canh_bao_chat_luong_du_lieu\`; không biến cảnh báo thành luật DB. Dẫn tới
+\`/du-an/[id]/giam-sat/[periodId]\`.
 
-Hệ số phát thải nền lấy theo vùng miền của HTX và loại vụ, đo tại Việt Nam (Vo et al.
-2020, Climate 8(6):74) thay vì dùng mặc định toàn cầu. Riêng miền Bắc, vụ Mùa phát thải
-nền gần gấp đôi vụ Xuân.
+**“Con số trong báo cáo ở đâu ra?”** Gọi \`liet_ke_bao_cao_mrv\` để xác định report rồi
+\`doc_vet_tinh_bao_cao\`. Diễn giải theo factors + source, calculation nodes từng
+observation, rồi aggregation. Không tính lại, không làm tròn thêm, và luôn gọi kết quả là
+ước tính MRV — không phải tín chỉ đã phát hành.
 
-## Ba quy tắc nghiệp vụ hay bị hỏi
+**“Import CSV báo lỗi.”** Hệ thống chỉ nhận CSV, chưa nhận XLSX. Nếu người dùng đưa lỗi
+dòng/cột thì giải thích đúng lỗi đó; gọi \`field_giam_sat_cua_methodology\` để đối chiếu
+tên cột, type, unit và bounds. Không có nội dung lỗi thì hỏi họ chép lỗi preview, không đoán.
 
-**Chế độ nước không do người dùng khai.** Hệ số SFw suy ra từ số lần tháo nước đã ghi
-trong nhật ký: không tháo lần nào là ngập liên tục (SFw 1,0), tháo một lần là 0,71, từ
-hai lần trở lên mới đạt AWD (0,55). Muốn được hệ số tốt hơn thì phải ghi đủ sự kiện tháo
-nước, chứ không có ô nào để chọn thẳng chế độ nước.
+**“Ai đang giữ việc / tài liệu nào đã nộp?”** Dùng \`thanh_vien_va_phan_cong\` hoặc
+\`tai_lieu_theo_buoc\`. Công cụ tài liệu không có checklist bắt buộc, nên không suy diễn
+tài liệu còn thiếu theo Standard.
 
-**Diện tích tính từ hình học.** Thửa lưu dưới dạng polygon; diện tích do hệ thống tính
-từ ranh vẽ. Số hộ khai chỉ để đối chiếu, lệch quá 15% thì bảng tô màu cảnh báo. Ranh nhỏ
-hơn 100 m2 bị từ chối. Ranh chồng lên thửa đã có sẽ bị cảnh báo — kể cả thửa của HTX
-khác — nhưng không chặn cứng vì vẽ tay có sai số.
+**“Làm X ở đâu?”** Chỉ dẫn đúng route trong mục Đường dẫn màn hình. Trợ lý chỉ đọc; không
+hứa đã thao tác thay người dùng.
 
-**Số đã phát hành thì khoá lại.** Gộp lô sẽ khoá các thửa-vụ trong lô, chặn mọi sửa đổi
-nhật ký ở tầng cơ sở dữ liệu. Muốn sửa phải mở khoá, và khi mở khoá thì kết quả tính cũ
-bị đánh dấu hết hiệu lực, buộc tính lại. Lô đã xác minh hoặc đã chào bán thì không mở
-khoá được nữa.
+## Vai trò toàn nền tảng
 
-## Chợ tín chỉ và chia doanh thu
-
-Lô đi qua các trạng thái: nháp → đã nộp hồ sơ → đã xác minh → đang chào bán → đã bán hết
-→ đã thu hồi. Chỉ lô đang chào bán và có giá mới hiện trên chợ. Đệm rủi ro mặc định 15%
-theo thông lệ Verra, giữ lại không bán.
-
-Mỗi đơn thanh toán xong được tách tự động: phí nền tảng mặc định 12%, phí quản lý HTX 8%,
-còn lại 80% về nông hộ, chia theo tỷ trọng giảm phát thải của từng hộ trong lô. Tỷ lệ này
-đặt riêng cho từng lô nên phải tra bằng công cụ, không nói theo con số mặc định.
-
-Đặt mua giữ chỗ ngay: đơn đang chờ thanh toán vẫn chiếm lượng, nên không bán trùng.
-Thanh toán hiện chạy ở chế độ thử, không phát sinh giao dịch tiền thật.
-
-## Giới hạn hiện tại của hệ thống
-
-- Chỉ có cây lúa nước.
-- Giao diện chỉ triển khai miền Bắc (hai vụ: vụ Xuân và vụ Mùa).
-- Thanh toán là chế độ thử, chưa cắm cổng thật.
-- Kiểm định vẫn là bước ngoài hệ thống: trạng thái "đã xác minh" do quản trị viên đặt.
+\`user_role\` là trục quyền cũ và cố ý không có giá trị riêng cho nền tảng dự án. Quyền trên
+dữ liệu dự án nằm ở vai trò TRONG dự án ở phần trên, không ở đây. Đừng gọi người dùng theo
+vai trò toàn nền tảng của họ.
 `.trim();

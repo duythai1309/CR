@@ -1,6 +1,26 @@
 import type { Database } from "@/types/database";
 import type { ProjectRole } from "@/types/project-platform";
 
+/**
+ * Nhãn hiển thị. Tệp này đang bắc qua HAI sản phẩm và sẽ teo lại ở đợt gỡ module cũ.
+ *
+ * Trợ lý ảo KHÔNG còn import gì từ đây nữa (trước đây `handlers.ts` lấy năm nhãn và
+ * `prompt.ts` lấy `ROLE_LABEL`). Nhưng ở đợt này chưa bỏ được export nào: mọi hằng số
+ * bên dưới vẫn còn ít nhất một nơi import, và các nơi đó là route cũ chưa bị xoá.
+ *
+ * Kiểm lại bằng grep trước khi xoá từng cái ở đợt sau. Tình trạng lúc viết dòng này:
+ *
+ *   GIỮ (nền tảng dự án dùng)   ROLE_LABEL, PROJECT_ROLE_LABEL
+ *   XOÁ CÙNG /htx               REGION_LABEL, SEASON_TYPE_LABEL, SEASON_CALENDAR,
+ *                               WATER_REGIME_LABEL, PRESEASON_LABEL, STRAW_LABEL,
+ *                               ORGANIC_LABEL, WATER_EVENT_LABEL, BATCH_STATUS_LABEL
+ *   XOÁ CÙNG /cho, /don-hang    ORDER_STATUS_LABEL, PAYMENT_STATUS_LABEL
+ *
+ * Ba hằng số cuối là `Record` trên enum `batch_status`/`order_status`/`payment_status`;
+ * drop ba enum đó mà chưa xoá chúng là `npm run types` đỏ (rủi ro R3 trong
+ * `docs/audit/audit-keep.md`).
+ */
+
 type Enums = Database["public"]["Enums"];
 
 export const ROLE_LABEL: Record<Enums["user_role"], string> = {

@@ -1,6 +1,7 @@
 import { MAX_TOOL_ROUNDS } from "./guards";
 import type { ChatProvider, ProviderTurn, ToolCall } from "./provider";
 import type { ToolSpec } from "./tools";
+import { requiredToolNamesForQuestion } from "./routing";
 
 export type RunEvent =
   | { type: "status"; tool: string }
@@ -44,11 +45,24 @@ export async function* runTurn(opts: RunOptions): AsyncGenerator<RunEvent> {
   const contents: ProviderTurn[] = [...opts.contents];
   const toolCalls: ToolCall[] = [];
   let answer = "";
+  const question = [...contents]
+    .reverse()
+    .flatMap((turn) => [...turn.parts].reverse())
+    .find((part): part is { text: string } => "text" in part)?.text ?? "";
+  const routedNames = requiredToolNamesForQuestion(question);
+  const requiredToolNames = routedNames?.filter((name) => tools.some((tool) => tool.name === name));
 
   for (let round = 0; round < maxRounds; round++) {
     const calls: ToolCall[] = [];
 
-    for await (const event of provider.stream({ system, contents, tools })) {
+    for await (const event of provider.stream({
+      system,
+      contents,
+      tools,
+      // Chỉ ép vòng đầu. Sau functionResponse phải trả provider về AUTO, nếu không nó
+      // sẽ bị buộc gọi tool mãi và chạm MAX_TOOL_ROUNDS thay vì viết câu trả lời.
+      requiredToolNames: round === 0 && requiredToolNames?.length ? requiredToolNames : undefined,
+    })) {
       if (event.type === "calls") {
         calls.push(...event.calls);
       } else if (event.text) {

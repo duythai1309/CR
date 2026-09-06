@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { FunctionCallingConfigMode, GoogleGenAI } from "@google/genai";
 import type { ChatProvider, ProviderTurn } from "../provider";
 import type { ToolParamSchema } from "../tools";
 
@@ -53,7 +53,7 @@ export function createGeminiProvider(config: {
   const ai = new GoogleGenAI({ apiKey: config.apiKey });
 
   return {
-    async *stream({ system, contents, tools }) {
+    async *stream({ system, contents, tools, requiredToolNames }) {
       const response = await ai.models.generateContentStream({
         model: config.model,
         // SDK khai báo kiểu Content riêng; cấu trúc khớp nhưng TypeScript không nối
@@ -74,6 +74,15 @@ export function createGeminiProvider(config: {
                     })),
                   },
                 ]
+              : undefined,
+          toolConfig:
+            requiredToolNames && requiredToolNames.length > 0
+              ? {
+                  functionCallingConfig: {
+                    mode: FunctionCallingConfigMode.ANY,
+                    allowedFunctionNames: requiredToolNames,
+                  },
+                }
               : undefined,
         },
       });

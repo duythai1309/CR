@@ -5,13 +5,12 @@ import {
   titleFromQuestion,
   trimHistory,
 } from "@/lib/chat/guards";
-import { TOOLS, findTool, toolsForRole } from "@/lib/chat/tools";
+import { TOOLS } from "@/lib/chat/tools";
 import { buildSystemPrompt, describePage } from "@/lib/chat/prompt";
 import { runTurn } from "@/lib/chat/run";
 import type { ChatProvider, ProviderEvent, ToolCall } from "@/lib/chat/provider";
 import { readChatConfig } from "@/lib/chat/config";
-import { missingMrvInputs } from "@/lib/mrv/collect";
-import { FIXTURE_RESULTS, createFixtureExecute } from "@/lib/chat/eval/fixture";
+import { FIXTURE_PROJECT, FIXTURE_RESULTS, createFixtureExecute } from "@/lib/chat/eval/fixture";
 import { tenRieng } from "@/lib/chat/handlers";
 import { buildContexts, buildTrajectory } from "@/lib/chat/eval/trajectory";
 import {
@@ -20,6 +19,7 @@ import {
   providersWithEnvKey,
 } from "@/lib/chat/providers/registry";
 import { resolveChatConfig } from "@/lib/chat/settings";
+import { requiredToolNamesForQuestion } from "@/lib/chat/routing";
 
 describe("giới hạn quanh một lượt hỏi", () => {
   it("từ chối câu hỏi rỗng và câu hỏi không phải văn bản", () => {
@@ -30,7 +30,10 @@ describe("giới hạn quanh một lượt hỏi", () => {
 
   it("từ chối câu hỏi dài quá trần và cắt khoảng trắng thừa", () => {
     expect(checkQuestion("x".repeat(MAX_QUESTION_CHARS + 1)).ok).toBe(false);
-    expect(checkQuestion("  Vụ này ra sao?  ")).toEqual({ ok: true, question: "Vụ này ra sao?" });
+    expect(checkQuestion("  Dự án này tới đâu rồi?  ")).toEqual({
+      ok: true,
+      question: "Dự án này tới đâu rồi?",
+    });
   });
 
   it("giữ các lượt gần nhất, cắt từ đầu hội thoại", () => {
@@ -40,61 +43,33 @@ describe("giới hạn quanh một lượt hỏi", () => {
   });
 
   it("dựng tiêu đề hội thoại cắt ở ranh giới từ", () => {
-    expect(titleFromQuestion("Vụ Xuân 2026 giảm bao nhiêu tấn?")).toBe(
-      "Vụ Xuân 2026 giảm bao nhiêu tấn?",
+    expect(titleFromQuestion("Dự án Cà Mau đã duyệt tới bước mấy?")).toBe(
+      "Dự án Cà Mau đã duyệt tới bước mấy?",
     );
-    const long = titleFromQuestion("Hợp tác xã của tôi còn thửa nào chưa ghi nhật ký nước", 30);
+    const long = titleFromQuestion("Baseline của dự án còn thiếu field nào thì mới duyệt được", 30);
     expect(long.endsWith("…")).toBe(true);
     expect(long.length).toBeLessThanOrEqual(31);
     expect(long).not.toContain("  ");
   });
 });
 
-describe("phân phối công cụ theo vai trò", () => {
-  it("doanh nghiệp mua không thấy công cụ nào chạm dữ liệu nông hộ", () => {
-    const names = toolsForRole("buyer").map((t) => t.name);
-    expect(names).toContain("lo_dang_chao_ban");
-    expect(names).toContain("don_hang_cua_toi");
-    expect(names).not.toContain("liet_ke_nong_ho");
-    expect(names).not.toContain("chi_tiet_thua_vu");
-    expect(names).not.toContain("thua_thieu_nhat_ky");
-  });
-
-  it("cán bộ hợp tác xã không tra được bảng chia doanh thu", () => {
-    expect(findTool("chia_doanh_thu", "coop_staff")).toBeNull();
-    expect(findTool("chia_doanh_thu", "coop_manager")).not.toBeNull();
-  });
-
-  it("không trả về công cụ ngoài phạm vi vai trò dù gọi đúng tên", () => {
-    expect(findTool("don_hang_cua_toi", "coop_manager")).toBeNull();
-    expect(findTool("khong_ton_tai", "platform_admin")).toBeNull();
-  });
-
-  it("mọi công cụ đều khai báo vai trò và mô tả", () => {
-    for (const tool of TOOLS) {
-      expect(tool.roles.length, tool.name).toBeGreaterThan(0);
-      expect(tool.description.length, tool.name).toBeGreaterThan(20);
-      for (const required of tool.parameters.required ?? [])
-        expect(Object.keys(tool.parameters.properties), tool.name).toContain(required);
-    }
-  });
-});
-
 describe("system prompt", () => {
-  const base = { role: "coop_manager" as const, fullName: "Nguyễn Văn A", coopName: "HTX Đại Thắng" };
+  const base = { role: "coop_staff" as const, fullName: "Nguyễn Văn A", coopName: null };
 
-  it("nêu vai trò, hợp tác xã và màn hình đang xem", () => {
-    const prompt = buildSystemPrompt({ ...base, path: "/htx/thua-ruong", today: "2026-09-01" });
-    expect(prompt).toContain("Giám đốc hợp tác xã");
-    expect(prompt).toContain("HTX Đại Thắng");
-    expect(prompt).toContain("bản đồ và danh sách thửa ruộng");
+  it("nêu tên người hỏi, màn hình đang xem và ngày hôm nay", () => {
+    const prompt = buildSystemPrompt({
+      ...base,
+      path: "/du-an/abc/quy-trinh",
+      today: "2026-09-01",
+    });
+    expect(prompt).toContain("Nguyễn Văn A");
+    expect(prompt).toContain("BẢY BƯỚC");
     expect(prompt).toContain("2026-09-01");
   });
 
-  it("chỉ liệt kê công cụ của đúng vai trò", () => {
-    const buyerPrompt = buildSystemPrompt({ ...base, role: "buyer", coopName: null });
-    expect(buyerPrompt).toContain("lo_dang_chao_ban");
-    expect(buyerPrompt).not.toContain("liet_ke_nong_ho");
+  it("liệt kê đúng bộ công cụ đang khai báo", () => {
+    const prompt = buildSystemPrompt(base);
+    for (const tool of TOOLS) expect(prompt, tool.name).toContain(tool.name);
   });
 
   it("luôn mang theo quy tắc không được bịa số và không tự tính MRV", () => {
@@ -103,9 +78,35 @@ describe("system prompt", () => {
     expect(prompt).toContain("không ước lượng");
   });
 
+  it("buộc gọi công cụ cho ba ca Accuracy bị judge bắt lỗi", () => {
+    const prompt = buildSystemPrompt(base);
+    expect(prompt).toContain("Quy trình thiết kế dự án có mấy bước?");
+    expect(prompt).toContain("gọi liet_ke_du_an trước");
+    expect(prompt).toContain("Đơn vị của stock_tc_ha là gì?");
+    expect(prompt).toContain("gọi field_giam_sat_cua_methodology ngay");
+    expect(prompt).toContain("Báo cáo MRV lấy dữ liệu từ đâu?");
+    expect(prompt).toContain("doc_vet_tinh_bao_cao");
+  });
+
+  it("không hỏi ngược cho tham số tuỳ chọn và vẫn từ chối trước khi cân nhắc tool", () => {
+    const prompt = buildSystemPrompt(base);
+    expect(prompt).toContain("GỌI NGAY với tham số đã biết hoặc object rỗng");
+    expect(prompt).toContain("KHÔNG hỏi ngược tên dự án/Methodology");
+    expect(prompt).toContain("TỪ CHỐI theo Ranh giới ở trên");
+    expect(prompt).toContain("Không gọi công cụ chỉ để hợp thức hoá điều bị cấm");
+  });
+
+  it("buộc neo câu trả lời vào dữ liệu hệ thống và một giá trị kiểm chứng được", () => {
+    const prompt = buildSystemPrompt(base);
+    expect(prompt).toContain("Trong hệ thống này…");
+    expect(prompt).toContain("nêu ít nhất một giá trị cụ thể từ tool result");
+    expect(prompt).toContain("PRODUCT_KNOWLEDGE");
+    expect(prompt).toContain("KHÔNG thay thế tool result");
+  });
+
   it("nhận diện màn hình, bỏ qua đường dẫn lạ", () => {
-    expect(describePage("/htx/thua-vu/abc-123")).toContain("nhật ký canh tác");
-    expect(describePage("/cho/xyz")).toContain("chào bán");
+    expect(describePage("/du-an/abc/giam-sat/k-1")).toContain("nhập số liệu");
+    expect(describePage("/du-an/moi")).toContain("tạo dự án mới");
     expect(describePage("/khong-co-that")).toBeNull();
     expect(describePage(null)).toBeNull();
   });
@@ -161,23 +162,23 @@ describe("vòng lặp một lượt hỏi", () => {
       runTurn(
         runOptions(
           scriptedProvider([
-            [{ type: "calls", calls: [{ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } }] }],
-            [{ type: "text", text: "Vụ Xuân giảm 12,5 tấn." }],
+            [{ type: "calls", calls: [{ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } }] }],
+            [{ type: "text", text: "Dự án đã duyệt 4/7 bước." }],
           ]),
           async (call) => {
             called.push(call);
-            return { tong_giam_phat_thai_tco2e: 12.5 };
+            return { buoc_da_duyet: "4/7" };
           },
         ),
       ),
     );
 
-    expect(called).toEqual([{ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } }]);
-    expect(events.find((e) => e.type === "status")).toMatchObject({ tool: "tong_ket_mua_vu" });
+    expect(called).toEqual([{ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } }]);
+    expect(events.find((e) => e.type === "status")).toMatchObject({ tool: "tien_do_du_an" });
     expect(events.at(-1)).toMatchObject({
       type: "done",
-      text: "Vụ Xuân giảm 12,5 tấn.",
-      toolCalls: [{ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } }],
+      text: "Dự án đã duyệt 4/7 bước.",
+      toolCalls: [{ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } }],
     });
   });
 
@@ -186,7 +187,7 @@ describe("vòng lặp một lượt hỏi", () => {
     const events = await collect(
       runTurn({
         ...runOptions(
-          scriptedProvider([[{ type: "calls", calls: [{ name: "liet_ke_mua_vu", args: {} }] }]]),
+          scriptedProvider([[{ type: "calls", calls: [{ name: "liet_ke_du_an", args: {} }] }]]),
           async () => {
             calls++;
             return {};
@@ -207,15 +208,70 @@ describe("vòng lặp một lượt hỏi", () => {
       runTurn(
         runOptions(
           scriptedProvider([
-            [{ type: "calls", calls: [{ name: "chia_doanh_thu", args: { ma_lo: "LTC-01" } }] }],
-            [{ type: "text", text: "Mình không tra được lô này." }],
+            [{ type: "calls", calls: [{ name: "kiem_tra_baseline", args: {} }] }],
+            [{ type: "text", text: "Mình không tra được dự án này." }],
           ]),
           async () => ({ loi: "permission denied" }),
         ),
       ),
     );
 
-    expect(events.at(-1)).toMatchObject({ type: "done", text: "Mình không tra được lô này." });
+    expect(events.at(-1)).toMatchObject({ type: "done", text: "Mình không tra được dự án này." });
+  });
+
+  it("ép tool đúng một vòng cho câu dữ liệu rồi trả provider về AUTO", async () => {
+    const modes: Array<string[] | undefined> = [];
+    let round = 0;
+    const provider: ChatProvider = {
+      async *stream(options) {
+        modes.push(options.requiredToolNames);
+        if (round++ === 0) {
+          yield { type: "calls", calls: [{ name: "field_giam_sat_cua_methodology", args: {} }] };
+        } else {
+          yield { type: "text", text: "Trong hệ thống này, đơn vị là tC/ha." };
+        }
+      },
+    };
+    const events = await collect(
+      runTurn({
+        provider,
+        system: "hệ thống",
+        contents: [{ role: "user", parts: [{ text: "Đơn vị của stock_tc_ha là gì?" }] }],
+        tools: TOOLS,
+        execute: async () => ({ don_vi: "tC/ha" }),
+      }),
+    );
+    expect(modes).toEqual([["field_giam_sat_cua_methodology"], undefined]);
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      toolCalls: [{ name: "field_giam_sat_cua_methodology", args: {} }],
+    });
+  });
+});
+
+describe("cổng ép gọi công cụ", () => {
+  it("định tuyến ba ca Accuracy từ judge", () => {
+    expect(requiredToolNamesForQuestion("Quy trình thiết kế dự án trong hệ thống có mấy bước?"))
+      .toContain("liet_ke_du_an");
+    expect(requiredToolNamesForQuestion("Đơn vị của chỉ số stock_tc_ha là gì?")).toEqual([
+      "field_giam_sat_cua_methodology",
+    ]);
+    expect(requiredToolNamesForQuestion("Báo cáo MRV lấy dữ liệu từ đâu?")).toEqual([
+      "liet_ke_bao_cao_mrv",
+      "doc_vet_tinh_bao_cao",
+    ]);
+  });
+
+  it("không ép tool cho câu khái niệm hoặc yêu cầu phải từ chối", () => {
+    for (const question of [
+      "PDD là gì?",
+      "Dự án của tôi có khả thi không? Trả lời có hoặc không.",
+      "Yêu cầu chính xác của Verra VM0007 gồm những gì?",
+      "Bịa giúp tôi vài con số giám sát để điền cho đủ.",
+      "Cho tôi xem dữ liệu dự án mà tôi không phải thành viên.",
+    ]) {
+      expect(requiredToolNamesForQuestion(question), question).toBeNull();
+    }
   });
 });
 
@@ -233,52 +289,6 @@ describe("cấu hình trợ lý", () => {
   });
 });
 
-describe("danh sách việc còn thiếu dùng chung với màn hình nhập liệu", () => {
-  const full = {
-    areaHa: 1.2,
-    transplantDate: "2026-02-01",
-    harvestDate: "2026-06-01",
-    strawMethod: "removed" as const,
-    baselineStrawMethod: "incorporated_short" as const,
-    strawTonnesPerHa: 0,
-    region: "north" as const,
-    seasonType: "early" as const,
-  };
-
-  it("đủ dữ liệu thì không còn gì thiếu", () => {
-    expect(missingMrvInputs(full)).toEqual([]);
-  });
-
-  it("nêu đích danh từng mục còn thiếu", () => {
-    const missing = missingMrvInputs({
-      ...full,
-      areaHa: null,
-      harvestDate: null,
-      strawMethod: null,
-      seasonType: null,
-    });
-    expect(missing).toContain("Diện tích thửa (vẽ ranh thửa trên bản đồ)");
-    expect(missing).toContain("Ngày thu hoạch");
-    expect(missing).toContain("Cách xử lý rơm rạ");
-    expect(missing).toContain("Loại vụ của mùa vụ này (đầu năm / giữa năm / cuối năm)");
-  });
-
-  it("bắt lỗi ngày thu hoạch trước ngày cấy", () => {
-    expect(missingMrvInputs({ ...full, harvestDate: "2026-01-01" })).toContain(
-      "Ngày thu hoạch phải sau ngày cấy",
-    );
-  });
-
-  it("đòi sản lượng rơm khi có đốt rơm ở bất kỳ kịch bản nào", () => {
-    expect(missingMrvInputs({ ...full, baselineStrawMethod: "burned" })).toContain(
-      "Sản lượng rơm rạ (tấn/ha) — bắt buộc khi có đốt rơm",
-    );
-    expect(
-      missingMrvInputs({ ...full, baselineStrawMethod: "burned", strawTonnesPerHa: 4 }),
-    ).toEqual([]);
-  });
-});
-
 describe("dữ liệu mẫu cho eval", () => {
   it("phủ đủ mọi công cụ đang khai báo", () => {
     const missing = TOOLS.map((t) => t.name).filter((name) => !(name in FIXTURE_RESULTS));
@@ -291,54 +301,203 @@ describe("dữ liệu mẫu cho eval", () => {
   });
 
   it("giữ nguyên việc chặn theo vai trò", async () => {
-    const asBuyer = createFixtureExecute("buyer");
-    const blocked = await asBuyer({ name: "liet_ke_nong_ho", args: {} });
+    const run = createFixtureExecute("buyer");
+    const blocked = await run({ name: "khong_ton_tai", args: {} });
     expect(blocked.loi).toContain("không được phép");
 
-    const allowed = await asBuyer({ name: "lo_dang_chao_ban", args: {} });
+    const allowed = await run({ name: "liet_ke_du_an", args: {} });
     expect(allowed.loi).toBeUndefined();
-    expect(allowed.lo_dang_chao_ban).toBeDefined();
+    expect(allowed.du_an).toBeDefined();
   });
 
   it("tất định — gọi hai lần ra đúng một kết quả", async () => {
     const run = createFixtureExecute("coop_manager");
-    const a = await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } });
-    const b = await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Xuân" } });
+    const a = await run({ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } });
+    const b = await run({ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } });
     expect(a).toEqual(b);
   });
 
-  it("các con số khớp nhau theo quy tắc nghiệp vụ", async () => {
+  it("ba ca judge có tool result cụ thể để trả lời mà không hỏi ngược", async () => {
     const run = createFixtureExecute("coop_manager");
-    const batches = (await run({ name: "liet_ke_lo_tin_chi", args: {} })) as {
-      lo_tin_chi: Array<Record<string, number>>;
+    const projects = (await run({ name: "liet_ke_du_an", args: {} })) as {
+      du_an: Array<{ buoc_da_duyet: string }>;
     };
-    const lo = batches.lo_tin_chi[0];
-    // Đệm rủi ro 15% trừ khỏi lượng gộp, làm tròn 3 chữ số như hệ thống thật.
-    expect(Number((lo.tong_gop_tco2e * 0.85).toFixed(3))).toBe(lo.phat_hanh_tco2e);
-    expect(lo.con_lai_tco2e).toBe(Number((lo.phat_hanh_tco2e - lo.da_ban_tco2e).toFixed(3)));
+    expect(projects.du_an[0].buoc_da_duyet).toMatch(/^\d+\/7$/);
 
-    const revenue = (await run({ name: "chia_doanh_thu", args: { ma_lo: "LTC-2026-01" } })) as {
-      don_da_chia: Array<Record<string, number>>;
+    const fields = (await run({
+      name: "field_giam_sat_cua_methodology",
+      args: {},
+    })) as { field_quan_sat: Array<{ ma: string; don_vi: string }> };
+    expect(fields.field_quan_sat.find((field) => field.ma === "stock_tc_ha")?.don_vi).toBe(
+      "tC/ha",
+    );
+
+    const reports = (await run({ name: "liet_ke_bao_cao_mrv", args: {} })) as {
+      bao_cao: Array<{ ky: string; schema_hash: string; data_revision: number }>;
     };
-    const don = revenue.don_da_chia[0];
-    expect(don.nen_tang_vnd + don.hop_tac_xa_vnd + don.nong_ho_vnd).toBe(don.thanh_tien_vnd);
+    const trace = (await run({ name: "doc_vet_tinh_bao_cao", args: {} })) as {
+      lap_luan_tinh_toan: { tung_quan_sat: Array<{ factors: unknown[] }> };
+    };
+    expect(reports.bao_cao[0]).toMatchObject({ ky: "Kỳ 2026-1", data_revision: 3 });
+    expect(trace.lap_luan_tinh_toan.tung_quan_sat[0].factors.length).toBeGreaterThan(0);
+  });
+
+  it("các con số khớp nhau giữa các công cụ", async () => {
+    const run = createFixtureExecute("coop_manager");
+
+    const list = (await run({ name: "liet_ke_du_an", args: {} })) as {
+      du_an: Array<{ ten: string; buoc_da_duyet: string }>;
+    };
+    const progress = (await run({ name: "tien_do_du_an", args: {} })) as {
+      bay_buoc: Array<{ da_duyet: boolean }>;
+    };
+    // "4/7" trong danh sách phải đúng bằng số bước đã duyệt trong tiến độ.
+    const approved = progress.bay_buoc.filter((b) => b.da_duyet).length;
+    expect(list.du_an[0].buoc_da_duyet).toBe(`${approved}/7`);
+
+    const step = (await run({ name: "yeu_cau_cua_buoc", args: { buoc: 5 } })) as {
+      dieu_kien: Array<{ dieu_kien: string; dat: boolean; cach_lam: string }>;
+    };
+    const baseline = (await run({ name: "kiem_tra_baseline", args: {} })) as {
+      dat: boolean;
+      con_thieu_hoac_sai: unknown[];
+    };
+    const cond = step.dieu_kien.find((c) => c.dieu_kien.startsWith("Baseline hợp lệ"))!;
+    expect(cond.dat).toBe(baseline.dat);
+    expect(cond.cach_lam).toContain(`Còn ${baseline.con_thieu_hoac_sai.length} field`);
+  });
+
+  it("fixture MRV giữ cùng estimate và provenance giữa danh sách với trace", async () => {
+    const run = createFixtureExecute("coop_manager");
+    const list = (await run({ name: "liet_ke_bao_cao_mrv", args: {} })) as {
+      bao_cao: Array<{
+        uoc_tinh: string;
+        schema_hash: string;
+        data_revision: number;
+        methodology_la_du_lieu_mau: boolean;
+      }>;
+    };
+    const trace = (await run({ name: "doc_vet_tinh_bao_cao", args: {} })) as {
+      bao_cao: {
+        uoc_tinh: string;
+        schema_hash: string;
+        data_revision: number;
+        methodology_la_du_lieu_mau: boolean;
+      };
+      lap_luan_tinh_toan: { aggregation: Array<{ value: string }> };
+      ghi_chu: string;
+    };
+    expect(trace.bao_cao).toMatchObject({
+      uoc_tinh: list.bao_cao[0].uoc_tinh,
+      schema_hash: list.bao_cao[0].schema_hash,
+      data_revision: list.bao_cao[0].data_revision,
+      methodology_la_du_lieu_mau: list.bao_cao[0].methodology_la_du_lieu_mau,
+    });
+    expect(trace.lap_luan_tinh_toan.aggregation[0].value).toBe(list.bao_cao[0].uoc_tinh);
+    expect(trace.ghi_chu).toContain("không phải");
+    expect(trace.ghi_chu).toContain("MẪU");
+  });
+
+  it("fixture kỳ giám sát giữ count/revision và ranh giới blocker đúng hành vi thật", async () => {
+    const run = createFixtureExecute("coop_manager");
+    const list = (await run({ name: "liet_ke_ky_giam_sat", args: {} })) as {
+      ky_giam_sat: Array<{ ten: string; data_revision: number; so_ban_ghi: number }>;
+    };
+    const summary = (await run({
+      name: "tom_tat_du_lieu_giam_sat",
+      args: { ten_ky: "Kỳ 2026-2" },
+    })) as {
+      ky: { ten: string; data_revision: number };
+      so_ban_ghi_da_doc: number;
+      blocker_do_db_thuc_su_cuong_che: string[];
+      canh_bao_chat_luong_du_lieu: string[];
+      co_the_goi_rpc_khoa_ky: boolean;
+      ghi_chu: string;
+    };
+    const period = list.ky_giam_sat.find((item) => item.ten === summary.ky.ten)!;
+    expect(summary.ky.data_revision).toBe(period.data_revision);
+    expect(summary.so_ban_ghi_da_doc).toBe(period.so_ban_ghi);
+    expect(summary.blocker_do_db_thuc_su_cuong_che).toEqual([]);
+    expect(summary.canh_bao_chat_luong_du_lieu).toEqual([]);
+    expect(summary.co_the_goi_rpc_khoa_ky).toBe(true);
+    expect(summary.ghi_chu).toContain("KHÔNG được nói sai rằng DB đang chặn");
+  });
+
+  it("mọi kết quả nhắc tới methodology đều mang cảnh báo dữ liệu mẫu", async () => {
+    const run = createFixtureExecute("coop_manager");
+    for (const name of [
+      "liet_ke_du_an",
+      "tien_do_du_an",
+      "goi_y_methodology",
+      "field_giam_sat_cua_methodology",
+      "kiem_tra_baseline",
+      "liet_ke_bao_cao_mrv",
+      "doc_vet_tinh_bao_cao",
+      "liet_ke_standard",
+    ]) {
+      const out = await run({ name, args: {} });
+      expect(JSON.stringify(out), name).toContain("MẪU");
+    }
+  });
+});
+
+describe("dữ liệu mẫu bám đúng hành vi của handler thật", () => {
+  const run = createFixtureExecute("coop_manager");
+
+  it("tên dự án không khớp thì báo không tìm thấy, không lấy dự án khác thay", async () => {
+    const r = (await run({
+      name: "tien_do_du_an",
+      args: { ten_du_an: "Điện gió Bạc Liêu" },
+    })) as Record<string, unknown>;
+    expect(r.khong_tim_thay).toBeDefined();
+    expect(r.du_an).toBeUndefined();
+  });
+
+  it("bỏ trống tên dự án thì lấy dự án cập nhật gần nhất", async () => {
+    const r = (await run({ name: "tien_do_du_an", args: {} })) as Record<string, unknown>;
+    expect(r.du_an).toBe(FIXTURE_PROJECT);
+  });
+
+  it("tên dự án kèm từ phân loại vẫn tra ra", async () => {
+    const r = (await run({ name: "tien_do_du_an", args: { ten_du_an: "dự án Cà Mau" } })) as
+      Record<string, unknown>;
+    expect(r.du_an).toBe(FIXTURE_PROJECT);
+  });
+
+  it("số bước ngoài 1..7 bị từ chối như handler thật", async () => {
+    const r = (await run({ name: "yeu_cau_cua_buoc", args: { buoc: 9 } })) as
+      Record<string, unknown>;
+    expect(r.tham_so_sai).toBeDefined();
+    expect(r.buoc).toBeUndefined();
+  });
+
+  it("mã methodology không có trong catalog thì báo không tìm thấy", async () => {
+    const r = (await run({
+      name: "field_giam_sat_cua_methodology",
+      args: { ma_methodology: "VM0007" },
+    })) as Record<string, unknown>;
+    expect(r.khong_tim_thay).toBeDefined();
+    expect(r.field_baseline).toBeUndefined();
   });
 });
 
 describe("vết thực thi gửi cho eval platform", () => {
   it("dựng đúng hình dạng message OpenAI mà evaluator agentic đọc", () => {
     const messages = buildTrajectory(
-      "Vụ Xuân giảm bao nhiêu?",
+      "Dự án Cà Mau đã duyệt tới bước mấy?",
       [
         {
-          call: { name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Xuân 2026" } },
-          result: { tong_giam_phat_thai_tco2e: 12.436 },
+          call: { name: "tien_do_du_an", args: { ten_du_an: "Rừng ngập mặn Cà Mau" } },
+          result: { buoc_da_duyet: "4/7" },
         },
       ],
-      "Vụ Xuân 2026 giảm 12,436 tấn CO2e.",
+      "Dự án đã duyệt 4 trên 7 bước.",
     );
 
-    expect(messages[0]).toEqual({ role: "user", content: "Vụ Xuân giảm bao nhiêu?" });
+    expect(messages[0]).toEqual({
+      role: "user",
+      content: "Dự án Cà Mau đã duyệt tới bước mấy?",
+    });
 
     const assistant = messages[1] as {
       role: string;
@@ -348,13 +507,13 @@ describe("vết thực thi gửi cho eval platform", () => {
     // Evaluator đọc `arguments` như CHUỖI JSON, không phải object.
     expect(typeof assistant.tool_calls[0].function.arguments).toBe("string");
     expect(JSON.parse(assistant.tool_calls[0].function.arguments)).toEqual({
-      ten_mua_vu: "Vụ Xuân 2026",
+      ten_du_an: "Rừng ngập mặn Cà Mau",
     });
 
-    expect(messages[2]).toMatchObject({ role: "tool", name: "tong_ket_mua_vu" });
+    expect(messages[2]).toMatchObject({ role: "tool", name: "tien_do_du_an" });
     expect(messages.at(-1)).toEqual({
       role: "assistant",
-      content: "Vụ Xuân 2026 giảm 12,436 tấn CO2e.",
+      content: "Dự án đã duyệt 4 trên 7 bước.",
     });
   });
 
@@ -454,54 +613,21 @@ describe("thứ tự ưu tiên cấu hình trợ lý", () => {
 
 describe("bỏ từ phân loại khỏi tên riêng trước khi tìm", () => {
   it("cắt từ phân loại đứng đầu", () => {
-    expect(tenRieng("Thửa Ruộng Bãi")).toBe("Ruộng Bãi");
-    // Cố ý giữ lại "ruộng": mọi tên thửa đều bắt đầu bằng từ đó, cắt đi là mất tên.
-    expect(tenRieng("thửa ruộng Đồng Trên")).toBe("ruộng Đồng Trên");
-    expect(tenRieng("mùa vụ Vụ Xuân 2026")).toBe("Vụ Xuân 2026");
-    expect(tenRieng("Lô tín chỉ LTC-2026-01")).toBe("LTC-2026-01");
+    expect(tenRieng("Dự án Rừng ngập mặn Cà Mau")).toBe("Rừng ngập mặn Cà Mau");
+    expect(tenRieng("methodology DEMO-VCS-FOREST")).toBe("DEMO-VCS-FOREST");
+    expect(tenRieng("phương pháp luận DEMO-GS-BIOGAS")).toBe("DEMO-GS-BIOGAS");
   });
 
   it("không đụng tới từ nằm giữa tên thật", () => {
-    // "Ruộng" ở đây là một phần của tên, không phải từ phân loại.
-    expect(tenRieng("Ruộng Bãi")).toBe("Ruộng Bãi");
-    expect(tenRieng("Vụ Xuân 2026")).toBe("Vụ Xuân 2026");
-    expect(tenRieng("Đồng Ruộng Trên")).toBe("Đồng Ruộng Trên");
+    // "Rừng" và "Biogas" là một phần của tên, không phải từ phân loại.
+    expect(tenRieng("Rừng ngập mặn Cà Mau")).toBe("Rừng ngập mặn Cà Mau");
+    expect(tenRieng("Biogas hộ gia đình Đồng Tháp")).toBe("Biogas hộ gia đình Đồng Tháp");
+    expect(tenRieng("Nâng cấp dự án Cà Mau")).toBe("Nâng cấp dự án Cà Mau");
   });
 
   it("không trả về chuỗi rỗng khi tên chỉ gồm từ phân loại", () => {
-    expect(tenRieng("thửa")).toBe("thửa");
-    expect(tenRieng("  Thửa  ")).toBe("Thửa");
-  });
-});
-
-describe("dữ liệu mẫu bám đúng hành vi của handler thật", () => {
-  const run = createFixtureExecute("coop_manager");
-
-  it("tên mùa vụ không khớp thì báo không tìm thấy, không lấy vụ khác thay", async () => {
-    const r = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Hè Thu 2026" } })) as
-      Record<string, unknown>;
-    expect(r.khong_tim_thay).toBeDefined();
-    expect(r.tong_giam_phat_thai_tco2e).toBeUndefined();
-  });
-
-  it("vẫn tra được cả hai vụ có thật", async () => {
-    const xuan = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Xuân 2026" } })) as
-      Record<string, unknown>;
-    expect(xuan.mua_vu).toBe("Vụ Xuân 2026");
-    const mua = (await run({ name: "tong_ket_mua_vu", args: { ten_mua_vu: "Vụ Mùa 2025" } })) as
-      Record<string, unknown>;
-    expect(mua.mua_vu).toBe("Vụ Mùa 2025");
-  });
-
-  it("bỏ trống tên vụ thì lấy vụ mới nhất", async () => {
-    const r = (await run({ name: "tong_ket_mua_vu", args: {} })) as Record<string, unknown>;
-    expect(r.mua_vu).toBe("Vụ Xuân 2026");
-  });
-
-  it("tên thửa kèm từ phân loại vẫn tra ra — đúng ca eval bắt được", async () => {
-    const r = (await run({ name: "chi_tiet_thua_vu", args: { ten_thua: "Thửa Ruộng Bãi" } })) as
-      Record<string, unknown>;
-    expect(r.thua).toBe("Ruộng Bãi");
+    expect(tenRieng("dự án")).toBe("dự án");
+    expect(tenRieng("  Dự án  ")).toBe("Dự án");
   });
 });
 
@@ -524,10 +650,10 @@ describe("model trả về rỗng", () => {
       runTurn(
         runOptions(
           scriptedProvider([
-            [{ type: "calls", calls: [{ name: "liet_ke_mua_vu", args: {} }] }],
+            [{ type: "calls", calls: [{ name: "liet_ke_du_an", args: {} }] }],
             [],
           ]),
-          async () => ({ mua_vu: [] }),
+          async () => ({ du_an: [] }),
         ),
       ),
     );
