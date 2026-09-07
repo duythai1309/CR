@@ -45,13 +45,20 @@ export default async function ProjectListPage() {
 
       {rows.length === 0 ? (
         <Empty
-          title="Chưa có dự án nào"
+          title="Danh mục dự án của bạn đang trống"
           hint={
             <>
-              Tạo dự án đầu tiên để bắt đầu. Người tạo là chủ dự án, và bảy stage thiết kế
-              được dựng sẵn trong cùng một transaction.
+              <span className="block">
+                Đây là nơi tập hợp các hồ sơ dự án carbon mà bạn tham gia.
+              </span>
+              <span className="mt-2 block">
+                Hãy tạo dự án đầu tiên với tên và mô tả ngắn. Tạo xong, bạn là chủ dự án
+                và có ngay bảy stage thiết kế từ Project concept tới PDD để bắt đầu làm hồ
+                sơ.
+              </span>
             </>
           }
+          action={<LinkButton href="/du-an/moi">Tạo dự án đầu tiên</LinkButton>}
         />
       ) : (
         <div className="space-y-5">

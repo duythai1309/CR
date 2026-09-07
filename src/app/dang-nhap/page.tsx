@@ -18,14 +18,14 @@ export default async function LoginPage({
         src: "/anh/ruong-bac-thang-ha-giang.jpg",
         alt: "Ruộng bậc thang Hà Giang mùa lúa chín",
       }}
-      caption="Quản lý cấu trúc hồ sơ, bằng chứng và phiên bản dữ liệu trong một không gian làm việc có thể truy xuất."
-      title="Đăng nhập workspace"
-      subtitle="Dành cho đội ngũ phát triển dự án Carbon theo Verra, Gold Standard và các Standard tương tự."
+      caption="Quay lại danh mục để tiếp tục hồ sơ, bằng chứng và dữ liệu giám sát của các dự án bạn tham gia."
+      title="Đăng nhập"
+      subtitle="Dùng email và mật khẩu của bạn để tiếp tục tới Danh mục dự án."
       footer={
         <>
-          Chưa có tài khoản?{" "}
+          Chưa có tài khoản dự án?{" "}
           <Link href="/dang-ky" className="font-semibold text-leaf-700 underline underline-offset-2 hover:text-leaf-800">
-            Đăng ký
+            Tạo tài khoản
           </Link>
         </>
       }
