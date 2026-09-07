@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav, PageHeader } from "@/components/app-nav";
-import { Alert, Badge, Card, Empty, Table } from "@/components/ui";
+import { Alert, Badge, Card, Empty, LinkButton, Table } from "@/components/ui";
 import { listStandards } from "@/app/du-an/data";
 import { CreateMethodologyForm, FactorForm, PublishButton, ValidateForm } from "./forms";
 
@@ -69,7 +69,11 @@ export default async function CatalogPage() {
 
           <Card title="Methodology trong catalog">
             {rows.length === 0 ? (
-              <Empty title="Catalog trống" />
+              <Empty
+                title="Catalog trống"
+                hint="Thêm methodology đầu tiên ở trạng thái draft, rồi bổ sung hệ số và kiểm tra trước khi publish."
+                action={<LinkButton href="#them-methodology">Thêm methodology đầu tiên</LinkButton>}
+              />
             ) : (
               <Table head={["Mã", "Tên", "Loại", "Trạng thái", "Hệ số", "Thẩm định"]}>
                 <tbody>
@@ -141,14 +145,16 @@ export default async function CatalogPage() {
             />
           </Card>
 
-          <Card
-            title="Thêm methodology mới"
-            description="Dán metric_schema đã bóc tách từ tài liệu gốc. Tạo ở trạng thái draft."
-          >
-            <CreateMethodologyForm
-              standards={standards.map((s) => ({ id: s.id, label: `${s.code} — ${s.name}` }))}
-            />
-          </Card>
+          <div id="them-methodology" className="scroll-mt-6">
+            <Card
+              title="Thêm methodology mới"
+              description="Dán metric_schema đã bóc tách từ tài liệu gốc. Tạo ở trạng thái draft."
+            >
+              <CreateMethodologyForm
+                standards={standards.map((s) => ({ id: s.id, label: `${s.code} — ${s.name}` }))}
+              />
+            </Card>
+          </div>
         </div>
       </main>
     </>

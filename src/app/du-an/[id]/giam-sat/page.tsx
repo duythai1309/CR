@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
-import { Alert, Badge, Card, Empty, Table } from "@/components/ui";
+import { Badge, Card, Empty, LinkButton, Locked, Table } from "@/components/ui";
 import { abilitiesFor } from "@/components/project/rules";
 import { incompleteRecords } from "@/components/monitoring/summary";
 import { buildMethodologyForm } from "@/lib/methodology/form";
@@ -39,22 +39,32 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
     ),
   );
 
+  // Tab đã bị khoá ở điều hướng, nhưng vào thẳng URL vẫn tới được đây. Không có cổng
+  // này thì form tạo kỳ vẫn hiện và chết ở DB bằng một lỗi thô — tệ hơn là không hiện.
+  if (!ready)
+    return (
+      <Locked
+        title="Chưa tạo được kỳ giám sát"
+        reason="Kỳ giám sát chụp lại lược đồ chỉ số, baseline và bộ hệ số ngay lúc tạo, nên Methodology phải được khoá trước đã."
+        unlock={
+          <LinkButton href={`/du-an/${id}/quy-trinh#buoc-4`}>
+            Tới bước 4 để chọn và khoá Methodology
+          </LinkButton>
+        }
+      />
+    );
+
   return (
     <div className="space-y-6">
-      {!ready && (
-        <Alert tone="warn" title="Chưa tạo được monitoring period">
-          Phải khoá Methodology ở bước 4 trước. Kỳ giám sát chụp lại lược đồ chỉ số, baseline
-          và bộ hệ số ngay lúc tạo, nên lựa chọn phải cố định trước đã.
-        </Alert>
-      )}
-
-      {abilities.canApproveStage && ready && (
-        <Card
-          title="Tạo kỳ giám sát"
-          description="Mỗi kỳ chụp lại lược đồ chỉ số, baseline và bộ hệ số tại thời điểm tạo. Sửa methodology sau đó không làm đổi kỳ đã tạo."
-        >
-          <CreatePeriodForm projectId={id} />
-        </Card>
+      {abilities.canApproveStage && (
+        <div id="tao-ky-giam-sat" className="scroll-mt-6">
+          <Card
+            title="Tạo kỳ giám sát"
+            description="Mỗi kỳ chụp lại lược đồ chỉ số, baseline và bộ hệ số tại thời điểm tạo. Sửa methodology sau đó không làm đổi kỳ đã tạo."
+          >
+            <CreatePeriodForm projectId={id} />
+          </Card>
+        </div>
       )}
 
       <Card
@@ -64,7 +74,20 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
         {periods.length === 0 ? (
           <Empty
             title="Chưa có monitoring period nào"
-            hint="Tạo kỳ đầu tiên để bắt đầu nhập observation data."
+            hint={
+              abilities.canApproveStage
+                ? "Tạo kỳ đầu tiên để chụp cấu hình hiện tại và bắt đầu nhập observation data."
+                : "Chủ dự án cần tạo kỳ đầu tiên trước khi nhóm có thể nhập observation data."
+            }
+            action={
+              abilities.canApproveStage ? (
+                <LinkButton href="#tao-ky-giam-sat">Tạo kỳ giám sát đầu tiên</LinkButton>
+              ) : (
+                <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
+                  Xem người phụ trách dự án
+                </LinkButton>
+              )
+            }
           />
         ) : (
           <Table head={["Kỳ", "Khoảng thời gian", "Bản", "Trạng thái", "Quan sát", "Data revision", "Sẵn sàng khoá", ""]}>

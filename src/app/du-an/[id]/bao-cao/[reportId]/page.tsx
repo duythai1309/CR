@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
-import { Alert, Badge, Card, Table } from "@/components/ui";
+import { Alert, Badge, Card, SectionHeader, Table } from "@/components/ui";
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
 import { getMethodology, getProject, getStandard } from "../../../data";
@@ -38,16 +38,21 @@ export default async function ReportPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
+      <div>
         <Link href={`/du-an/${id}/bao-cao`} className="text-sm text-soil-600 hover:text-soil-900">
           ← Danh sách báo cáo
         </Link>
-        <h2 className="text-lg font-semibold text-soil-900">
-          {period?.name ?? "Kỳ giám sát"} — bản {report.version}
-        </h2>
-        <Badge tone={report.status === "final" ? "leaf" : "carbon"}>
-          {report.status === "final" ? "Final" : "Preview"}
-        </Badge>
+        <div className="mt-3">
+          <SectionHeader
+            title={`${period?.name ?? "Kỳ giám sát"} — bản ${report.version}`}
+            description="Báo cáo ước tính được sinh từ ảnh chụp của kỳ giám sát đã khoá."
+            aside={
+              <Badge tone={report.status === "final" ? "leaf" : "carbon"}>
+                {report.status === "final" ? "Final" : "Preview"}
+              </Badge>
+            }
+          />
+        </div>
       </div>
 
       <Alert tone="warn" title="Ước tính MRV — không phải tín chỉ đã phát hành">
@@ -64,6 +69,11 @@ export default async function ReportPage({
       )}
 
       <MethodologyIdentity standard={standard} methodology={methodology} />
+
+      <SectionHeader
+        title="Kết quả và truy xuất"
+        description="Xem con số ước tính, các ảnh chụp đầu vào và toàn bộ vết tính toán."
+      />
 
       <Card
         title="Ước tính giảm phát thải"

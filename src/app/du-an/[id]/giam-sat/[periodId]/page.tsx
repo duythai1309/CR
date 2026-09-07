@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
-import { Alert, Badge, Card, Empty, Table } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  Empty,
+  LinkButton,
+  Locked,
+  SectionHeader,
+  Table,
+} from "@/components/ui";
 import { abilitiesFor } from "@/components/project/rules";
 import { buildMethodologyForm } from "@/lib/methodology/form";
 import { evaluateMethodology, type FactorInput } from "@/lib/methodology/expression";
@@ -85,15 +94,19 @@ export default async function PeriodPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
+      <div>
         <Link href={`/du-an/${id}/giam-sat`} className="text-sm text-soil-600 hover:text-soil-900">
           ← Các kỳ giám sát
         </Link>
-        <h2 className="text-lg font-semibold text-soil-900">{period.name}</h2>
-        <Badge tone={open ? "carbon" : "leaf"}>{open ? "Đang mở" : "Đã khoá"}</Badge>
-        <span className="text-sm text-soil-600">
-          {period.start_date} → {period.end_date} · bản {period.version}
-        </span>
+        <div className="mt-3">
+          <SectionHeader
+            title={period.name}
+            description={`${period.start_date} → ${period.end_date} · bản ${period.version}`}
+            aside={
+              <Badge tone={open ? "carbon" : "leaf"}>{open ? "Đang mở" : "Đã khoá"}</Badge>
+            }
+          />
+        </div>
       </div>
 
       {!open && (
@@ -130,6 +143,11 @@ export default async function PeriodPage({
           hoặc Gold Standard công nhận. Kết quả chỉ dùng để thử workflow và ước tính nội bộ.
         </Alert>
       )}
+
+      <SectionHeader
+        title="Số liệu và ước tính"
+        description="Đối chiếu dữ liệu quan sát với baseline và xem vết tính của kỳ hiện tại."
+      />
 
       <Card
         title="Đối chiếu với baseline"
@@ -194,7 +212,15 @@ export default async function PeriodPage({
         )}
 
         {!estimate && !estimateError && (
-          <p className="text-sm text-soil-600">Nhập số liệu trước đã.</p>
+          <Locked
+            title="Chưa có ước tính"
+            reason="Cần ít nhất một quan sát hợp lệ trong kỳ trước khi Methodology có dữ liệu để tính."
+            unlock={
+              canEdit ? (
+                <LinkButton href="#nhap-quan-sat">Nhập quan sát đầu tiên</LinkButton>
+              ) : undefined
+            }
+          />
         )}
 
         {estimate && (
@@ -223,45 +249,103 @@ export default async function PeriodPage({
         )}
       </Card>
 
-      {canEdit && (
-        <Card
-          title="Nhập một quan sát"
-          description="Form sinh từ chỉ số của Methodology đã chụp trong kỳ này."
-        >
-          <ObservationForm
-            projectId={id}
-            periodId={periodId}
-            fields={form.observation.map((f) => ({
-              id: f.id,
-              label: f.label,
-              control: f.control,
-              unit: f.unit,
-              required: f.required,
-              options: f.options,
-              group: f.group,
-              constraints: f.constraints,
-              requiredIf: f.required_if,
-              aliases: f.aliases,
-              acceptedUnits: f.accepted_units,
-            }))}
-            startDate={period.start_date}
-            endDate={period.end_date}
-          />
-        </Card>
+      <SectionHeader
+        title="Nhập và quản lý dữ liệu"
+        description={
+          open
+            ? "Nhập quan sát bằng biểu mẫu hoặc tệp CSV, kiểm tra dữ liệu rồi khoá kỳ."
+            : "Kỳ đã khoá giữ nguyên ảnh chụp dữ liệu; cần hiệu chỉnh thì tạo một kỳ bản mới."
+        }
+      />
+
+      {!canEdit && (
+        <Locked
+          title={open ? "Bạn đang xem ở chế độ chỉ đọc" : "Không thể nhập thêm dữ liệu"}
+          reason={
+            !open
+              ? "Kỳ đã khoá và dữ liệu đã đóng băng. Muốn hiệu chỉnh, chủ dự án cần tạo một kỳ bản mới."
+              : project.deleted_at
+                ? "Dự án đã xoá nên mọi thao tác ghi đều bị chặn."
+                : "Chỉ chủ dự án hoặc thành viên có vai trò Đơn vị phát triển mới được nhập dữ liệu giám sát."
+          }
+          unlock={
+            project.deleted_at ? undefined : open ? (
+              <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
+                Xem thành viên dự án
+              </LinkButton>
+            ) : (
+              <LinkButton href={`/du-an/${id}/giam-sat`} variant="secondary">
+                Quay lại các kỳ giám sát
+              </LinkButton>
+            )
+          }
+        />
       )}
 
       {canEdit && (
-        <Card
-          title="Nhập từ tệp CSV"
-          description="Xem trước toàn bộ lỗi theo dòng và cột trước khi ghi. Hoặc cả tệp vào, hoặc không dòng nào vào."
-        >
-          <ImportPanel projectId={id} periodId={periodId} schema={period.schema_snapshot} />
-        </Card>
+        <div id="nhap-quan-sat" className="scroll-mt-6">
+          <Card
+            title="Nhập một quan sát"
+            description="Form sinh từ chỉ số của Methodology đã chụp trong kỳ này."
+          >
+            <ObservationForm
+              projectId={id}
+              periodId={periodId}
+              fields={form.observation.map((f) => ({
+                id: f.id,
+                label: f.label,
+                control: f.control,
+                unit: f.unit,
+                required: f.required,
+                options: f.options,
+                group: f.group,
+                constraints: f.constraints,
+                requiredIf: f.required_if,
+                aliases: f.aliases,
+                acceptedUnits: f.accepted_units,
+              }))}
+              startDate={period.start_date}
+              endDate={period.end_date}
+            />
+          </Card>
+        </div>
+      )}
+
+      {canEdit && (
+        <div id="nhap-csv" className="scroll-mt-6">
+          <Card
+            title="Nhập từ tệp CSV"
+            description="Xem trước toàn bộ lỗi theo dòng và cột trước khi ghi. Hoặc cả tệp vào, hoặc không dòng nào vào."
+          >
+            <ImportPanel projectId={id} periodId={periodId} schema={period.schema_snapshot} />
+          </Card>
+        </div>
       )}
 
       <Card title={`Dữ liệu đã nhập (${records.length})`}>
         {records.length === 0 ? (
-          <Empty title="Chưa có quan sát nào" hint="Nhập tay hoặc nhập từ tệp CSV." />
+          <Empty
+            title="Chưa có quan sát nào"
+            hint={
+              canEdit
+                ? "Nhập một quan sát bằng biểu mẫu hoặc dùng tệp CSV để thêm nhiều dòng cùng lúc."
+                : "Kỳ này chưa có dữ liệu quan sát. Thành viên có quyền nhập dữ liệu cần thêm quan sát trước."
+            }
+            action={
+              canEdit ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <LinkButton href="#nhap-quan-sat">Nhập quan sát đầu tiên</LinkButton>
+                  <LinkButton href="#nhap-csv" variant="secondary">
+                    Nhập từ tệp CSV
+                  </LinkButton>
+                </div>
+              ) : (
+                <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
+                  Xem thành viên dự án
+                </LinkButton>
+              )
+            }
+          />
         ) : (
           <div className="max-h-[32rem] overflow-auto">
             <Table
