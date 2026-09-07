@@ -114,7 +114,7 @@ export default async function Home() {
         <section id="cach-lam" className="bg-forest-800">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
-              Bảy bước, <span className="text-mint-400">từ ý tưởng đến hồ sơ</span>
+              C-ROUTE, <span className="text-mint-400">từ ý tưởng đến hồ sơ</span>
             </h2>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
               Mỗi bước có đầu việc, người phụ trách, thời hạn, bình luận và tài liệu. Tiến
@@ -308,7 +308,7 @@ export default async function Home() {
               Công cụ cho project developer
             </span>
             <h2 className="mt-8 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl">
-              Dữ liệu chưa đạt, chỉ rõ thiếu gì
+              Giám sát dữ liệu MRV
             </h2>
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-mint-100">
               Engine kiểm tra dữ liệu theo schema của methodology trước khi tính. Trường
