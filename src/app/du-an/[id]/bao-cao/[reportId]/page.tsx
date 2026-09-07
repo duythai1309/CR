@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
+import { createClient } from "@/lib/supabase/server";
 import { Alert, Badge, Card, SectionHeader, Table } from "@/components/ui";
+import { abilitiesFor } from "@/components/project/rules";
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
 import { getMethodology, getProject, getStandard } from "../../../data";
 import { getPeriod, getReport, listProjectActors } from "../../giam-sat/data";
+import { ReportAssistPanel } from "./assist-panel";
 
 export const metadata: Metadata = { title: "Báo cáo MRV" };
 
@@ -21,7 +25,7 @@ export default async function ReportPage({
   params: Promise<{ id: string; reportId: string }>;
 }) {
   const { id, reportId } = await params;
-  await requireProjectMember(id);
+  const { role } = await requireProjectMember(id);
 
   const [project, report] = await Promise.all([getProject(id), getReport(id, reportId)]);
   if (!project || !report) notFound();
@@ -35,6 +39,9 @@ export default async function ReportPage({
   const requester = actors.find((actor) => actor.userId === report.requested_by);
   const results = report.results as ReportResults;
   const credit = results?.estimated_credit;
+  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const supabase = await createClient();
+  const assistantConfigured = (await loadChatConfig(supabase)) !== null;
 
   return (
     <div className="space-y-6">
@@ -101,6 +108,14 @@ export default async function ReportPage({
           </div>
         )}
       </Card>
+
+      <ReportAssistPanel
+        projectId={id}
+        reportId={reportId}
+        configured={assistantConfigured}
+        canUse={abilities.canWriteTasks}
+        missingMessage={missingKeyMessage()}
+      />
 
       <Card title="Xuất báo cáo">
         <Alert tone="warn" title="Chưa phải mẫu chính thức của tổ chức chứng nhận">

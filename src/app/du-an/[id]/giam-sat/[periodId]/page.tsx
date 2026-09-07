@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
+import { createClient } from "@/lib/supabase/server";
 import {
   Alert,
   Badge,
@@ -24,6 +26,7 @@ import {
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { getMethodology, getProject, getStandard } from "../../../data";
 import { getPeriod, getPeriodData, listImports, listProjectActors } from "../data";
+import { MonitoringAssistPanel } from "./assist-panel";
 import { ImportPanel, LockPeriodForm, ObservationForm, ObservationRow } from "./forms";
 
 export const metadata: Metadata = { title: "Kỳ giám sát" };
@@ -46,6 +49,8 @@ export default async function PeriodPage({
     getMethodology(period.methodology_id),
     listProjectActors(id),
   ]);
+  const supabase = await createClient();
+  const assistantConfigured = (await loadChatConfig(supabase)) !== null;
   const actorName = new Map(actors.map((actor) => [actor.userId, actor.fullName]));
 
   const abilities = abilitiesFor(role, project.deleted_at !== null);
@@ -143,6 +148,14 @@ export default async function PeriodPage({
           hoặc Gold Standard công nhận. Kết quả chỉ dùng để thử workflow và ước tính nội bộ.
         </Alert>
       )}
+
+      <MonitoringAssistPanel
+        projectId={id}
+        periodId={periodId}
+        configured={assistantConfigured}
+        canUse={abilities.canWriteTasks}
+        missingMessage={missingKeyMessage()}
+      />
 
       <SectionHeader
         title="Số liệu và ước tính"
