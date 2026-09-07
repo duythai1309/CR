@@ -77,7 +77,7 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
             }`}
           >
             <RouteMark className={scrolled ? "text-mint-400" : "text-forest-800"} />
-            <span>C-route</span>
+            <span>C-ROUTE</span>
           </Link>
 
           <div className="hidden flex-1 items-center justify-end gap-8 text-[15px] font-medium lg:flex">
