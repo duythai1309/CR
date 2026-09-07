@@ -23,3 +23,6 @@ tests/db/runs/**
 # Không commit: 41 MB, và đây là tài liệu có bản quyền của bên thứ ba, repo này công khai.
 # Xem reference/README.md để biết lấy ở đâu.
 reference/methodologies/
+
+# Cấu hình quyền cá nhân cho máy này, không chia sẻ.
+.claude/settings.local.json
