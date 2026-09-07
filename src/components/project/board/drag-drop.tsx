@@ -58,7 +58,7 @@ export function BoardColumns({
   nameOf,
   dragDrop,
   onMoveStage,
-  onStatus,
+  onColumn,
   onDropTask,
   onDropColumn,
   onOpenTask,
@@ -80,7 +80,8 @@ export function BoardColumns({
   nameOf: (id: string | null) => string;
   dragDrop: BoardDragDropState;
   onMoveStage: (taskId: string, stageId: string, currentStageId: string) => void;
-  onStatus: (taskId: string, status: string, currentStatus?: string) => void;
+  /** Chuyển card sang cột khác bằng ô chọn — lối đi không-kéo cho cùng thao tác. */
+  onColumn: (taskId: string, columnId: string, currentColumnId: string | null) => void;
   onDropTask: (taskId: string, columnId: string, index: number) => void;
   onDropColumn: (columnId: string, index: number) => void;
   onOpenTask: (taskId: string) => void;
@@ -94,6 +95,9 @@ export function BoardColumns({
 
   const fullOf = (columnId: string) =>
     fullColumns.find((entry) => entry.column.id === columnId)?.tasks ?? [];
+
+  // Ô chọn cột trên mỗi card cần danh sách cột phẳng, theo đúng thứ tự đang hiện.
+  const columnList = fullColumns.map((entry) => entry.column);
 
   /** Danh sách của một cột sau khi bỏ card đang kéo — hệ toạ độ mà `taskDrop.index` dùng. */
   const restOf = (columnId: string) =>
@@ -218,6 +222,7 @@ export function BoardColumns({
                       task={task}
                       stage={stages.find((stage) => stage.id === task.stageId)}
                       stages={stages}
+                      columns={columnList}
                       now={now}
                       canWrite={canWrite}
                       pending={pending}
@@ -227,7 +232,7 @@ export function BoardColumns({
                       onDragEnd={reset}
                       onOpen={() => onOpenTask(task.id)}
                       onMove={(stageId) => onMoveStage(task.id, stageId, task.stageId)}
-                      onStatus={(next) => onStatus(task.id, next, task.status)}
+                      onColumn={(next) => onColumn(task.id, next, task.columnId)}
                     />
                   </li>
                 </Fragment>
@@ -263,6 +268,7 @@ export function BoardColumns({
                   task={task}
                   stage={stages.find((stage) => stage.id === task.stageId)}
                   stages={stages}
+                  columns={columnList}
                   now={now}
                   canWrite={canWrite}
                   pending={pending}
@@ -272,7 +278,7 @@ export function BoardColumns({
                   onDragEnd={reset}
                   onOpen={() => onOpenTask(task.id)}
                   onMove={(stageId) => onMoveStage(task.id, stageId, task.stageId)}
-                  onStatus={(next) => onStatus(task.id, next, task.status)}
+                  onColumn={(next) => onColumn(task.id, next, task.columnId)}
                 />
               </li>
             ))}

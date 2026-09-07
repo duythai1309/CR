@@ -2,16 +2,18 @@
 
 import { Badge } from "@/components/ui";
 import {
-  TASK_STATUSES,
   TASK_STATUS_LABEL,
   TASK_STATUS_TONE,
   taskFlags,
+  type BoardColumnView,
   type StageView,
   type TaskCard,
 } from "@/components/project/rules";
 
+// Vòng focus rõ ràng theo đúng `controlClass` của `ui.tsx` — ô chọn nhỏ vẫn là chỗ thao
+// tác bằng bàn phím, không được mảnh hơn ô chọn thường.
 const MICRO =
-  "w-full rounded border border-soil-200 bg-white px-1.5 py-1 text-xs text-soil-900 outline-none focus:border-leaf-500";
+  "w-full rounded border border-soil-200 bg-white px-1.5 py-1 text-xs text-soil-900 outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -39,10 +41,22 @@ export function DueLabel({ task, now }: { task: TaskCard; now: Date }) {
   );
 }
 
+/**
+ * Một card trên bảng.
+ *
+ * Hai ô chọn dưới card là **đường bàn phím** cho hai thao tác mà chuột làm bằng kéo-thả:
+ * đổi mục hồ sơ và CHUYỂN CỘT. WCAG 2.2 "Dragging Movements" (AA) đòi mọi thao tác kéo
+ * phải có lối đi không-kéo; ô chọn cột chính là lối đó, nên không được bỏ.
+ *
+ * Ô thứ hai cố ý liệt kê CỘT của dự án chứ không phải bốn `TASK_STATUSES` cứng: cột trên
+ * bảng đọc `column_id`, nên một ô "Trạng thái" ở đây sẽ đổi `status` mà card đứng yên —
+ * người dùng bấm rồi không thấy gì xảy ra. `status` vẫn sửa được trong panel sửa nhanh.
+ */
 export function TaskCardView({
   task,
   stage,
   stages,
+  columns,
   now,
   canWrite,
   pending,
@@ -52,11 +66,13 @@ export function TaskCardView({
   onDragEnd,
   onOpen,
   onMove,
-  onStatus,
+  onColumn,
 }: {
-  task: TaskCard;
+  task: TaskCard & { columnId: string | null };
   stage: StageView | undefined;
   stages: StageView[];
+  /** Cột của CHÍNH dự án này, theo thứ tự đang hiện trên bảng. */
+  columns: BoardColumnView[];
   now: Date;
   canWrite: boolean;
   pending: boolean;
@@ -67,7 +83,8 @@ export function TaskCardView({
   /** Bấm vào tiêu đề mở panel sửa nhanh ngay trên bảng. */
   onOpen: () => void;
   onMove: (stageId: string) => void;
-  onStatus: (status: string) => void;
+  /** Chuyển card sang cột khác — cùng đường ghi với kéo-thả. */
+  onColumn: (columnId: string) => void;
 }) {
   const flags = taskFlags(task, now);
   const edge = flags.blocked
@@ -142,16 +159,17 @@ export function TaskCardView({
           </label>
 
           <label className="flex items-center gap-2 text-xs text-soil-600">
-            <span className="w-16 shrink-0">Trạng thái</span>
+            <span className="w-16 shrink-0">Cột</span>
             <select
-              value={task.status}
-              disabled={pending}
-              onChange={(event) => onStatus(event.target.value)}
+              value={task.columnId ?? ""}
+              disabled={pending || columns.length === 0}
+              onChange={(event) => onColumn(event.target.value)}
               className={MICRO}
             >
-              {TASK_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {TASK_STATUS_LABEL[status]}
+              {task.columnId === null && <option value="">Chưa xếp cột</option>}
+              {columns.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
                 </option>
               ))}
             </select>

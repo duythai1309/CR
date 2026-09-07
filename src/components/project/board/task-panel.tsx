@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Alert, Button, Field, Input, Select, Textarea } from "@/components/ui";
 import {
   TASK_STATUSES,
@@ -10,6 +10,7 @@ import {
   type StageView,
 } from "@/components/project/rules";
 import { updateTask } from "@/app/du-an/[id]/actions";
+import { FOCUSABLE_SELECTOR, nextFocusIndex } from "./focus-trap";
 
 /**
  * Sửa nhanh một card ngay trên bảng.
@@ -37,6 +38,12 @@ export function TaskQuickPanel({
 }) {
   const [error, action, pending] = useActionState(updateTask, null);
   const [submitted, setSubmitted] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+
+  const focusables = () =>
+    panelRef.current
+      ? Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+      : [];
 
   // `useActionState` trả về void, nên "lưu xong chưa" phải đọc từ `pending` hạ xuống:
   // hết pending mà không có lỗi nghĩa là đã ghi được.
@@ -54,14 +61,41 @@ export function TaskQuickPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  /**
+   * Mở thì đưa focus vào panel; đóng thì TRẢ nó về đúng card đã mở panel.
+   *
+   * Ghi lại `document.activeElement` ngay lúc mount nên không cần ai truyền ref card vào:
+   * phần tử đang focus lúc đó chính là nút tiêu đề vừa được bấm. Không trả focus thì bàn
+   * phím rơi về đầu tài liệu và người dùng mất chỗ đang đứng.
+   */
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    focusables()[0]?.focus();
+    return () => opener?.focus?.();
+  }, []);
+
   const stage = stages.find((item) => item.id === task.stageId);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-soil-900/20" onClick={onClose}>
       <aside
+        ref={panelRef}
         role="dialog"
+        aria-modal="true"
         aria-label={`Sửa nhanh: ${task.title}`}
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") return;
+          const items = focusables();
+          const target = nextFocusIndex(
+            items.length,
+            items.indexOf(document.activeElement as HTMLElement),
+            event.shiftKey,
+          );
+          if (target === null) return;
+          event.preventDefault();
+          items[target]?.focus();
+        }}
         className="flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-soil-200 bg-white shadow-xl"
       >
         <header className="flex items-start justify-between gap-3 border-b border-soil-200 px-5 py-4">
