@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { requireProjectMember } from "@/lib/auth";
+import { getActiveProjectSupport, requireProjectMember } from "@/lib/auth";
 import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import { Alert, Badge } from "@/components/ui";
 import { getMethodology, getProject, getStages, getStandard } from "../data";
@@ -37,9 +37,13 @@ export default async function ProjectLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { role } = await requireProjectMember(id);
+  const { profile, role } = await requireProjectMember(id);
 
-  const [project, stages] = await Promise.all([getProject(id), getStages(id)]);
+  const [project, stages, supportSession] = await Promise.all([
+    getProject(id),
+    getStages(id),
+    profile.role === "platform_admin" ? getActiveProjectSupport(id, profile.id) : Promise.resolve(null),
+  ]);
   if (!project) notFound();
   const [standard, methodology] = await Promise.all([
     getStandard(project.standard_id),
@@ -107,6 +111,16 @@ export default async function ProjectLayout({
           <Alert tone="warn" title="Dự án đã xoá">
             Dự án này đã được chủ dự án xoá. Nội dung vẫn xem lại được, nhưng mọi thao tác
             ghi đều bị chặn.
+          </Alert>
+        </div>
+      )}
+
+      {supportSession && (
+        <div className="mb-4">
+          <Alert tone="warn" title="Phiên hỗ trợ chỉ đọc đang hoạt động">
+            Quyền xem hộ được ghi vào nhật ký với lý do “{supportSession.reason}” và tự hết
+            hạn lúc {new Date(supportSession.expiresAt).toLocaleString("vi-VN")}. Bạn không
+            thể sửa dữ liệu, duyệt stage hoặc chạy thao tác MRV trong phiên này.
           </Alert>
         </div>
       )}

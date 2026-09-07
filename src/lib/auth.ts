@@ -147,6 +147,124 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
   });
 }
 
+export interface ProjectStageApproval {
+  stageId: string;
+  ordinal: number;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approverName: string | null;
+}
+
+/**
+ * Tên người duyệt được lấy theo `approved_by`, không theo danh sách thành viên hiện
+ * tại. Vì vậy một người đã rời dự án vẫn được ghi nhận đúng trong lịch sử stage.
+ * RPC 0018 chỉ trả đúng năm cột cần hiển thị và không nới policy của `profiles`.
+ */
+export async function getProjectStageApprovals(
+  projectId: string,
+): Promise<ProjectStageApproval[]> {
+  if (!readSupabaseConfig()) return [];
+  const db = await projectClient();
+  const { data, error } = await db.rpc("project_stage_approval_directory", {
+    p_project_id: projectId,
+  });
+  if (error || !Array.isArray(data)) return [];
+
+  return data.flatMap((row: Record<string, unknown>): ProjectStageApproval[] => {
+    if (typeof row.stage_id !== "string" || typeof row.ordinal !== "number") return [];
+    return [
+      {
+        stageId: row.stage_id,
+        ordinal: row.ordinal,
+        approvedAt: typeof row.approved_at === "string" ? row.approved_at : null,
+        approvedBy: typeof row.approved_by === "string" ? row.approved_by : null,
+        approverName: typeof row.approver_name === "string" ? row.approver_name : null,
+      },
+    ];
+  });
+}
+
+export interface ProjectSupportSession {
+  id: string;
+  projectId: string;
+  adminId: string;
+  reason: string;
+  openedAt: string;
+  expiresAt: string;
+}
+
+/** Phiên hỗ trợ đang có hiệu lực của admin hiện tại, dùng để hiện cảnh báo chỉ đọc. */
+export async function getActiveProjectSupport(
+  projectId: string,
+  adminId: string,
+): Promise<ProjectSupportSession | null> {
+  if (!readSupabaseConfig()) return null;
+  const db = await projectClient();
+  const { data, error } = await db
+    .from("project_support_sessions")
+    .select("id, project_id, admin_id, reason, opened_at, expires_at")
+    .eq("project_id", projectId)
+    .eq("admin_id", adminId)
+    .gt("expires_at", new Date().toISOString())
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+
+  const row = data as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.project_id !== "string" ||
+    typeof row.admin_id !== "string" ||
+    typeof row.reason !== "string" ||
+    typeof row.opened_at !== "string" ||
+    typeof row.expires_at !== "string"
+  )
+    return null;
+
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    adminId: row.admin_id,
+    reason: row.reason,
+    openedAt: row.opened_at,
+    expiresAt: row.expires_at,
+  };
+}
+
+export type BeginProjectSupportResult =
+  | { ok: true; sessionId: string; expiresAt: string }
+  | { ok: false; message: string };
+
+/**
+ * Mở phiên xem hộ. Kiểm tra ở đây chỉ để trả lỗi dễ hiểu; quyền thật, thời hạn và audit
+ * đều do `begin_project_support` trong migration 0018 cưỡng chế.
+ */
+export async function beginProjectSupport(
+  projectId: string,
+  reason: string,
+  durationMinutes: number,
+): Promise<BeginProjectSupportResult> {
+  const profile = await requireProfile();
+  if (profile.role !== "platform_admin")
+    return { ok: false, message: "Chỉ quản trị nền tảng được mở phiên hỗ trợ." };
+
+  const db = await projectClient();
+  const { data, error } = await db.rpc("begin_project_support", {
+    p_project_id: projectId,
+    p_reason: reason,
+    p_duration_minutes: durationMinutes,
+  });
+  if (error || !Array.isArray(data) || data.length === 0)
+    return { ok: false, message: "Không mở được phiên. Kiểm tra UUID dự án và lý do hỗ trợ." };
+
+  const row = data[0] as Record<string, unknown>;
+  if (typeof row.support_session_id !== "string" || typeof row.expires_at !== "string")
+    return { ok: false, message: "Cơ sở dữ liệu trả về phiên hỗ trợ không hợp lệ." };
+
+  return { ok: true, sessionId: row.support_session_id, expiresAt: row.expires_at };
+}
+
 export type InviteeLookup =
   | { found: true; userId: string; fullName: string; alreadyMember: boolean }
   | { found: false; message: string };

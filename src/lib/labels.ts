@@ -2,32 +2,22 @@ import type { Database } from "@/types/database";
 import type { ProjectRole } from "@/types/project-platform";
 
 /**
- * Nhãn hiển thị. Tệp này đang bắc qua HAI sản phẩm và sẽ teo lại ở đợt gỡ module cũ.
+ * Nhãn vai trò toàn cục. Enum vẫn giữ bốn giá trị để tương thích với hồ sơ và types đã
+ * sinh, nhưng sau 0016 chỉ `platform_admin` có ý nghĩa đặc quyền. Ba giá trị legacy còn
+ * lại phải cùng hiện như một “Tài khoản nền tảng”; xem quyết định trong
+ * `docs/design/debt-0018.md` §2.
  *
- * Trợ lý ảo KHÔNG còn import gì từ đây nữa (trước đây `handlers.ts` lấy năm nhãn và
- * `prompt.ts` lấy `ROLE_LABEL`). Nhưng ở đợt này chưa bỏ được export nào: mọi hằng số
- * bên dưới vẫn còn ít nhất một nơi import, và các nơi đó là route cũ chưa bị xoá.
- *
- * Kiểm lại bằng grep trước khi xoá từng cái ở đợt sau. Tình trạng lúc viết dòng này:
- *
- *   GIỮ (nền tảng dự án dùng)   ROLE_LABEL, PROJECT_ROLE_LABEL
- *   XOÁ CÙNG /htx               REGION_LABEL, SEASON_TYPE_LABEL, SEASON_CALENDAR,
- *                               WATER_REGIME_LABEL, PRESEASON_LABEL, STRAW_LABEL,
- *                               ORGANIC_LABEL, WATER_EVENT_LABEL, BATCH_STATUS_LABEL
- *   XOÁ CÙNG /cho, /don-hang    ORDER_STATUS_LABEL, PAYMENT_STATUS_LABEL
- *
- * Ba hằng số cuối là `Record` trên enum `batch_status`/`order_status`/`payment_status`;
- * drop ba enum đó mà chưa xoá chúng là `npm run types` đỏ (rủi ro R3 trong
- * `docs/audit/audit-keep.md`).
+ * Các nhãn nghiệp vụ legacy phía dưới còn tồn tại trong snapshot `Database` hiện tại.
+ * Chúng chỉ nên được xoá cùng lần regenerate types, không phải bằng sửa tay tệp sinh.
  */
 
 type Enums = Database["public"]["Enums"];
 
 export const ROLE_LABEL: Record<Enums["user_role"], string> = {
   platform_admin: "Quản trị nền tảng",
-  coop_manager: "Giám đốc hợp tác xã",
-  coop_staff: "Cán bộ hợp tác xã",
-  buyer: "Doanh nghiệp mua tín chỉ",
+  coop_manager: "Tài khoản nền tảng",
+  coop_staff: "Tài khoản nền tảng",
+  buyer: "Tài khoản nền tảng",
 };
 
 /**

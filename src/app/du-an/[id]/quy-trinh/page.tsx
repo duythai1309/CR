@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProjectMembers, requireProjectMember } from "@/lib/auth";
+import { getProjectStageApprovals, requireProjectMember } from "@/lib/auth";
 import { Alert, Badge, Card, CheckMark, ProgressBar } from "@/components/ui";
 import { buildMethodologyForm } from "@/lib/methodology/form";
 import { parseMetricSchema, validateValues } from "@/lib/methodology/schema";
@@ -57,13 +57,13 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const { role } = await requireProjectMember(id);
 
-  const [project, stages, tasks, documents, standards, members] = await Promise.all([
+  const [project, stages, tasks, documents, standards, stageApprovals] = await Promise.all([
     getProject(id),
     getStages(id),
     getTasks(id),
     getDocuments(id),
     listStandards(),
-    getProjectMembers(id),
+    getProjectStageApprovals(id),
   ]);
   if (!project) notFound();
 
@@ -74,7 +74,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
 
   const abilities = abilitiesFor(role, project.deleted_at !== null);
   const views = stages.map(toStageView);
-  const memberName = new Map(members.map((m) => [m.userId, m.fullName]));
+  const approvalByStage = new Map(stageApprovals.map((approval) => [approval.stageId, approval]));
 
   // Kiểm baseline theo đúng những phép mà `project_validate_values` thực hiện. Schema
   // hỏng hoặc chưa chọn methodology thì để `undefined` — "chưa kết luận được" khác hẳn
@@ -179,9 +179,10 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
         const kind = STAGE_DOCUMENT[stage.ordinal];
         const stageDocs = kind ? documents.filter((d) => d.kind === kind) : [];
         const isCurrent = stage.ordinal === current?.ordinal;
-        const approver = stage.approvedAt
-          ? ((stages.find((s) => s.id === stage.id)?.approved_by ?? null) as string | null)
-          : null;
+        const approval = approvalByStage.get(stage.id);
+        const approvedBy =
+          approval?.approvedBy ??
+          ((stages.find((row) => row.id === stage.id)?.approved_by ?? null) as string | null);
 
         return (
           <details
@@ -219,8 +220,8 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                     {new Date(stage.approvedAt).toLocaleString("vi-VN")}
                   </span>
                   <span className="block">
-                    {approver
-                      ? (memberName.get(approver) ?? "Người duyệt không còn trong dự án")
+                    {approvedBy
+                      ? (approval?.approverName ?? "Không đọc được tên người duyệt")
                       : "Không ghi nhận người duyệt"}
                   </span>
                 </span>

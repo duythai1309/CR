@@ -76,7 +76,7 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
               scrolled ? "text-white" : "text-forest-900"
             }`}
           >
-            <Sprout className={scrolled ? "text-mint-400" : "text-forest-800"} />
+            <RouteMark className={scrolled ? "text-mint-400" : "text-forest-800"} />
             <span>C-route</span>
           </Link>
 
@@ -142,8 +142,14 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
   );
 }
 
-/** Dấu hiệu nhận diện: mầm lúa vươn lên từ hai lá mạ. */
-function Sprout({ className }: { className?: string }) {
+/**
+ * Dấu hiệu nhận diện của C-route: một lộ trình đi lên qua các mốc.
+ *
+ * Trước đây là mầm lúa vươn lên từ hai lá mạ — đúng với sản phẩm MRV lúa nước cũ, nhưng
+ * lệch hẳn với nền tảng quản lý vòng đời dự án Carbon và với cái tên mới. Hình mới đọc
+ * thẳng ra tên sản phẩm: một tuyến đường gấp khúc đi lên, ba mốc là các bước phải qua.
+ */
+function RouteMark({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden
@@ -154,12 +160,15 @@ function Sprout({ className }: { className?: string }) {
       stroke="currentColor"
       strokeWidth="1.9"
       strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
-      <path d="M12 21V9" />
-      <path d="M12 12C12 8.5 9.5 6 6 6c0 3.5 2.5 6 6 6Z" />
-      <path d="M12 10c0-3.3 2.4-5.6 5.6-5.6C17.6 7.7 15.3 10 12 10Z" />
-      <path d="M6.5 21h11" />
+      {/* Tuyến đi lên qua ba mốc */}
+      <path d="M4 19l5-5 4 3 7-9" />
+      {/* Ba mốc trên tuyến */}
+      <circle cx="4" cy="19" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="13" cy="17" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="20" cy="8" r="1.6" fill="currentColor" stroke="none" />
     </svg>
   );
 }

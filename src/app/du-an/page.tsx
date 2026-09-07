@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-nav";
 import { Alert, Empty, LinkButton, Stat } from "@/components/ui";
+import { requireProfile } from "@/lib/auth";
 import { ProjectPortfolio } from "@/components/project/portfolio";
 import { projectAttention } from "@/components/project/rules";
 import { listPortfolio } from "./data";
@@ -15,7 +16,7 @@ export const metadata: Metadata = { title: "Danh mục dự án" };
  * trả lời "cái gì đang chặn dự án nào".
  */
 export default async function ProjectListPage() {
-  const rows = await listPortfolio();
+  const [profile, rows] = await Promise.all([requireProfile(), listPortfolio()]);
 
   const live = rows.filter((r) => !r.deletedAt);
   const attention = live.filter((r) => projectAttention(r).length > 0);
@@ -30,7 +31,16 @@ export default async function ProjectListPage() {
       <PageHeader
         title="Danh mục dự án"
         description="Hồ sơ thiết kế dự án carbon mà bạn là thành viên. Bảy bước từ Project concept tới PDD, rồi monitoring period và MRV estimate."
-        action={<LinkButton href="/du-an/moi">Tạo dự án</LinkButton>}
+        action={
+          <div className="flex gap-2">
+            {profile.role === "platform_admin" && (
+              <LinkButton href="/du-an/ho-tro" variant="secondary">
+                Xem hộ dự án
+              </LinkButton>
+            )}
+            <LinkButton href="/du-an/moi">Tạo dự án</LinkButton>
+          </div>
+        }
       />
 
       {rows.length === 0 ? (
