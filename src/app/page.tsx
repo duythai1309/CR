@@ -520,8 +520,8 @@ export default async function Home() {
                     </a>
                   </li>
                   <li>
-                    <a href="mailto:croute.vn@gmail.com" className="hover:text-mint-400">
-                      croute.vn@gmail.com
+                    <a href="mailto:croute@gmail.com" className="hover:text-mint-400">
+                      croute@gmail.com
                     </a>
                   </li>
                   <li className="max-w-xs leading-relaxed">
