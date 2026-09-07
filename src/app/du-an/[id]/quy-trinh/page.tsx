@@ -31,8 +31,14 @@ import {
   StandardPicker,
   UploadDocumentForm,
 } from "./forms";
+import {
+  StageFeasibilityBlock,
+  StageIdeaBlock,
+  StageSelectionAdviceBlock,
+} from "./setup-blocks";
+import { getProjectSetup } from "../thiet-lap/data";
 
-export const metadata: Metadata = { title: "Bảy bước" };
+export const metadata: Metadata = { title: "Thiết kế dự án" };
 
 const STAGE_DOCUMENT: Record<number, DocumentKind> = {
   2: "feasibility",
@@ -57,13 +63,14 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const { role } = await requireProjectMember(id);
 
-  const [project, stages, tasks, documents, standards, stageApprovals] = await Promise.all([
+  const [project, stages, tasks, documents, standards, stageApprovals, setup] = await Promise.all([
     getProject(id),
     getStages(id),
     getTasks(id),
     getDocuments(id),
     listStandards(),
     getProjectStageApprovals(id),
+    getProjectSetup(id),
   ]);
   if (!project) notFound();
 
@@ -74,6 +81,16 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
 
   const abilities = abilitiesFor(role, project.deleted_at !== null);
   const views = stages.map(toStageView);
+
+  // Nội dung bốn bước đầu, gộp từ màn Khởi tạo cũ. `canWriteTasks` là cùng quyền mà màn
+  // đó dùng trước đây, giữ nguyên để không nới quyền ghi qua đường giao diện.
+  const idea = setup.idea ?? {};
+  const description = setup.description ?? "";
+  const feasibility = setup.feasibility ?? {};
+  const advice = setup.selection_advice ?? {};
+  const canEditSetup = abilities.canWriteTasks;
+  const hasSetupInput =
+    Object.values(idea).some((v) => v !== undefined && v !== "") || description.trim().length > 0;
   const approvalByStage = new Map(stageApprovals.map((approval) => [approval.stageId, approval]));
 
   // Kiểm baseline theo đúng những phép mà `project_validate_values` thực hiện. Schema
@@ -264,6 +281,33 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                     ràng buộc của hệ thống.
                   </span>
                 </p>
+              )}
+
+              {stage.ordinal === 1 && (
+                <StageIdeaBlock
+                  projectId={id}
+                  idea={idea}
+                  description={description}
+                  canEdit={canEditSetup}
+                />
+              )}
+
+              {stage.ordinal === 2 && (
+                <StageFeasibilityBlock
+                  projectId={id}
+                  feasibility={feasibility}
+                  canEdit={canEditSetup}
+                  hasInput={hasSetupInput}
+                />
+              )}
+
+              {(stage.ordinal === 3 || stage.ordinal === 4) && (
+                <StageSelectionAdviceBlock
+                  projectId={id}
+                  advice={advice}
+                  canEdit={canEditSetup}
+                  hasProjectType={Boolean(idea.project_type)}
+                />
               )}
 
               {stage.ordinal === 3 && (
