@@ -1,9 +1,10 @@
 /**
  * Kiểu sinh tự động từ schema Supabase — KHÔNG sửa tay.
  *
- * Sinh lại bằng MCP `generate_typescript_types` sau mỗi lần áp migration. Bản trước đó
- * được sinh trước khi có 16 bảng nền tảng dự án, nên mọi truy vấn tới `methodologies`,
- * `projects`, `monitoring_periods`... đều bị TypeScript từ chối dù bảng có thật trong DB.
+ * Sinh lại bằng MCP `generate_typescript_types` sau mỗi lần áp migration. Bản này được
+ * sinh sau khi áp 0018 (phiên hỗ trợ vận hành, RPC tên người duyệt) và 0019 (VM0051),
+ * nên đã có `project_support_sessions`, `begin_project_support` và
+ * `project_stage_approval_directory`.
  */
 export type Json =
   | string
@@ -1460,6 +1461,48 @@ export type Database = {
           },
         ]
       }
+      project_support_sessions: {
+        Row: {
+          admin_id: string
+          expires_at: string
+          id: string
+          opened_at: string
+          project_id: string
+          reason: string
+        }
+        Insert: {
+          admin_id: string
+          expires_at: string
+          id?: string
+          opened_at?: string
+          project_id: string
+          reason: string
+        }
+        Update: {
+          admin_id?: string
+          expires_at?: string
+          id?: string
+          opened_at?: string
+          project_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_support_sessions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_support_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_tasks: {
         Row: {
           assignee_id: string | null
@@ -2205,6 +2248,10 @@ export type Database = {
       }
       app_project_ids: { Args: never; Returns: string[] }
       app_project_role: { Args: { p_project_id: string }; Returns: string }
+      app_project_support_active: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       app_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -2212,6 +2259,17 @@ export type Database = {
       approve_project_stage: {
         Args: { p_ordinal: number; p_project_id: string }
         Returns: undefined
+      }
+      begin_project_support: {
+        Args: {
+          p_duration_minutes?: number
+          p_project_id: string
+          p_reason: string
+        }
+        Returns: {
+          expires_at: string
+          support_session_id: string
+        }[]
       }
       build_credit_batch: { Args: { p_batch_id: string }; Returns: Json }
       check_field_overlap: {
@@ -2468,6 +2526,16 @@ export type Database = {
           full_name: string
           role: string
           user_id: string
+        }[]
+      }
+      project_stage_approval_directory: {
+        Args: { p_project_id: string }
+        Returns: {
+          approved_at: string
+          approved_by: string
+          approver_name: string
+          ordinal: number
+          stage_id: string
         }[]
       }
       project_validate_expression: {
