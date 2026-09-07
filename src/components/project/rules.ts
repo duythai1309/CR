@@ -93,9 +93,20 @@ export function atLeast(role: ProjectRole, minimum: ProjectRole): boolean {
 }
 
 /**
- * Quyền theo `PLAN.md` §5. Ánh xạ đúng vào những gì cơ sở dữ liệu cho phép:
- * `canWriteTasks` khớp `app_project_can_write` (`0013:331-336`), còn các quyền còn lại
- * khớp điều kiện `app_project_role(...)='owner'` trong policy và RPC.
+ * Quyền trong một dự án.
+ *
+ * **Chính sách (07/09/2026): mọi THÀNH VIÊN dự án đều toàn quyền**, bất kể `owner` /
+ * `developer` / `viewer`. Đây là quyết định sản phẩm, không phải sửa lỗi — mô hình cũ
+ * (`atLeast`, grant, `app_project_can_write`) vốn đúng với ý định cũ của nó.
+ *
+ * **Lớp kiểm THÀNH VIÊN vẫn còn nguyên và là thứ giữ an toàn.** Người không phải thành
+ * viên vẫn không đọc và không ghi được gì: `requireProjectMember` trả 404, còn RLS đòi
+ * `app_project_role(...) is not null`. Cái được gỡ là phân biệt GIỮA các vai trò, không
+ * phải hàng rào quanh dự án.
+ *
+ * Tương ứng ở tầng DB là migration 0022 (`app_project_can_write`, `approve_project_stage`,
+ * `set_project_member`, `create_mrv_report`). Trước khi 0022 được áp, hàm này rộng hơn
+ * những gì Postgres cho phép, nên giao diện sẽ mở nút mà cơ sở dữ liệu còn từ chối.
  */
 export interface ProjectAbilities {
   canWriteTasks: boolean;
@@ -108,20 +119,29 @@ export interface ProjectAbilities {
   canDeleteProject: boolean;
 }
 
-export function abilitiesFor(role: ProjectRole, projectDeleted = false): ProjectAbilities {
-  // Dự án đã xoá mềm: đọc lịch sử vẫn được, mọi đường ghi đóng lại. Đây là điều kiện
-  // `p.deleted_at is null` bên trong `app_project_can_write`, chép lại cho giao diện.
-  const write = !projectDeleted && atLeast(role, "developer");
-  const own = !projectDeleted && role === "owner";
+export function abilitiesFor(
+  /**
+   * Vai trò cố ý KHÔNG còn được đọc: mọi thành viên có cùng quyền. Giữ tham số để 8 chỗ
+   * gọi không phải đổi, và để siết lại sau này chỉ phải sửa đúng một hàm.
+   */
+  role: ProjectRole,
+  projectDeleted = false,
+): ProjectAbilities {
+  void role;
+
+  // Ràng buộc CÒN LẠI DUY NHẤT: dự án đã xoá mềm thì đọc lịch sử vẫn được, mọi đường ghi
+  // đóng lại. Đây là điều kiện `p.deleted_at is null` bên trong `app_project_can_write`
+  // — 0022 giữ nguyên nó — chứ không phải phân quyền, nên nó không bị gỡ cùng.
+  const allowed = !projectDeleted;
   return {
-    canWriteTasks: write,
-    canComment: write,
-    canUploadFiles: write,
-    canManageMembers: own,
-    canApproveStage: own,
-    canChooseStandard: own,
-    canEditBaseline: own,
-    canDeleteProject: own,
+    canWriteTasks: allowed,
+    canComment: allowed,
+    canUploadFiles: allowed,
+    canManageMembers: allowed,
+    canApproveStage: allowed,
+    canChooseStandard: allowed,
+    canEditBaseline: allowed,
+    canDeleteProject: allowed,
   };
 }
 

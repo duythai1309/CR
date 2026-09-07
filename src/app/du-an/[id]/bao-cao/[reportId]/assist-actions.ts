@@ -89,7 +89,7 @@ export async function runReportAssist(
   projectId: string,
   reportId: string,
 ): Promise<ReportAssistResult> {
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
   try {
     const [project, report] = await Promise.all([
       getProject(projectId),

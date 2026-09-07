@@ -124,7 +124,7 @@ export async function runMonitoringAssist(
   projectId: string,
   periodId: string,
 ): Promise<MonitoringAssistResult> {
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
   try {
     const [project, period] = await Promise.all([
       getProject(projectId),

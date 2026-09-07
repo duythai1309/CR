@@ -113,7 +113,7 @@ async function writeSetup(
 
 /** Bước 1 — lưu ý tưởng có cấu trúc. */
 export async function saveIdea(projectId: string, idea: ProjectIdea): Promise<SetupActionResult> {
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
   try {
     const clean = normaliseProjectIdea(idea);
     return await writeSetup(projectId, (setup) => ({ ...setup, idea: clean }), "Đã lưu ý tưởng dự án.");
@@ -124,7 +124,7 @@ export async function saveIdea(projectId: string, idea: ProjectIdea): Promise<Se
 
 /** Bước 2 — lưu mô tả do người dùng viết. */
 export async function saveDescription(projectId: string, text: string): Promise<SetupActionResult> {
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
   try {
     if (typeof text !== "string") return fail("Mô tả dự án phải là nội dung chữ.");
     const description = text.trim();
@@ -144,7 +144,7 @@ export async function saveFeasibilityNotes(
   projectId: string,
   notes: string,
 ): Promise<SetupActionResult> {
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
   try {
     if (typeof notes !== "string") return fail("Nhận định chuyên gia phải là nội dung chữ.");
     const clean = notes.trim();
@@ -164,7 +164,7 @@ export async function saveFeasibilityNotes(
 
 /** Bước 3 — AI chỉ cấu trúc known/gaps, tuyệt đối không tạo verdict. */
 export async function runFeasibilityAssist(projectId: string): Promise<SetupActionResult> {
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
   try {
     const record = await getProjectSetupRecord(projectId);
     if (!record) return fail("Không tìm thấy dự án.");
@@ -214,7 +214,7 @@ export async function runFeasibilityAssist(projectId: string): Promise<SetupActi
 
 /** Bước 4 — lấy catalog qua handler hiện hữu, model chỉ giải thích trên allowlist đó. */
 export async function runSelectionAdvice(projectId: string): Promise<SetupActionResult> {
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
   try {
     const record = await getProjectSetupRecord(projectId);
     if (!record) return fail("Không tìm thấy dự án.");

@@ -42,7 +42,7 @@ export async function createTask(_prev: Result, formData: FormData): Promise<Res
   const projectId = String(formData.get("project_id") ?? "");
   const stageId = String(formData.get("stage_id") ?? "");
   if (!projectId || !stageId) return "Thiếu thông tin dự án hoặc bước.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const title = validateTaskTitle(formData.get("title"));
   if (!title.ok) return title.error;
@@ -84,7 +84,7 @@ export async function updateTask(_prev: Result, formData: FormData): Promise<Res
   const projectId = String(formData.get("project_id") ?? "");
   const taskId = String(formData.get("task_id") ?? "");
   if (!projectId || !taskId) return "Thiếu thông tin công việc.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const title = validateTaskTitle(formData.get("title"));
   if (!title.ok) return title.error;
@@ -123,7 +123,7 @@ export async function moveTask(
   position: number,
 ): Promise<Result> {
   if (formConfigError()) return formConfigError();
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db
@@ -144,7 +144,7 @@ export async function setTaskStatus(
 ): Promise<Result> {
   if (formConfigError()) return formConfigError();
   if (!isTaskStatus(status)) return "Trạng thái không hợp lệ.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db
@@ -162,7 +162,7 @@ export async function deleteTask(_prev: Result, formData: FormData): Promise<Res
   const projectId = String(formData.get("project_id") ?? "");
   const taskId = String(formData.get("task_id") ?? "");
   if (!projectId || !taskId) return "Thiếu thông tin công việc.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db
@@ -189,7 +189,7 @@ export async function addComment(_prev: Result, formData: FormData): Promise<Res
   const projectId = String(formData.get("project_id") ?? "");
   const taskId = String(formData.get("task_id") ?? "");
   if (!projectId || !taskId) return "Thiếu thông tin công việc.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const body = validateCommentBody(formData.get("body"));
   if (!body.ok) return body.error;
@@ -208,7 +208,7 @@ export async function deleteComment(_prev: Result, formData: FormData): Promise<
   const projectId = String(formData.get("project_id") ?? "");
   const commentId = String(formData.get("comment_id") ?? "");
   if (!projectId || !commentId) return "Thiếu thông tin bình luận.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   // Policy chỉ cho tác giả hoặc owner xoá (`0013:900`); ai khác nhận 0 dòng, không lỗi.
@@ -227,7 +227,7 @@ export async function detachFile(_prev: Result, formData: FormData): Promise<Res
   const projectId = String(formData.get("project_id") ?? "");
   const attachmentId = String(formData.get("attachment_id") ?? "");
   if (!projectId || !attachmentId) return "Thiếu thông tin tệp đính kèm.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db
@@ -268,7 +268,7 @@ export async function attachFileToTask(_prev: Result, formData: FormData): Promi
   const projectId = String(formData.get("project_id") ?? "");
   const taskId = String(formData.get("task_id") ?? "");
   if (!projectId || !taskId) return "Thiếu thông tin công việc.";
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return "Chưa chọn tệp.";
@@ -347,7 +347,7 @@ export async function bulkUpdateTasks(
   }
   if (Object.keys(update).length === 0) return "Chưa chọn thay đổi nào.";
 
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db
@@ -395,7 +395,7 @@ export async function createBoardColumn(projectId: string, rawName: string): Pro
   const configError = formConfigError();
   if (configError) return configError;
   if (!projectId) return "Thiếu thông tin dự án.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const existing = await readColumns(projectId);
   const name = validateColumnName(
@@ -424,7 +424,7 @@ export async function renameBoardColumn(
   const configError = formConfigError();
   if (configError) return configError;
   if (!projectId || !columnId) return "Thiếu thông tin cột.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const existing = await readColumns(projectId);
   const name = validateColumnName(
@@ -457,7 +457,7 @@ export async function deleteBoardColumn(projectId: string, columnId: string): Pr
   const configError = formConfigError();
   if (configError) return configError;
   if (!projectId || !columnId) return "Thiếu thông tin cột.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const [{ data: tasks }, columns] = await Promise.all([
@@ -502,7 +502,7 @@ export async function applyColumnOrder(
   if (!projectId) return "Thiếu thông tin dự án.";
   if (rows.length === 0) return null;
   if (rows.length > 100) return "Bảng có quá nhiều cột để sắp xếp một lượt.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const results = await Promise.all(
@@ -539,7 +539,7 @@ export async function moveTaskToColumn(
   if (configError) return configError;
   if (!projectId || !taskId || !columnId) return "Thiếu thông tin công việc hoặc cột.";
   if (rows.length > 500) return "Cột có quá nhiều công việc để sắp xếp một lượt.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const bridged = statusForColumnName(columnName);
   const db = await projectClient();
@@ -572,7 +572,7 @@ export async function reorderTasksInColumn(
   if (!projectId) return "Thiếu thông tin dự án.";
   if (rows.length === 0) return null;
   if (rows.length > 500) return "Cột có quá nhiều công việc để sắp xếp một lượt.";
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const error = await applyTaskOrder(projectId, rows);
   if (error) return error;

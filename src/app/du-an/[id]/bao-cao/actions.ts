@@ -35,7 +35,7 @@ export async function generateReport(_prev: Result, formData: FormData): Promise
   if (!templateId) return fail("Chọn một template báo cáo.");
   if (!outputCalculation) return fail("Chọn chỉ số tính dùng làm ước tính tín chỉ của kỳ.");
 
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
 
   const period = await getPeriod(projectId, periodId);
   if (!period) return fail("Không tìm thấy kỳ giám sát.");

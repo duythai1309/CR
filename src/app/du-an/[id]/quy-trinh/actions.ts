@@ -90,7 +90,7 @@ export async function chooseStandard(_prev: Result, formData: FormData): Promise
 
   const projectId = String(formData.get("project_id") ?? "");
   if (!projectId) return fail("Thiếu mã dự án.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const standardId = String(formData.get("standard_id") ?? "").trim();
   if (!standardId) return fail("Chưa chọn Standard.");
@@ -116,7 +116,7 @@ export async function chooseMethodology(_prev: Result, formData: FormData): Prom
 
   const projectId = String(formData.get("project_id") ?? "");
   if (!projectId) return fail("Thiếu mã dự án.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const methodologyId = String(formData.get("methodology_id") ?? "").trim();
   if (!methodologyId) return fail("Chưa chọn Methodology.");
@@ -150,7 +150,7 @@ export async function chooseMethodology(_prev: Result, formData: FormData): Prom
  * field con người đã điền trước khi bản nháp được ghi vào `projects.setup`.
  */
 export async function runBaselineDraftAssist(projectId: string): Promise<Result> {
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
   try {
     const record = await getProjectSetupRecord(projectId);
     if (!record) return fail("Không tìm thấy dự án.");
@@ -222,7 +222,7 @@ export async function saveBaseline(_prev: Result, formData: FormData): Promise<R
 
   const projectId = String(formData.get("project_id") ?? "");
   if (!projectId) return fail("Thiếu mã dự án.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const project = await getProject(projectId);
   if (!project) return fail("Không tìm thấy dự án.");
@@ -288,7 +288,7 @@ export async function approveStage(_prev: Result, formData: FormData): Promise<R
   const projectId = String(formData.get("project_id") ?? "");
   const ordinal = Number(formData.get("ordinal"));
   if (!projectId || !Number.isInteger(ordinal)) return fail("Thiếu thông tin bước.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db.rpc("approve_project_stage", {
@@ -322,7 +322,7 @@ export async function uploadDocument(_prev: Result, formData: FormData): Promise
   const projectId = String(formData.get("project_id") ?? "");
   const stageId = String(formData.get("stage_id") ?? "");
   if (!projectId || !stageId) return fail("Thiếu thông tin dự án hoặc bước.");
-  const { profile } = await requireProjectMember(projectId, "developer");
+  const { profile } = await requireProjectMember(projectId);
 
   const kind = String(formData.get("kind") ?? "");
   if (!isDocumentKind(kind)) return fail("Loại tài liệu không hợp lệ.");

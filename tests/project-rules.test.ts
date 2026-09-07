@@ -48,31 +48,47 @@ const LOCKED = {
   methodologyLockedAt: "2026-09-02T00:00:00.000Z",
 };
 
-describe("quyền theo vai trò dự án (PLAN.md §5)", () => {
+describe("quyền trong dự án — mọi thành viên toàn quyền (chính sách 07/09/2026)", () => {
   it("owner toàn quyền", () => {
     const a = abilitiesFor("owner");
     expect(a.canWriteTasks && a.canManageMembers && a.canApproveStage && a.canDeleteProject).toBe(true);
   });
 
-  it("developer thao tác task nhưng KHÔNG xoá được dự án", () => {
+  // Ca cũ chốt "developer KHÔNG xoá được dự án". Chính sách mới bỏ phân biệt vai trò, nên
+  // ca này nay canh đúng điều ngược lại — kể cả bốn quyền trước đây chỉ owner mới có.
+  it("developer toàn quyền, gồm cả xoá dự án và duyệt bước", () => {
     const a = abilitiesFor("developer");
     expect(a.canWriteTasks).toBe(true);
     expect(a.canComment).toBe(true);
-    expect(a.canDeleteProject).toBe(false);
-    expect(a.canManageMembers).toBe(false);
-    expect(a.canApproveStage).toBe(false);
+    expect(a.canDeleteProject).toBe(true);
+    expect(a.canManageMembers).toBe(true);
+    expect(a.canApproveStage).toBe(true);
   });
 
-  it("viewer chỉ xem", () => {
+  // Ca cũ chốt "viewer chỉ xem". Viewer nay cũng là thành viên đầy đủ.
+  it("viewer toàn quyền — không còn vai trò nào chỉ được xem", () => {
     const a = abilitiesFor("viewer");
-    expect(Object.values(a).some(Boolean)).toBe(false);
+    expect(Object.values(a).every(Boolean)).toBe(true);
   });
 
-  it("dự án đã xoá mềm thì mọi đường ghi đóng lại, kể cả với owner", () => {
-    const a = abilitiesFor("owner", true);
-    expect(Object.values(a).some(Boolean)).toBe(false);
+  it("ba vai trò cho ra bộ quyền GIỐNG HỆT nhau", () => {
+    const owner = abilitiesFor("owner");
+    expect(abilitiesFor("developer")).toEqual(owner);
+    expect(abilitiesFor("viewer")).toEqual(owner);
   });
 
+  // Ràng buộc còn lại DUY NHẤT sau khi bỏ phân quyền — phải có test canh, và phải canh
+  // cho cả ba vai trò chứ không riêng owner như bản cũ.
+  it("dự án đã xoá mềm thì mọi đường ghi đóng lại, với MỌI vai trò", () => {
+    for (const role of ["owner", "developer", "viewer"] as const) {
+      const a = abilitiesFor(role, true);
+      expect(Object.values(a).some(Boolean), role).toBe(false);
+    }
+  });
+
+  // `atLeast` không còn được `abilitiesFor` dùng, nhưng cột `role` vẫn còn trong schema và
+  // chốt "không xoá owner cuối cùng" (`0013:564-565`) vẫn sống, nên thứ tự vai trò vẫn
+  // phải đúng. Giữ nguyên ca này.
   it("thứ tự vai trò dùng để chặn tối thiểu", () => {
     expect(atLeast("owner", "developer")).toBe(true);
     expect(atLeast("developer", "developer")).toBe(true);
