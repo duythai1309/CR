@@ -77,10 +77,7 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
             }`}
           >
             <Sprout className={scrolled ? "text-mint-400" : "text-forest-800"} />
-            <span>
-              Agri-Carbon
-              <br className="hidden sm:block" /> Pass
-            </span>
+            <span>C-route</span>
           </Link>
 
           <div className="hidden flex-1 items-center justify-end gap-8 text-[15px] font-medium lg:flex">

@@ -43,7 +43,7 @@ export function AppNav({
     <header className="border-b border-soil-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
         <Link href="/" className="font-semibold text-leaf-800">
-          Agri-Carbon Pass
+          C-route
         </Link>
         <nav className="flex flex-wrap items-center gap-1">
           {links.map((l) => (

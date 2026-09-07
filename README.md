@@ -1,6 +1,6 @@
-# Agri-Carbon Pass
+# C-route
 
-Agri-Carbon Pass là nền tảng quản lý vòng đời dự án Carbon dành cho **đơn vị phát triển
+C-route là nền tảng quản lý vòng đời dự án Carbon dành cho **đơn vị phát triển
 dự án chuyên nghiệp**: đội ngũ tư vấn xây dựng hồ sơ theo Verra, Gold Standard và các
 Standard tương tự. Sản phẩm tập trung vào hai phần đang nằm trong phạm vi:
 

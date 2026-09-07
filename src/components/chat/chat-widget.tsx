@@ -42,7 +42,7 @@ export function ChatWidget({
       {mounted && (
         <section
           hidden={!open}
-          aria-label="Trợ lý Agri-Carbon Pass"
+          aria-label="Trợ lý C-route"
           className="pointer-events-auto flex h-[min(32rem,70dvh)] w-full max-w-[26rem] flex-col overflow-hidden rounded-2xl border border-soil-200 bg-soil-50 shadow-xl"
         >
           <header className="flex items-center justify-between border-b border-soil-200 bg-white px-4 py-3">

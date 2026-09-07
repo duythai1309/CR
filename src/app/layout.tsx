@@ -10,11 +10,12 @@ const beVietnam = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: {
-    default: "Agri-Carbon Pass",
-    template: "%s · Agri-Carbon Pass",
+    default: "C-route",
+    template: "%s · C-route",
   },
   description:
-    "Nền tảng số hoá MRV và kết nối tín chỉ carbon cho nông hộ nhỏ và hợp tác xã nông nghiệp.",
+    "Nền tảng quản lý vòng đời dự án Carbon cho đơn vị phát triển dự án: bảy bước thiết kế, " +
+    "giám sát MRV và báo cáo ước tính theo Verra và Gold Standard.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

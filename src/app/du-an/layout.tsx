@@ -5,7 +5,7 @@ import { ProjectTopBar } from "@/components/project/project-shell";
 import { ChatWidget } from "@/components/chat/chat-widget";
 
 export const metadata: Metadata = {
-  title: { default: "Dự án", template: "%s · Dự án · Agri-Carbon Pass" },
+  title: { default: "Dự án", template: "%s · Dự án · C-route" },
 };
 
 /**

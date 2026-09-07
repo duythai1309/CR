@@ -56,7 +56,7 @@ export function AuthLayout({
         <section className="hidden flex-col justify-between p-10 text-white lg:flex">
           <Link href="/" className="inline-flex items-center gap-2.5 text-white transition hover:text-mint-100">
             <Sprout />
-            <span className="text-base font-bold tracking-tight">Agri-Carbon Pass</span>
+            <span className="text-base font-bold tracking-tight">C-route</span>
           </Link>
           <div className="max-w-xl py-16">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-mint-100">{eyebrow}</p>
@@ -78,7 +78,7 @@ export function AuthLayout({
             className="inline-flex items-center gap-2.5 text-forest-900 transition hover:text-forest-700 lg:hidden"
           >
             <Sprout />
-            <span className="text-base font-bold tracking-tight">Agri-Carbon Pass</span>
+            <span className="text-base font-bold tracking-tight">C-route</span>
           </Link>
 
           <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-leaf-700 lg:mt-0">{eyebrow}</p>

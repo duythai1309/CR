@@ -13,7 +13,7 @@ const SLIDES: HeroSlide[] = [
     headline: "Từ ý tưởng đến hồ sơ đăng ký,",
     accent: "một vòng đời dự án liền mạch.",
     body:
-      "Agri-Carbon Pass giúp đơn vị phát triển dự án điều phối bảy bước thiết kế, phân công công việc và tập trung bằng chứng trên cùng một không gian làm việc.",
+      "C-route giúp đơn vị phát triển dự án điều phối bảy bước thiết kế, phân công công việc và tập trung bằng chứng trên cùng một không gian làm việc.",
   },
   {
     video: "/video/thua-ruong-flycam.mp4",
@@ -127,7 +127,7 @@ export default async function Home() {
                   nhiều vòng tài liệu và các kỳ giám sát kéo dài trong nhiều năm.
                 </p>
                 <p>
-                  Agri-Carbon Pass giữ công việc, methodology, dữ liệu MRV và báo cáo trong
+                  C-route giữ công việc, methodology, dữ liệu MRV và báo cáo trong
                   một cấu trúc thống nhất để đội ngũ tập trung vào chất lượng hồ sơ.
                 </p>
               </div>
@@ -508,7 +508,7 @@ export default async function Home() {
               Vận hành dự án carbon chuyên nghiệp trên một nền tảng thống nhất
             </h2>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
-              Agri-Carbon Pass giúp đơn vị tư vấn xây dựng hồ sơ Verra và Gold Standard
+              C-route giúp đơn vị tư vấn xây dựng hồ sơ Verra và Gold Standard
               quản lý công việc, methodology, Monitoring và báo cáo MRV có vết tính.
             </p>
 
@@ -537,7 +537,7 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-6 py-16">
           <div className="flex flex-wrap items-start justify-between gap-10">
             <div>
-              <div className="text-lg font-bold text-white">Agri-Carbon Pass</div>
+              <div className="text-lg font-bold text-white">C-route</div>
               <p className="mt-3 max-w-sm leading-relaxed text-mint-100/70">
                 Nền tảng quản lý vòng đời dự án carbon cho đội ngũ phát triển chuyên nghiệp.
               </p>
