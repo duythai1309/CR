@@ -1,26 +1,13 @@
 import Link from "next/link";
 
 /**
- * Trục hành trình của một dự án Carbon: Thiết kế → Giám sát → Báo cáo.
+ * Trục hành trình của một dự án carbon: Thiết kế → Giám sát → Báo cáo.
  *
- * Trước đây điều hướng là sáu tab phẳng, mỗi tab ứng với một nhóm bảng trong DB. Người
- * dùng phải tự dựng bản đồ "mình đang ở đâu, còn bao xa" trong đầu. Trục này nói thẳng
- * điều đó ra.
- *
- * Ba giai đoạn KHÔNG phải ba thực thể mới trong DB. Chúng là cách đọc lại trạng thái đã
- * có: `approved` đếm stage đã duyệt, `methodologyLocked` là mốc mở Module B. Không có
- * cột nào được thêm, không có luật nào bị vòng qua.
- *
- * Giai đoạn chưa mở vẫn hiện, kèm lý do. Giấu đi sẽ tiện hơn cho mắt nhưng phá mô hình
- * nghiệp vụ: bảy bước và chu kỳ MRV là chuẩn của Standard, người làm nghề cần thấy đủ
- * bản đồ kể cả phần chưa đi tới.
+ * Thiết kế là danh mục bảy hồ sơ thông tin cần xây dựng, không phải chuỗi bảy đầu việc.
+ * Vì vậy tiến độ ở đây đếm hồ sơ đã có nội dung; trạng thái duyệt tuần tự là một trục
+ * riêng và không được dùng để khoá việc điền hồ sơ.
  */
 
-/**
- * `available` = đã mở nhưng chưa phải việc đang làm. Tách khỏi `done` vì hai thứ đó
- * nhìn giống nhau nhưng nghĩa ngược nhau; gộp lại là nói với người đọc code rằng giai
- * đoạn đã hoàn thành trong khi nó còn chưa bắt đầu.
- */
 type PhaseState = "done" | "active" | "available" | "locked";
 
 interface Phase {
@@ -30,25 +17,89 @@ interface Phase {
   state: PhaseState;
 }
 
-const TOTAL_STAGES = 7;
+export interface DossierPresence {
+  idea: boolean;
+  feasibility: boolean;
+  standard: boolean;
+  methodology: boolean;
+  baseline: boolean;
+  additionality: boolean;
+  pdd: boolean;
+}
 
-/** Ba giai đoạn suy ra từ trạng thái thật, không từ một cột trạng thái riêng. */
+const DOSSIER_KEYS: Array<keyof DossierPresence> = [
+  "idea",
+  "feasibility",
+  "standard",
+  "methodology",
+  "baseline",
+  "additionality",
+  "pdd",
+];
+
+const TOTAL_DOSSIERS = DOSSIER_KEYS.length;
+
+function hasMeaningfulValue(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.some(hasMeaningfulValue);
+  if (value && typeof value === "object")
+    return Object.values(value as Record<string, unknown>).some(hasMeaningfulValue);
+  return false;
+}
+
+/** Suy ra trạng thái nội dung từ đúng các trường mà màn Thiết kế đang hiển thị. */
+export function dossierPresence({
+  setup,
+  standardId,
+  methodologyId,
+  baseline,
+  documentKinds,
+}: {
+  setup: {
+    idea?: unknown;
+    description?: unknown;
+    feasibility?: unknown;
+  };
+  standardId: string | null;
+  methodologyId: string | null;
+  baseline: unknown;
+  documentKinds: string[];
+}): DossierPresence {
+  const documents = new Set(documentKinds);
+  return {
+    idea: hasMeaningfulValue(setup.idea) || hasMeaningfulValue(setup.description),
+    feasibility: hasMeaningfulValue(setup.feasibility) || documents.has("feasibility"),
+    standard: Boolean(standardId),
+    methodology: Boolean(methodologyId),
+    baseline: hasMeaningfulValue(baseline) || documents.has("baseline"),
+    additionality: documents.has("additionality"),
+    pdd: documents.has("pdd"),
+  };
+}
+
+export function countPresentDossiers(presence: DossierPresence): number {
+  return DOSSIER_KEYS.filter((key) => presence[key]).length;
+}
+
+/** Ba giai đoạn suy ra từ số hồ sơ đã có và phụ thuộc thật để mở Module B. */
 export function journeyPhases({
-  approved,
+  dossierCount,
   methodologyLocked,
 }: {
-  approved: number;
+  dossierCount: number;
   methodologyLocked: boolean;
 }): Phase[] {
-  const designDone = approved >= TOTAL_STAGES;
+  const boundedCount = Math.min(TOTAL_DOSSIERS, Math.max(0, Math.trunc(dossierCount)));
+  const designDone = boundedCount >= TOTAL_DOSSIERS;
 
   return [
     {
       slug: "quy-trinh",
       label: "Thiết kế",
       detail: designDone
-        ? `Đủ ${TOTAL_STAGES}/${TOTAL_STAGES} bước`
-        : `${approved}/${TOTAL_STAGES} bước đã duyệt`,
+        ? `Đã có đủ ${TOTAL_DOSSIERS}/${TOTAL_DOSSIERS} hồ sơ`
+        : `${boundedCount}/${TOTAL_DOSSIERS} hồ sơ đã có`,
       state: designDone ? "done" : "active",
     },
     {
@@ -56,7 +107,7 @@ export function journeyPhases({
       label: "Giám sát",
       detail: methodologyLocked
         ? "Nhập dữ liệu theo kỳ"
-        : "Mở sau khi khoá Methodology ở bước 4",
+        : "Mở sau khi khoá Methodology để cố định metric_schema",
       state: methodologyLocked ? (designDone ? "active" : "available") : "locked",
     },
     {
@@ -64,10 +115,7 @@ export function journeyPhases({
       label: "Báo cáo",
       detail: methodologyLocked
         ? "Sinh báo cáo MRV từ kỳ đã khoá"
-        : "Mở sau khi khoá Methodology ở bước 4",
-      // Không bao giờ là `active`: trục này không biết đã có kỳ nào khoá chưa, và biết
-      // được thì phải truy vấn listPeriods trên mọi trang con. Trang Báo cáo tự nói
-      // điều kiện tinh đó bằng `Locked`.
+        : "Mở sau khi khoá Methodology để cố định metric_schema",
       state: methodologyLocked ? "available" : "locked",
     },
   ];
@@ -96,16 +144,36 @@ const TONE: Record<PhaseState, { bar: string; label: string; detail: string }> =
   },
 };
 
-export function JourneyRail({
+export async function JourneyRail({
   projectId,
-  approved,
+  approved: _legacyApproved,
   methodologyLocked,
 }: {
   projectId: string;
+  /** Giữ prop cũ để layout không phải đổi; tiến độ không còn dùng số lượt duyệt này. */
   approved: number;
   methodologyLocked: boolean;
 }) {
-  const phases = journeyPhases({ approved, methodologyLocked });
+  const [{ getDocuments, getProject }, { getProjectSetup }] = await Promise.all([
+    import("@/app/du-an/data"),
+    import("@/app/du-an/[id]/thiet-lap/data"),
+  ]);
+  const [project, documents, setup] = await Promise.all([
+    getProject(projectId),
+    getDocuments(projectId),
+    getProjectSetup(projectId),
+  ]);
+  const present = dossierPresence({
+    setup,
+    standardId: project?.standard_id ?? null,
+    methodologyId: project?.methodology_id ?? null,
+    baseline: project?.baseline,
+    documentKinds: documents.map((document) => document.kind),
+  });
+  const phases = journeyPhases({
+    dossierCount: countPresentDossiers(present),
+    methodologyLocked,
+  });
 
   return (
     <ol className="mt-4 grid gap-2 sm:grid-cols-3" aria-label="Giai đoạn của dự án">

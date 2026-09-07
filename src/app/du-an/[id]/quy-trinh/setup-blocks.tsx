@@ -8,7 +8,7 @@ import {
 } from "../thiet-lap/forms";
 
 /**
- * Phần nội dung của bốn bước đầu, gộp từ màn "Khởi tạo" cũ vào đúng khối bước của màn
+ * Phần nội dung của bốn hồ sơ đầu, gộp từ màn "Khởi tạo" cũ vào đúng mục của màn
  * Thiết kế.
  *
  * Trước đây hai màn tách rời: người dùng điền ý tưởng, mô tả và đánh giá khả thi ở
@@ -16,12 +16,11 @@ import {
  * viết ra câu đó — "Sang tab Quy trình để chọn và khoá Standard rồi Methodology" — nên nó
  * là một điểm gãy có chứng cứ, không phải suy đoán.
  *
- * Bốn khối dưới đây KHÔNG phải bốn stage mới. Chúng gắn vào stage 1–4 vốn cố định trong
- * `0013_project_platform.sql`, theo đúng `STAGE_HINT`:
- * stage 1 Project concept · stage 2 Feasibility · stage 3 Standard · stage 4 Methodology.
+ * Bốn khối dưới đây gắn với record stage cố định trong DB để giữ tương thích với tài liệu
+ * và duyệt. Trên giao diện chúng là hồ sơ có thể xây dựng song song, không phải đầu việc.
  */
 
-/** Stage 1 — Project concept: ý tưởng và mô tả nằm cùng một chỗ với nút duyệt bước 1. */
+/** Hồ sơ Project Idea: ý tưởng và mô tả dự án. */
 export function StageIdeaBlock({
   projectId,
   idea,
@@ -48,7 +47,7 @@ export function StageIdeaBlock({
   );
 }
 
-/** Stage 2 — Feasibility assessment. */
+/** Hồ sơ Feasibility Assessment. */
 export function StageFeasibilityBlock({
   projectId,
   feasibility,
@@ -125,7 +124,7 @@ export function StageFeasibilityBlock({
 }
 
 /**
- * Stage 3 và 4 — gợi ý của trợ lý, đặt NGAY TRÊN picker của chính bước đó.
+ * Gợi ý của trợ lý cho hai hồ sơ Standard và Methodology.
  *
  * Gợi ý không tự chốt gì; nút khoá vẫn là `StandardPicker`/`MethodologyPicker` bên dưới,
  * vẫn đi qua RPC cũ. Thay đổi duy nhất là người dùng không còn phải đổi tab giữa lúc đọc
@@ -149,7 +148,7 @@ export function StageSelectionAdviceBlock({
     <div className="grid gap-4 rounded-lg border border-soil-200 bg-soil-50 p-4">
       <SectionHeader
         title="Gợi ý của trợ lý"
-        description="Đối chiếu loại hình dự án ở bước 1 với catalog Methodology trong hệ thống. Gợi ý không chốt thay bạn."
+        description="Đối chiếu loại hình trong hồ sơ Project Idea với catalog Methodology của hệ thống. Gợi ý không chốt thay bạn."
       />
 
       {hasSample && (
@@ -162,7 +161,7 @@ export function StageSelectionAdviceBlock({
       {candidates.length === 0 ? (
         <Empty
           title="Chưa có gợi ý nào"
-          hint="Trợ lý cần loại hình dự án ở bước 1 để đối chiếu với catalog."
+          hint="Trợ lý cần loại hình trong hồ sơ Project Idea để đối chiếu với catalog."
           action={
             <SelectionAdviceButton
               projectId={projectId}
