@@ -3,7 +3,17 @@ import { notFound } from "next/navigation";
 import { getProjectStageApprovals, requireProjectMember } from "@/lib/auth";
 import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
 import { createClient } from "@/lib/supabase/server";
-import { Alert, Badge, Card, CheckMark, LinkButton, Locked, ProgressBar } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  CheckMark,
+  Empty,
+  LinkButton,
+  Locked,
+  ProgressBar,
+  SectionHeader,
+} from "@/components/ui";
 import {
   countPresentDossiers,
   dossierPresence,
@@ -91,7 +101,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
   const abilities = abilitiesFor(role, project.deleted_at !== null);
   const views = stages.map(toStageView);
 
-  // Nội dung bốn bước đầu, gộp từ màn Khởi tạo cũ. `canWriteTasks` là cùng quyền mà màn
+  // Nội dung bốn hồ sơ đầu, gộp từ màn Khởi tạo cũ. `canWriteTasks` là cùng quyền mà màn
   // đó dùng trước đây, giữ nguyên để không nới quyền ghi qua đường giao diện.
   const idea = setup.idea ?? {};
   const description = setup.description ?? "";
@@ -167,19 +177,16 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
 
       {/* Toàn cảnh bảy hồ sơ; số duyệt được trình bày riêng trong từng khối. */}
       <section className="rounded-xl border border-soil-200 bg-white px-5 py-4 shadow-sm">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-soil-900">Bảy hồ sơ thiết kế cần xây dựng</h2>
-            <p className="mt-1 text-sm text-soil-600">
-              Có thể bổ sung bất kỳ hồ sơ nào bất kỳ lúc nào, trừ hai phụ thuộc dữ liệu
-              được nêu ngay tại mục Methodology và Baseline.
+        <SectionHeader
+          title="Bảy hồ sơ thiết kế cần xây dựng"
+          description="Có thể bổ sung các hồ sơ song song, trừ phụ thuộc dữ liệu của Methodology và Baseline."
+          aside={
+            <p className="text-sm text-soil-600">
+              <span className="font-semibold tabular-nums text-soil-900">{presentCount}/7</span>{" "}
+              hồ sơ đã có
             </p>
-          </div>
-          <p className="text-sm text-soil-600">
-            <span className="font-semibold tabular-nums text-soil-900">{presentCount}/7</span>{" "}
-            hồ sơ đã có
-          </p>
-        </div>
+          }
+        />
 
         <div className="mt-3">
           <ProgressBar
@@ -397,12 +404,10 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
 
               {kind && (
                 <div className="rounded-lg border border-soil-200 bg-soil-50 p-4">
-                  <h4 className="text-sm font-semibold text-soil-900">
-                    {DOCUMENT_KIND_LABEL[kind]}
-                  </h4>
+                  <SectionHeader title={DOCUMENT_KIND_LABEL[kind]} />
 
                   {stageDocs.length > 0 ? (
-                    <ul className="mt-2 space-y-1 text-sm text-soil-700">
+                    <ul className="space-y-1 text-sm text-soil-700">
                       {stageDocs.map((d) => (
                         <li key={d.id} className="flex flex-wrap items-center gap-2">
                           <Badge tone="soil">bản {d.version}</Badge>
@@ -415,10 +420,22 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1 text-sm text-soil-600">Chưa có tài liệu nào.</p>
+                    <Empty
+                      title={`Chưa có ${DOCUMENT_KIND_LABEL[kind]}`}
+                      hint="Tải tài liệu chứng minh để hoàn thiện hồ sơ này. Mỗi lần tải lên tạo một phiên bản mới."
+                      action={
+                        abilities.canUploadFiles ? (
+                          <UploadDocumentForm projectId={id} stageId={stage.id} kind={kind} />
+                        ) : (
+                          <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
+                            Xem người phụ trách dự án
+                          </LinkButton>
+                        )
+                      }
+                    />
                   )}
 
-                  {abilities.canUploadFiles && (
+                  {stageDocs.length > 0 && abilities.canUploadFiles && (
                     <div className="mt-3">
                       <UploadDocumentForm projectId={id} stageId={stage.id} kind={kind} />
                     </div>
@@ -474,8 +491,8 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
         </p>
         <p className="mt-2 text-sm text-soil-700">
           Còn thiếu, và nằm ngoài phạm vi phiên bản hiện tại: stakeholder consultation,
-          validation, registration, VVB verification, standard review và issuance — bước
-          8–11 và 15–17 của quy trình chuẩn. MRV report sinh ở tab Báo cáo là{" "}
+          validation, registration, VVB verification, standard review và issuance — các
+          công đoạn 8–11 và 15–17 của quy trình chuẩn. MRV report sinh ở tab Báo cáo là{" "}
           <strong>ước tính</strong>, không phải tín chỉ đã phát hành.
         </p>
       </Card>
@@ -500,18 +517,18 @@ function ApprovalChecklist({
 
   return (
     <div className="rounded-lg border border-soil-200 bg-soil-50 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h4 className="text-sm font-semibold text-soil-900">Duyệt hồ sơ — hành động của chủ dự án</h4>
-          <p className="mt-0.5 text-xs text-soil-600">
+      <SectionHeader
+        title="Duyệt hồ sơ — hành động của chủ dự án"
+        description={
+          <>
             Duyệt là việc riêng, không khoá quyền điền hồ sơ. Checklist chép từ{" "}
             <code className="font-mono">approve_project_stage</code> trong{" "}
             <code className="font-mono">0013_project_platform.sql</code>; cơ sở dữ liệu vẫn
             cưỡng chế thứ tự duyệt và không kiểm gì ngoài danh sách này.
-          </p>
-        </div>
-        {action}
-      </div>
+          </>
+        }
+        aside={action}
+      />
 
       <ul className="mt-3 space-y-2">
         {checks.map((check) => (

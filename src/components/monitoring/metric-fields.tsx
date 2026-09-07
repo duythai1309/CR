@@ -76,6 +76,7 @@ export function MetricFieldInput({
         <input
           type="checkbox"
           name={name}
+          aria-label={field.label}
           defaultChecked={value === true}
           disabled={disabled}
           className="h-4 w-4 rounded border-soil-300"
@@ -83,6 +84,7 @@ export function MetricFieldInput({
       ) : (
         <Input
           name={name}
+          aria-label={field.label}
           type={field.control === "date" ? "date" : "text"}
           inputMode={
             field.control === "decimal" || field.control === "integer" ? "decimal" : undefined

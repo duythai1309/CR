@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
-import { Alert, Badge, Card, Empty, LinkButton, Locked, Table } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  Empty,
+  LinkButton,
+  Locked,
+  SectionHeader,
+  Table,
+} from "@/components/ui";
 import { abilitiesFor } from "@/components/project/rules";
 import { getMethodology, getProject, getStandard } from "../../data";
 import { listPeriods, listReports, listTemplates } from "../giam-sat/data";
@@ -37,6 +46,11 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
+      <SectionHeader
+        title="Báo cáo MRV"
+        description="Sinh và rà soát báo cáo ước tính từ ảnh chụp của kỳ giám sát đã khoá."
+      />
+
       <Alert tone="warn" title="Đây là ước tính, không phải tín chỉ đã phát hành">
         Báo cáo sinh ở đây áp công thức của Methodology lên số liệu đã nhập.
         {methodology?.is_sample &&
@@ -75,10 +89,15 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
             description="Chỉ sinh được từ kỳ đã khoá — nhờ vậy con số trong báo cáo không đổi khi dữ liệu sau này thay đổi."
           >
             {templates.length === 0 ? (
-              <Alert tone="warn">
-                Chưa có template báo cáo nào cho cặp Standard/Methodology của dự án. Quản trị
-                nền tảng cần thêm trước.
-              </Alert>
+              <Locked
+                title="Chưa có template báo cáo"
+                reason="Catalog chưa có template cho cặp Standard/Methodology của dự án. Quản trị nền tảng cần bổ sung trước."
+              />
+            ) : outputs.length === 0 ? (
+              <Locked
+                title="Chưa có chỉ số ước tính phù hợp"
+                reason="Methodology của kỳ này không có chỉ số đơn vị tCO2e được gộp bằng tổng, nên chưa thể sinh ước tính tín chỉ cho cả kỳ."
+              />
             ) : (
               <div className="space-y-4">
                 <Alert tone="warn" title="Template hiện là placeholder">
@@ -104,6 +123,18 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
+      {!abilities.canWriteTasks && locked.length > 0 && (
+        <Locked
+          title="Bạn chưa thể sinh báo cáo"
+          reason="Chỉ Chủ dự án hoặc Đơn vị phát triển được sinh báo cáo từ kỳ giám sát đã khoá."
+          unlock={
+            <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
+              Xem thành viên dự án
+            </LinkButton>
+          }
+        />
+      )}
+
       <Card title={`Báo cáo đã sinh (${reports.length})`}>
         {reports.length === 0 ? (
           <Empty
@@ -124,39 +155,44 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
             }
           />
         ) : (
-          <Table head={["Kỳ", "Bản", "Trạng thái", "Ước tính", "Sinh lúc", ""]}>
-            {reports.map((r) => {
-              const credit = (r.results as { estimated_credit?: { value?: string; unit?: string } })
-                ?.estimated_credit;
-              return (
-                <tr key={r.id} className="border-b border-soil-100 last:border-0">
-                  <td className="px-3 py-2.5 font-medium text-soil-900">
-                    {periodName.get(r.period_id) ?? "—"}
-                  </td>
-                  <td className="px-3 py-2.5 text-soil-700">{r.version}</td>
-                  <td className="px-3 py-2.5">
-                    <Badge tone={r.status === "final" ? "leaf" : "carbon"}>
-                      {r.status === "final" ? "Final" : "Preview"}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-2.5 text-soil-900">
-                    {credit?.value ?? "—"} {credit?.unit ?? ""}
-                  </td>
-                  <td className="px-3 py-2.5 text-soil-700">
-                    {new Date(r.generated_at).toLocaleString("vi-VN")}
-                  </td>
-                  <td className="px-3 py-2.5 text-right">
-                    <Link
-                      href={`/du-an/${id}/bao-cao/${r.id}`}
-                      className="text-sm font-medium text-leaf-700 hover:underline"
-                    >
-                      Xem
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </Table>
+          <div className="overflow-x-auto">
+            <div className="min-w-[48rem]">
+              <Table head={["Kỳ", "Bản", "Trạng thái", "Ước tính", "Sinh lúc", ""]}>
+                {reports.map((r) => {
+                  const credit = (
+                    r.results as { estimated_credit?: { value?: string; unit?: string } }
+                  )?.estimated_credit;
+                  return (
+                    <tr key={r.id} className="border-b border-soil-100 last:border-0">
+                      <td className="px-3 py-2.5 font-medium text-soil-900">
+                        {periodName.get(r.period_id) ?? "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-soil-700">{r.version}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge tone={r.status === "final" ? "leaf" : "carbon"}>
+                          {r.status === "final" ? "Final" : "Preview"}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2.5 text-soil-900">
+                        {credit?.value ?? "—"} {credit?.unit ?? ""}
+                      </td>
+                      <td className="px-3 py-2.5 text-soil-700">
+                        {new Date(r.generated_at).toLocaleString("vi-VN")}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Link
+                          href={`/du-an/${id}/bao-cao/${r.id}`}
+                          className="text-sm font-medium text-leaf-700 hover:underline"
+                        >
+                          Xem
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Table>
+            </div>
+          </div>
         )}
       </Card>
     </div>

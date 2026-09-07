@@ -167,21 +167,38 @@ export default async function PeriodPage({
         description="Chỉ số quan sát của kỳ, đặt cạnh giá trị baseline đã chụp lúc tạo kỳ."
       >
         {summaries.length === 0 ? (
-          <p className="text-sm text-soil-600">Methodology này không khai chỉ số quan sát nào.</p>
+          <Locked
+            title="Chưa có chỉ số quan sát"
+            reason="Methodology của kỳ này không khai chỉ số quan sát, nên không có dữ liệu để đối chiếu với baseline."
+          />
         ) : (
-          <Table head={["Chỉ số", "Đơn vị", "Số quan sát", "Nhỏ nhất", "Lớn nhất", "Trung bình", "Baseline"]}>
-            {summaries.map((s) => (
-              <tr key={s.fieldId} className="border-b border-soil-100 last:border-0">
-                <td className="px-3 py-2 font-medium text-soil-900">{s.label}</td>
-                <td className="px-3 py-2 text-soil-600">{s.unit}</td>
-                <td className="px-3 py-2 text-soil-700">{s.count}</td>
-                <td className="px-3 py-2 text-soil-700">{s.min ?? "—"}</td>
-                <td className="px-3 py-2 text-soil-700">{s.max ?? "—"}</td>
-                <td className="px-3 py-2 text-soil-700">{s.mean ?? "—"}</td>
-                <td className="px-3 py-2 text-soil-900">{s.baseline ?? "—"}</td>
-              </tr>
-            ))}
-          </Table>
+          <div className="overflow-x-auto">
+            <div className="min-w-[48rem]">
+              <Table
+                head={[
+                  "Chỉ số",
+                  "Đơn vị",
+                  "Số quan sát",
+                  "Nhỏ nhất",
+                  "Lớn nhất",
+                  "Trung bình",
+                  "Baseline",
+                ]}
+              >
+                {summaries.map((s) => (
+                  <tr key={s.fieldId} className="border-b border-soil-100 last:border-0">
+                    <td className="px-3 py-2 font-medium text-soil-900">{s.label}</td>
+                    <td className="px-3 py-2 text-soil-600">{s.unit}</td>
+                    <td className="px-3 py-2 text-soil-700">{s.count}</td>
+                    <td className="px-3 py-2 text-soil-700">{s.min ?? "—"}</td>
+                    <td className="px-3 py-2 text-soil-700">{s.max ?? "—"}</td>
+                    <td className="px-3 py-2 text-soil-700">{s.mean ?? "—"}</td>
+                    <td className="px-3 py-2 text-soil-900">{s.baseline ?? "—"}</td>
+                  </tr>
+                ))}
+              </Table>
+            </div>
+          </div>
         )}
 
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-1 text-sm text-soil-600">
@@ -361,60 +378,80 @@ export default async function PeriodPage({
           />
         ) : (
           <div className="max-h-[32rem] overflow-auto">
-            <Table
-              head={[
-                "Mã quan sát",
-                "Ngày",
-                ...form.observation.map((f) => f.label),
-                "Nguồn",
-                "Actor / phiên bản",
-                ...(canEdit ? [""] : []),
-              ]}
-            >
-              {records.map((r) => (
-                <ObservationRow
-                  key={r.id}
-                  projectId={id}
-                  periodId={periodId}
-                  recordKey={r.record_key}
-                  observedOn={r.observed_on}
-                  values={form.observation.map((f) => {
-                    const v = (r.metric_values as MetricValues)?.[f.id];
-                    return v === null || v === undefined ? "—" : String(v);
-                  })}
-                  fromImport={r.import_id !== null}
-                  sourceRow={r.source_row}
-                  enteredBy={r.entered_by}
-                  enteredByName={actorName.get(r.entered_by) ?? "Thành viên dự án"}
-                  recordRevision={r.revision}
-                  updatedAt={r.updated_at}
-                  expectedRevision={period.data_revision}
-                  canEdit={canEdit}
-                />
-              ))}
-            </Table>
+            <div className="min-w-[64rem]">
+              <Table
+                head={[
+                  "Mã quan sát",
+                  "Ngày",
+                  ...form.observation.map((f) => f.label),
+                  "Nguồn",
+                  "Người nhập / phiên bản",
+                  ...(canEdit ? [""] : []),
+                ]}
+              >
+                {records.map((r) => (
+                  <ObservationRow
+                    key={r.id}
+                    projectId={id}
+                    periodId={periodId}
+                    recordKey={r.record_key}
+                    observedOn={r.observed_on}
+                    values={form.observation.map((f) => {
+                      const v = (r.metric_values as MetricValues)?.[f.id];
+                      return v === null || v === undefined ? "—" : String(v);
+                    })}
+                    fromImport={r.import_id !== null}
+                    sourceRow={r.source_row}
+                    enteredBy={r.entered_by}
+                    enteredByName={actorName.get(r.entered_by) ?? "Thành viên dự án"}
+                    recordRevision={r.revision}
+                    updatedAt={r.updated_at}
+                    expectedRevision={period.data_revision}
+                    canEdit={canEdit}
+                  />
+                ))}
+              </Table>
+            </div>
           </div>
         )}
       </Card>
 
-      {imports.length > 0 && (
-        <Card title="Lần nhập tệp" description="Mỗi lần nhập được ghi lại để truy nguồn số liệu.">
-          <Table head={["Thời điểm", "Người nhập", "Mã lần nhập"]}>
-            {imports.map((i) => (
-              <tr key={i.id} className="border-b border-soil-100 last:border-0">
-                <td className="px-3 py-2 text-soil-700">
-                  {new Date(i.created_at).toLocaleString("vi-VN")}
-                </td>
-                <td className="px-3 py-2 text-xs text-soil-600">
-                  <span className="block font-medium text-soil-800">{actorName.get(i.imported_by) ?? "Thành viên dự án"}</span>
-                  <span className="block font-mono">{i.imported_by}</span>
-                </td>
-                <td className="px-3 py-2 font-mono text-xs text-soil-600">{i.id}</td>
-              </tr>
-            ))}
-          </Table>
-        </Card>
-      )}
+      <Card title="Lần nhập tệp" description="Mỗi lần nhập được ghi lại để truy nguồn số liệu.">
+        {imports.length === 0 ? (
+          <Empty
+            title="Chưa có lần nhập CSV"
+            hint="Nhập CSV để thêm nhiều quan sát và ghi lại nguồn của lần nhập."
+            action={
+              canEdit ? (
+                <LinkButton href="#nhap-csv">Nhập tệp CSV đầu tiên</LinkButton>
+              ) : (
+                <LinkButton href={`/du-an/${id}/giam-sat`} variant="secondary">
+                  Quay lại các kỳ giám sát
+                </LinkButton>
+              )
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="min-w-[36rem]">
+              <Table head={["Thời điểm", "Người nhập", "Mã lần nhập"]}>
+                {imports.map((i) => (
+                  <tr key={i.id} className="border-b border-soil-100 last:border-0">
+                    <td className="px-3 py-2 text-soil-700">
+                      {new Date(i.created_at).toLocaleString("vi-VN")}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-soil-600">
+                      <span className="block font-medium text-soil-800">{actorName.get(i.imported_by) ?? "Thành viên dự án"}</span>
+                      <span className="block font-mono">{i.imported_by}</span>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs text-soil-600">{i.id}</td>
+                  </tr>
+                ))}
+              </Table>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {abilities.canApproveStage && open && (
         <Card

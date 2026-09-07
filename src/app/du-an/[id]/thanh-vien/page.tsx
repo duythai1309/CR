@@ -131,25 +131,29 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
               }
             />
           ) : (
-            <Table
-              head={
-                abilities.canManageMembers
-                  ? ["Thành viên", "Vai trò", "Việc đang giữ", ""]
-                  : ["Thành viên", "Vai trò", "Việc đang giữ"]
-              }
-            >
-              {members.map((m) => (
-                <MemberRow
-                  key={m.userId}
-                  projectId={id}
-                  member={m}
-                  canManage={abilities.canManageMembers}
-                  isSelf={m.userId === profile.id}
-                  isLastOwner={m.role === "owner" && owners === 1}
-                  workload={workload.get(m.userId) ?? null}
-                />
-              ))}
-            </Table>
+            <div className="overflow-x-auto">
+              <div className="min-w-[44rem]">
+                <Table
+                  head={
+                    abilities.canManageMembers
+                      ? ["Thành viên", "Vai trò", "Việc đang giữ", ""]
+                      : ["Thành viên", "Vai trò", "Việc đang giữ"]
+                  }
+                >
+                  {members.map((m) => (
+                    <MemberRow
+                      key={m.userId}
+                      projectId={id}
+                      member={m}
+                      canManage={abilities.canManageMembers}
+                      isSelf={m.userId === profile.id}
+                      isLastOwner={m.role === "owner" && owners === 1}
+                      workload={workload.get(m.userId) ?? null}
+                    />
+                  ))}
+                </Table>
+              </div>
+            </div>
           )}
 
           {unassigned > 0 && (
@@ -175,7 +179,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
             [
               [
                 "owner",
-                "Quản lý thành viên, chọn và khoá Standard/Methodology, duyệt bước, tạo và khoá monitoring period, xoá dự án.",
+                "Quản lý thành viên, chọn và khoá Standard/Methodology, duyệt hồ sơ, tạo và khoá monitoring period, xoá dự án.",
               ],
               [
                 "developer",

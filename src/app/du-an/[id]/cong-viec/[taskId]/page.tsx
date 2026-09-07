@@ -121,12 +121,12 @@ export default async function TaskPage({
       <section>
         <SectionHeader
           title={task.title}
-          description="Chi tiết, người phụ trách và tiến độ của công việc trong bước thiết kế."
+          description="Chi tiết, người phụ trách, tiến độ và hồ sơ liên quan."
           aside={<Badge tone={TASK_STATUS_TONE[status]}>{TASK_STATUS_LABEL[status]}</Badge>}
         />
         <Card>
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Meta label="Thuộc bước">
+            <Meta label="Mục hồ sơ">
               {stage ? `${stage.ordinal}. ${stage.title}` : "Không xác định"}
             </Meta>
             <Meta label="Giao cho">
@@ -185,7 +185,7 @@ export default async function TaskPage({
                     href={`/du-an/${id}/quy-trinh#buoc-${stage.ordinal}`}
                     variant="secondary"
                   >
-                    Xem bước thiết kế liên quan
+                    Xem hồ sơ thiết kế liên quan
                   </LinkButton>
                 ) : (
                   <LinkButton href={`/du-an/${id}`} variant="secondary">
@@ -258,7 +258,7 @@ export default async function TaskPage({
         <p className="mt-5 border-t border-soil-100 pt-3 text-xs text-soil-600">
           Đây <strong>không</strong> phải lịch sử trạng thái. Schema chỉ giữ{" "}
           <code className="font-mono">updated_at</code> trên công việc; không có bảng nào ghi
-          lại ai đổi trạng thái, người nhận hay hạn — và ai lúc nào. Muốn có audit trail đầy
+          lại ai đã đổi trạng thái, người nhận hoặc hạn vào lúc nào. Muốn có audit trail đầy
           đủ cho VVB thì cần thêm bảng sự kiện, xem{" "}
           <code className="font-mono">docs/design/pages-module-a.md</code>.
         </p>

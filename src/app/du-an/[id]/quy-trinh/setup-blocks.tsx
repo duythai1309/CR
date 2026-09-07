@@ -1,4 +1,4 @@
-import { Alert, Badge, Empty, Meta, SectionHeader } from "@/components/ui";
+import { Alert, Badge, Empty, LinkButton, Meta, SectionHeader } from "@/components/ui";
 import type { FeasibilityAssessment, ProjectIdea, SelectionAdvice } from "@/types/project-setup";
 import {
   DescriptionForm,
@@ -73,7 +73,7 @@ export function StageFeasibilityBlock({
 
       {known.length > 0 && (
         <section>
-          <h4 className="text-sm font-semibold text-soil-800">Điều đã biết</h4>
+          <h3 className="text-sm font-semibold text-soil-800">Điều đã biết</h3>
           <ul className="mt-2 grid list-disc gap-1 pl-5 text-sm text-soil-700">
             {known.map((k, i) => (
               <li key={i}>{k}</li>
@@ -83,13 +83,25 @@ export function StageFeasibilityBlock({
       )}
 
       <section>
-        <h4 className="text-sm font-semibold text-soil-800">
+        <h3 className="text-sm font-semibold text-soil-800">
           Điều còn thiếu {gaps.length > 0 && <Badge tone="carbon">{gaps.length}</Badge>}
-        </h4>
+        </h3>
         {gaps.length === 0 ? (
-          <p className="mt-2 text-sm text-soil-600">
-            Chưa có khoảng trống nào được ghi nhận. Bấm “Nhờ trợ lý rà soát” để bắt đầu.
-          </p>
+          <div className="mt-2">
+            <Empty
+              title="Chưa ghi nhận khoảng trống"
+              hint="Nhờ trợ lý rà nội dung đã nhập và đề xuất bằng chứng cần thu thập."
+              action={
+                canEdit ? (
+                  <LinkButton href="#ra-soat-kha-thi">Nhờ trợ lý rà soát</LinkButton>
+                ) : (
+                  <LinkButton href={`/du-an/${projectId}/thanh-vien`} variant="secondary">
+                    Xem người phụ trách dự án
+                  </LinkButton>
+                )
+              }
+            />
+          </div>
         ) : (
           <ul className="mt-2 grid gap-2">
             {gaps.map((g, i) => (
@@ -113,12 +125,14 @@ export function StageFeasibilityBlock({
         </Meta>
       )}
 
-      <FeasibilityPanel
-        projectId={projectId}
-        notes={feasibility.notes ?? ""}
-        canEdit={canEdit}
-        hasInput={hasInput}
-      />
+      <div id="ra-soat-kha-thi" className="scroll-mt-6">
+        <FeasibilityPanel
+          projectId={projectId}
+          notes={feasibility.notes ?? ""}
+          canEdit={canEdit}
+          hasInput={hasInput}
+        />
+      </div>
     </div>
   );
 }

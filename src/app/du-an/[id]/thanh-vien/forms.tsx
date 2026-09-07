@@ -85,6 +85,7 @@ export function MemberRow({
               <input type="hidden" name="user_id" value={member.userId} />
               <Select
                 name="role"
+                aria-label={`Vai trò của ${member.fullName}`}
                 defaultValue={member.role}
                 disabled={rolePending || isLastOwner}
                 className="w-44"

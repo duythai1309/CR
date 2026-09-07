@@ -2,8 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
-import { Alert, Badge, Button, Empty, Field, Input, SectionHeader, Select } from "@/components/ui";
-import type { DocumentKind } from "@/components/project/rules";
+import {
+  Alert,
+  Badge,
+  Button,
+  Empty,
+  Field,
+  Input,
+  LinkButton,
+  Locked,
+  SectionHeader,
+  Select,
+} from "@/components/ui";
+import { DOCUMENT_KIND_LABEL, type DocumentKind } from "@/components/project/rules";
 import type { BaselineDraft } from "@/types/project-setup";
 import {
   approveStage,
@@ -21,7 +32,7 @@ function Feedback({ result }: { result: Result }) {
   return <Alert tone={result.ok ? "ok" : "error"}>{result.message}</Alert>;
 }
 
-/* ------------------------------------------------------------------ bước 3 */
+/* ------------------------------------------------------------------ hồ sơ Standard */
 
 export function StandardPicker({
   projectId,
@@ -45,9 +56,17 @@ export function StandardPicker({
         <Badge tone="leaf">Đã khoá</Badge>{" "}
         <span className="ml-1 font-medium">{current?.label ?? "Standard đã chọn"}</span>
         <span className="mt-1 block text-xs text-soil-600">
-          Khoá là một chiều — cơ sở dữ liệu từ chối mọi thay đổi sau bước này.
+          Khoá là một chiều — cơ sở dữ liệu từ chối mọi thay đổi sau đó.
         </span>
       </p>
+    );
+
+  if (standards.length === 0)
+    return (
+      <Locked
+        title="Chưa có Standard để chọn"
+        reason="Catalog chưa có Standard. Quản trị nền tảng cần bổ sung trước."
+      />
     );
 
   if (!canEdit)
@@ -94,7 +113,7 @@ export function StandardPicker({
   );
 }
 
-/* ------------------------------------------------------------------ bước 4 */
+/* ------------------------------------------------------------------ hồ sơ Methodology */
 
 export function MethodologyPicker({
   projectId,
@@ -117,7 +136,7 @@ export function MethodologyPicker({
   if (!standardLocked)
     return (
       <p className="text-sm text-soil-600">
-        Khoá Standard ở bước 3 trước. Danh sách Methodology chỉ hiện những bản thuộc đúng
+        Khoá Standard trước. Danh sách Methodology chỉ hiện những bản thuộc đúng
         Standard đã chọn.
       </p>
     );
@@ -128,6 +147,14 @@ export function MethodologyPicker({
         <Badge tone="leaf">Đã khoá</Badge>{" "}
         <span className="ml-1 font-medium">{current?.label ?? "Methodology đã chọn"}</span>
       </p>
+    );
+
+  if (methodologies.length === 0)
+    return (
+      <Locked
+        title="Chưa có Methodology để chọn"
+        reason="Catalog chưa có Methodology đã publish cho Standard này. Quản trị nền tảng cần bổ sung trước."
+      />
     );
 
   if (!canEdit)
@@ -157,13 +184,6 @@ export function MethodologyPicker({
         </Select>
       </Field>
 
-      {methodologies.length === 0 && (
-        <Alert tone="warn">
-          Chưa có Methodology nào được publish cho Standard này. Quản trị nền tảng cần thêm
-          trước.
-        </Alert>
-      )}
-
       <Feedback result={result} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" variant="secondary" disabled={pending}>
@@ -185,7 +205,7 @@ export function MethodologyPicker({
   );
 }
 
-/* ------------------------------------------------------------------ bước 5 */
+/* ------------------------------------------------------------------ hồ sơ Baseline */
 
 export function BaselineForm({
   projectId,
@@ -246,9 +266,15 @@ export function BaselineForm({
 
   if (fields.length === 0)
     return (
-      <p className="text-sm text-soil-600">
-        Methodology này không khai chỉ số baseline nào.
-      </p>
+      <Locked
+        title="Chưa có chỉ số baseline"
+        reason="Methodology đang chọn không khai chỉ số baseline, nên chưa có trường dữ liệu để nhập."
+        unlock={
+          <LinkButton href="#buoc-4" variant="secondary">
+            Xem hồ sơ Methodology
+          </LinkButton>
+        }
+      />
     );
 
   return (
@@ -284,6 +310,7 @@ export function BaselineForm({
                   <input
                     type="checkbox"
                     name={`f_${f.id}`}
+                    aria-label={f.label}
                     defaultChecked={value === true}
                     disabled={!canEdit}
                     className="h-4 w-4 rounded border-soil-300"
@@ -397,7 +424,7 @@ export function BaselineForm({
   );
 }
 
-/* ------------------------------------------------------------------ duyệt bước */
+/* ------------------------------------------------------------------ duyệt hồ sơ */
 
 export function ApproveStageForm({
   projectId,
@@ -417,7 +444,7 @@ export function ApproveStageForm({
         <input type="hidden" name="project_id" value={projectId} />
         <input type="hidden" name="ordinal" value={ordinal} />
         <Button type="submit" variant="secondary" disabled={pending || blocked}>
-          {pending ? "Đang duyệt…" : "Duyệt bước"}
+          {pending ? "Đang duyệt…" : "Duyệt hồ sơ"}
         </Button>
       </form>
       {blocked && (
@@ -452,14 +479,20 @@ export function UploadDocumentForm({
       <input type="hidden" name="stage_id" value={stageId} />
       <input type="hidden" name="kind" value={kind} />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <Field
+        label={`Tệp ${DOCUMENT_KIND_LABEL[kind]}`}
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB. Mỗi lần tải lên tạo một phiên bản mới."
+      >
         <input
           type="file"
           name="file"
+          accept=".pdf,.docx,.xlsx,.csv,image/jpeg,image/png,image/webp"
           required
           onChange={(e) => setName(e.target.files?.[0]?.name ?? null)}
           className="text-sm text-soil-700 file:mr-3 file:rounded-lg file:border file:border-soil-200 file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-soil-800"
         />
+      </Field>
+      <div>
         <Button type="submit" variant="secondary" disabled={pending}>
           {pending ? "Đang tải lên…" : "Tải lên bản mới"}
         </Button>
