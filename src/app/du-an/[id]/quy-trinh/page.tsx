@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProjectStageApprovals, requireProjectMember } from "@/lib/auth";
+import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
+import { createClient } from "@/lib/supabase/server";
 import { Alert, Badge, Card, CheckMark, ProgressBar } from "@/components/ui";
 import { buildMethodologyForm } from "@/lib/methodology/form";
 import { parseMetricSchema, validateValues } from "@/lib/methodology/schema";
@@ -62,16 +64,19 @@ const STAGE_DOCUMENT: Record<number, DocumentKind> = {
 export default async function WorkflowPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { role } = await requireProjectMember(id);
+  const supabase = await createClient();
 
-  const [project, stages, tasks, documents, standards, stageApprovals, setup] = await Promise.all([
-    getProject(id),
-    getStages(id),
-    getTasks(id),
-    getDocuments(id),
-    listStandards(),
-    getProjectStageApprovals(id),
-    getProjectSetup(id),
-  ]);
+  const [project, stages, tasks, documents, standards, stageApprovals, setup, assistantConfig] =
+    await Promise.all([
+      getProject(id),
+      getStages(id),
+      getTasks(id),
+      getDocuments(id),
+      listStandards(),
+      getProjectStageApprovals(id),
+      getProjectSetup(id),
+      loadChatConfig(supabase),
+    ]);
   if (!project) notFound();
 
   const [methodologies, methodology] = await Promise.all([
@@ -369,6 +374,10 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                       values={project.baseline as Record<string, unknown>}
                       revision={project.baseline_revision}
                       canEdit={abilities.canEditBaseline}
+                      canAssist={canEditSetup}
+                      assistantConfigured={assistantConfig !== null}
+                      assistantMissingMessage={missingKeyMessage()}
+                      draft={setup.baseline_draft}
                     />
                   </>
                 ) : (

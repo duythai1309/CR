@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Alert, Badge, Button, Field, Input, Select } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { useActionState, useRef, useState } from "react";
+import { Alert, Badge, Button, Empty, Field, Input, SectionHeader, Select } from "@/components/ui";
 import type { DocumentKind } from "@/components/project/rules";
+import type { BaselineDraft } from "@/types/project-setup";
 import {
   approveStage,
   chooseMethodology,
   chooseStandard,
+  runBaselineDraftAssist,
   saveBaseline,
   uploadDocument,
 } from "./actions";
@@ -190,6 +193,10 @@ export function BaselineForm({
   values,
   revision,
   canEdit,
+  canAssist,
+  assistantConfigured,
+  assistantMissingMessage,
+  draft,
 }: {
   projectId: string;
   fields: Array<{
@@ -203,8 +210,39 @@ export function BaselineForm({
   values: Record<string, unknown>;
   revision: number;
   canEdit: boolean;
+  canAssist: boolean;
+  assistantConfigured: boolean;
+  assistantMissingMessage: string;
+  draft?: BaselineDraft;
 }) {
   const [result, action, pending] = useActionState(saveBaseline, null);
+  const [assistResult, setAssistResult] = useState<Result>(null);
+  const [running, setRunning] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+
+  const draftRows = Object.entries(draft?.values ?? {}).flatMap(([fieldId, proposal]) => {
+    const field = fields.find((candidate) => candidate.id === fieldId);
+    return field ? [{ field, proposal }] : [];
+  });
+
+  async function runAssist() {
+    setRunning(true);
+    const next = await runBaselineDraftAssist(projectId);
+    setAssistResult(next);
+    setRunning(false);
+    if (next?.ok) router.refresh();
+  }
+
+  function copyToForm(fieldId: string, value: string | number) {
+    const control = formRef.current?.elements.namedItem(`f_${fieldId}`);
+    if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
+      control.value = String(value);
+      control.dispatchEvent(new Event("input", { bubbles: true }));
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+      control.focus();
+    }
+  }
 
   if (fields.length === 0)
     return (
@@ -214,65 +252,148 @@ export function BaselineForm({
     );
 
   return (
-    <form action={action} className="space-y-4">
-      <input type="hidden" name="project_id" value={projectId} />
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
+      <form ref={formRef} action={action} className="space-y-4">
+        <input type="hidden" name="project_id" value={projectId} />
 
-      <p className="text-xs text-soil-600">
-        Form sinh tự động từ chỉ số của Methodology — bản baseline hiện tại là số{" "}
-        <strong>{revision}</strong>. Số thập phân dùng dấu chấm.
-      </p>
+        <p className="text-xs text-soil-600">
+          Form sinh tự động từ chỉ số của Methodology — bản baseline hiện tại là số{" "}
+          <strong>{revision}</strong>. Số thập phân dùng dấu chấm.
+        </p>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {fields.map((f) => {
-          const value = values?.[f.id];
-          const text = value === null || value === undefined ? "" : String(value);
-          return (
-            <Field
-              key={f.id}
-              label={`${f.label}${f.required ? " *" : ""}`}
-              hint={f.unit ? `Đơn vị: ${f.unit}` : undefined}
+        <div className="grid gap-4 md:grid-cols-2">
+          {fields.map((f) => {
+            const value = values?.[f.id];
+            const text = value === null || value === undefined ? "" : String(value);
+            return (
+              <Field
+                key={f.id}
+                label={`${f.label}${f.required ? " *" : ""}`}
+                hint={f.unit ? `Đơn vị: ${f.unit}` : undefined}
+              >
+                {f.control === "select" ? (
+                  <Select name={`f_${f.id}`} defaultValue={text} disabled={!canEdit}>
+                    <option value="">—</option>
+                    {f.options.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </Select>
+                ) : f.control === "checkbox" ? (
+                  <input
+                    type="checkbox"
+                    name={`f_${f.id}`}
+                    defaultChecked={value === true}
+                    disabled={!canEdit}
+                    className="h-4 w-4 rounded border-soil-300"
+                  />
+                ) : (
+                  <Input
+                    name={`f_${f.id}`}
+                    type={f.control === "date" ? "date" : "text"}
+                    inputMode={f.control === "decimal" || f.control === "integer" ? "decimal" : undefined}
+                    defaultValue={text}
+                    disabled={!canEdit}
+                  />
+                )}
+              </Field>
+            );
+          })}
+        </div>
+
+        <Feedback result={result} />
+
+        {canEdit ? (
+          <Button type="submit" disabled={pending}>
+            {pending ? "Đang lưu…" : "Lưu baseline"}
+          </Button>
+        ) : (
+          <p className="text-sm text-soil-600">Chỉ chủ dự án sửa được baseline.</p>
+        )}
+      </form>
+
+      <aside className="rounded-lg border border-soil-200 bg-soil-50 p-4">
+        <SectionHeader
+          title="Bản nháp baseline của trợ lý"
+          description="Trợ lý chỉ đọc payload từ hai công cụ nội bộ. Không giá trị nào tự đi vào baseline thật."
+        />
+
+        {draftRows.length === 0 ? (
+          <Empty
+            title="Chưa có giá trị nháp"
+            hint="Trợ lý chỉ đề xuất field số còn trống khi payload handler có đủ nguồn để suy ra."
+            action={
+              <Button
+                type="button"
+                disabled={running || !canAssist || !assistantConfigured}
+                onClick={runAssist}
+              >
+                {running ? "Trợ lý đang soạn…" : "Nhờ trợ lý soạn nháp baseline"}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="space-y-3">
+            <Alert tone="warn" title="Nội dung do máy sinh, chưa được thẩm định">
+              {draft?.disclaimer}
+            </Alert>
+            <p className="text-xs text-soil-600">
+              Sinh lúc {draft?.generated_at ? new Date(draft.generated_at).toLocaleString("vi-VN") : "—"}
+              {draft?.generated_by_name || draft?.generated_by
+                ? ` · người bấm sinh: ${draft.generated_by_name || draft.generated_by}`
+                : ""}
+            </p>
+            <ul className="space-y-2">
+              {draftRows.map(({ field, proposal }) => (
+                <li key={field.id} className="rounded-lg border border-soil-200 bg-white p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-soil-900">{field.label}</p>
+                      <p className="font-mono text-sm text-soil-800">
+                        {proposal.value} {field.unit}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!canEdit}
+                      onClick={() => copyToForm(field.id, proposal.value)}
+                    >
+                      Chép sang ô nhập
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-soil-700">
+                    <strong>Lý do:</strong> {proposal.reason}
+                  </p>
+                  <p className="mt-1 text-xs text-soil-600">
+                    <strong>Nguồn suy ra:</strong> {proposal.source}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={running || !canAssist || !assistantConfigured}
+              onClick={runAssist}
             >
-              {f.control === "select" ? (
-                <Select name={`f_${f.id}`} defaultValue={text} disabled={!canEdit}>
-                  <option value="">—</option>
-                  {f.options.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              ) : f.control === "checkbox" ? (
-                <input
-                  type="checkbox"
-                  name={`f_${f.id}`}
-                  defaultChecked={value === true}
-                  disabled={!canEdit}
-                  className="h-4 w-4 rounded border-soil-300"
-                />
-              ) : (
-                <Input
-                  name={`f_${f.id}`}
-                  type={f.control === "date" ? "date" : "text"}
-                  inputMode={f.control === "decimal" || f.control === "integer" ? "decimal" : undefined}
-                  defaultValue={text}
-                  disabled={!canEdit}
-                />
-              )}
-            </Field>
-          );
-        })}
-      </div>
+              {running ? "Trợ lý đang soạn…" : "Soạn lại bản nháp"}
+            </Button>
+          </div>
+        )}
 
-      <Feedback result={result} />
-
-      {canEdit ? (
-        <Button type="submit" disabled={pending}>
-          {pending ? "Đang lưu…" : "Lưu baseline"}
-        </Button>
-      ) : (
-        <p className="text-sm text-soil-600">Chỉ chủ dự án sửa được baseline.</p>
-      )}
-    </form>
+        {!assistantConfigured && (
+          <p className="mt-3 text-sm text-soil-600">{assistantMissingMessage}</p>
+        )}
+        {!canAssist && (
+          <p className="mt-3 text-sm text-soil-600">
+            Vai trò hiện tại không được yêu cầu trợ lý tạo bản nháp.
+          </p>
+        )}
+        <Feedback result={assistResult} />
+      </aside>
+    </div>
   );
 }
 
