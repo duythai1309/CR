@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 const LEFT = [
   { href: "#cach-lam", label: "Vòng đời dự án" },
   { href: "#doanh-thu", label: "Không gian làm việc" },
-  { href: "#cong-cu", label: "MRV & báo cáo" },
 ];
 
 const RIGHT = [

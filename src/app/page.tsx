@@ -84,7 +84,7 @@ const STORIES = [
     title: "Báo cáo giữ nguyên vết tính",
     body:
       "Mỗi kết quả gắn với dữ liệu nguồn, phiên bản methodology, bộ hệ số và mẫu báo cáo đã dùng tại thời điểm tạo.",
-    href: "#cong-cu",
+    href: "#phuong-phap",
   },
 ];
 
@@ -293,59 +293,6 @@ export default async function Home() {
         </section>
 
 
-        {/* ------------------------------------------------- dải nổi bật: công cụ */}
-        <section id="cong-cu" className="relative isolate overflow-hidden bg-forest-900">
-          <Image
-            src="/anh/ruong-ngap-nuoc.jpg"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/70 to-forest-950/40" />
-          <div className="relative mx-auto max-w-7xl px-6 py-32 sm:py-44">
-            <span className="inline-block rounded-md bg-white/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-white backdrop-blur">
-              Công cụ cho project developer
-            </span>
-            <h2 className="mt-8 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl">
-              Giám sát dữ liệu MRV
-            </h2>
-            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-mint-100">
-              Engine kiểm tra dữ liệu theo schema của methodology trước khi tính. Trường
-              thiếu, sai đơn vị hay ngoài khoảng hợp lệ được chỉ ra ngay, thay vì âm thầm
-              đi vào báo cáo cuối kỳ.
-            </p>
-
-            <ul className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
-              {[
-                "Form giám sát sinh từ metric schema",
-                "Import CSV có bước map và kiểm tra cột",
-                "Khoá snapshot trước khi sinh báo cáo",
-                "Lưu đủ tham số để tái lập phép tính",
-              ].map((t) => (
-                <li key={t} className="flex gap-3 text-mint-100">
-                  <CheckIcon />
-                  {t}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-12 flex flex-wrap gap-4">
-              <Link
-                href="/dang-ky"
-                className="rounded-full bg-mint-500 px-8 py-4 font-semibold text-forest-950 transition hover:bg-mint-400"
-              >
-                Tạo tài khoản
-              </Link>
-              <Link
-                href="/du-an"
-                className="rounded-full border border-white/70 px-8 py-4 font-semibold text-white transition hover:bg-white hover:text-forest-900"
-              >
-                Mở danh sách dự án
-              </Link>
-            </div>
-          </div>
-        </section>
 
         {/* --------------------------------------------------------- câu chuyện */}
         <section id="cau-chuyen" className="bg-forest-800">
@@ -752,24 +699,6 @@ function GlobeIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      aria-hidden
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="mt-0.5 shrink-0 text-mint-400"
-    >
-      <path d="m5 13 4 4L19 7" />
-    </svg>
-  );
-}
 
 function CheckBadge() {
   return (
