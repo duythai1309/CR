@@ -19,6 +19,24 @@ export interface PromptContext {
   today?: string;
 }
 
+/**
+ * Màn Thiết kế gộp cả luồng khởi tạo lẫn bảy bước, nên mô tả phải nói đủ hai nửa.
+ *
+ * Trước đây đây là hai màn: `/thiet-lap` cho ý tưởng, mô tả và feasibility; `/quy-trinh`
+ * cho khoá lựa chọn và duyệt. Chúng đã gộp làm một. Nếu mô tả chỉ giữ nửa "bảy bước" thì
+ * người dùng đứng ngay trên màn có nút "Nhờ trợ lý rà soát" lại được trả lời như thể
+ * chức năng đó ở chỗ khác.
+ */
+const DESIGN_SCREEN_HINT =
+  "màn hình THIẾT KẾ dự án — gộp luồng khởi tạo và BẢY BƯỚC thiết kế vào một chỗ. Trong từng " +
+  "khối bước: bước 1 nhập ý tưởng và mô tả; bước 2 đánh giá khả thi có trợ lý rà soát " +
+  "known/gaps — trợ lý chỉ cấu trúc, không phán quyết khả thi, kết luận do chuyên gia " +
+  "viết; bước 3 và 4 có gợi ý Standard/Methodology rồi chọn và khoá ngay tại đó; bước 5 " +
+  "baseline; bước 6 additionality; bước 7 PDD. Mỗi khối chứa sẵn checklist điều kiện và " +
+  "nút duyệt của chính bước đó, nên KHÔNG bảo người dùng chuyển sang màn khác để khoá hay " +
+  "duyệt. Người hỏi đang đứng ở đây thì gần như chắc chắn muốn biết bước hiện tại còn " +
+  "vướng gì: gọi yeu_cau_cua_buoc thay vì hỏi lại họ";
+
 /** Mô tả màn hình đang mở, giúp trợ lý hiểu "cái này" trong câu hỏi trỏ vào đâu. */
 const PAGE_HINTS: Array<[RegExp, string]> = [
   [
@@ -29,18 +47,11 @@ const PAGE_HINTS: Array<[RegExp, string]> = [
   [/^\/du-an\/[^/]+\/giam-sat/, "danh sách kỳ giám sát: dùng liet_ke_ky_giam_sat"],
   [/^\/du-an\/[^/]+\/bao-cao\/[^/]+/, "chi tiết MRV estimate: dùng doc_vet_tinh_bao_cao khi hỏi nguồn gốc con số"],
   [/^\/du-an\/[^/]+\/bao-cao/, "danh sách báo cáo MRV: dùng liet_ke_bao_cao_mrv"],
-  [
-    /^\/du-an\/[^/]+\/thiet-lap/,
-    "luồng khởi tạo dự án: ý tưởng, mô tả, feasibility assessment có AI hỗ trợ và gợi ý " +
-      "Standard/Methodology. Trợ lý chỉ cấu trúc known/gaps, không phán quyết khả thi",
-  ],
-  [
-    /^\/du-an\/[^/]+\/quy-trinh/,
-    "màn hình BẢY BƯỚC thiết kế dự án — chọn và khoá Standard, chọn và khoá Methodology, " +
-      "nhập baseline scenario, additionality, tải tài liệu và PDD, duyệt từng bước. Người " +
-      "hỏi đang đứng ở đây thì gần như chắc chắn muốn biết bước hiện tại còn vướng gì: gọi " +
-      "yeu_cau_cua_buoc thay vì hỏi lại họ",
-  ],
+  // `/thiet-lap` chỉ còn redirect sang `/quy-trinh` — không ai đứng ở đó nữa. Giữ mục này
+  // để một liên kết hay dấu trang cũ vẫn được nhận diện trong khoảnh khắc trước khi
+  // chuyển hướng, và trỏ về cùng mô tả để trợ lý không có hai bản mâu thuẫn.
+  [/^\/du-an\/[^/]+\/thiet-lap/, DESIGN_SCREEN_HINT],
+  [/^\/du-an\/[^/]+\/quy-trinh/, DESIGN_SCREEN_HINT],
   [/^\/du-an\/[^/]+\/thanh-vien/, "danh sách thành viên dự án và phân vai trò"],
   [
     /^\/du-an\/[^/]+\/cong-viec\//,

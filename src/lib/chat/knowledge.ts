@@ -72,8 +72,12 @@ phải tạo dự án mới.
 1. /du-an — danh sách dự án của người dùng. /du-an/moi — tạo dự án mới.
 2. /du-an/[id] — bảng kanban, mỗi bước là một cột, kéo card sang cột khác để đổi bước.
    Trạng thái công việc (todo / in_progress / done / blocked) là ô chọn riêng trên card.
-3. /du-an/[id]/quy-trinh — bảy bước: chọn và khoá Standard, Methodology, nhập baseline,
-   tải tài liệu, duyệt từng bước.
+3. /du-an/[id]/quy-trinh — màn THIẾT KẾ, gộp cả luồng khởi tạo lẫn bảy bước. Bước 1 nhập
+   ý tưởng và mô tả; bước 2 đánh giá khả thi có trợ lý rà soát; bước 3 và 4 có gợi ý rồi
+   chọn và khoá Standard, Methodology ngay tại đó; bước 5 baseline; bước 6 additionality;
+   bước 7 PDD. Checklist điều kiện và nút duyệt nằm trong chính khối của từng bước, nên
+   không phải chuyển màn để khoá hay duyệt. /du-an/[id]/thiet-lap là đường dẫn cũ, nay chỉ
+   chuyển hướng về đây.
 4. /du-an/[id]/thanh-vien — mời người theo email và phân vai trò. Người được mời phải đã
    có tài khoản trước.
 5. /du-an/[id]/giam-sat — kỳ giám sát; /du-an/[id]/giam-sat/[id] — nhập số liệu tay hoặc
