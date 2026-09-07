@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   filterTasks,
   sortTasks,
+  type BoardTaskCard,
   type StageView,
-  type TaskCard,
   type TaskFilter,
   type TaskSort,
 } from "@/components/project/rules";
@@ -15,14 +15,22 @@ interface FilterSortMember {
   fullName: string;
 }
 
+/**
+ * Lọc và sắp xếp card của bảng.
+ *
+ * `filterTasks`/`sortTasks` nhận và trả `TaskCard`, nên sau khi lọc phải tra ngược về
+ * `BoardTaskCard` để giữ lại `columnId` — thứ mà bảng cần để biết card thuộc cột nào.
+ */
 export function useFilteredSortedTasks({
-  columns,
+  tasks,
+  stages,
   members,
   filter,
   sort,
   viewerId,
 }: {
-  columns: Array<{ stage: StageView; tasks: TaskCard[] }>;
+  tasks: BoardTaskCard[];
+  stages: StageView[];
   members: FilterSortMember[];
   filter: TaskFilter;
   sort: TaskSort;
@@ -38,33 +46,41 @@ export function useFilteredSortedTasks({
     [memberName],
   );
 
-  const allTasks = useMemo(() => columns.flatMap((column) => column.tasks), [columns]);
+  const byId = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
+  const asBoardCards = useCallback(
+    (rows: Array<{ id: string }>) =>
+      rows.map((row) => byId.get(row.id)).filter((task): task is BoardTaskCard => Boolean(task)),
+    [byId],
+  );
+
   const stageOf = useMemo(() => {
     const map = new Map<string, StageView>();
-    for (const column of columns) map.set(column.stage.id, column.stage);
+    for (const stage of stages) map.set(stage.id, stage);
     return map;
-  }, [columns]);
+  }, [stages]);
 
   // Dùng một mốc thời gian cho cả lần render để các thẻ cạnh nhau không hiển thị mâu thuẫn.
   const [now, setNow] = useState<Date>(() => new Date(0));
-  useEffect(() => setNow(new Date()), [columns]);
+  useEffect(() => setNow(new Date()), [tasks]);
 
   const visible = useMemo(
-    () => filterTasks(allTasks, filter, { viewerId, now }),
-    [allTasks, filter, viewerId, now],
+    () => asBoardCards(filterTasks(tasks, filter, { viewerId, now })),
+    [asBoardCards, tasks, filter, viewerId, now],
   );
   const listRows = useMemo(
     () =>
-      sortTasks(visible, sort, {
-        stageOrdinal: (stageId) => stageOf.get(stageId)?.ordinal ?? 99,
-        memberName: (id) => nameOf(id) || "￿",
-      }),
-    [visible, sort, stageOf, nameOf],
+      asBoardCards(
+        sortTasks(visible, sort, {
+          stageOrdinal: (stageId) => stageOf.get(stageId)?.ordinal ?? 99,
+          memberName: (id) => nameOf(id) || "￿",
+        }),
+      ),
+    [asBoardCards, visible, sort, stageOf, nameOf],
   );
 
   return {
-    allTasks,
-    hidden: allTasks.length - visible.length,
+    allTasks: tasks,
+    hidden: tasks.length - visible.length,
     listRows,
     nameOf,
     now,

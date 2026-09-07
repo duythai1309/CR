@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Badge } from "@/components/ui";
 import {
   TASK_STATUSES,
@@ -43,29 +42,30 @@ export function DueLabel({ task, now }: { task: TaskCard; now: Date }) {
 export function TaskCardView({
   task,
   stage,
-  columns,
+  stages,
   now,
   canWrite,
   pending,
-  projectId,
   assigneeName,
   dragging,
   onDragStart,
   onDragEnd,
+  onOpen,
   onMove,
   onStatus,
 }: {
   task: TaskCard;
-  stage: StageView;
-  columns: Array<{ stage: StageView; tasks: TaskCard[] }>;
+  stage: StageView | undefined;
+  stages: StageView[];
   now: Date;
   canWrite: boolean;
   pending: boolean;
-  projectId: string;
   assigneeName: string;
   dragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
+  /** Bấm vào tiêu đề mở panel sửa nhanh ngay trên bảng. */
+  onOpen: () => void;
   onMove: (stageId: string) => void;
   onStatus: (status: string) => void;
 }) {
@@ -91,15 +91,19 @@ export function TaskCardView({
         canWrite ? "cursor-grab active:cursor-grabbing" : ""
       } ${dragging ? "opacity-50" : ""}`}
     >
-      <Link
-        href={`/du-an/${projectId}/cong-viec/${task.id}`}
-        className="block text-sm font-medium text-soil-900 hover:text-leaf-800"
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full text-left text-sm font-medium text-soil-900 hover:text-leaf-800"
       >
         {task.title}
-      </Link>
+      </button>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Badge tone={TASK_STATUS_TONE[task.status]}>{TASK_STATUS_LABEL[task.status]}</Badge>
+        <Badge tone="soil">
+          {stage ? `${stage.ordinal}. ${stage.title}` : "Mục hồ sơ không xác định"}
+        </Badge>
         <DueLabel task={task} now={now} />
       </div>
 
@@ -122,16 +126,16 @@ export function TaskCardView({
       {canWrite && (
         <div className="mt-3 grid gap-1.5 border-t border-soil-100 pt-2.5">
           <label className="flex items-center gap-2 text-xs text-soil-600">
-            <span className="w-16 shrink-0">Bước</span>
+            <span className="w-16 shrink-0">Mục hồ sơ</span>
             <select
-              value={stage.id}
+              value={task.stageId}
               disabled={pending}
               onChange={(event) => onMove(event.target.value)}
               className={MICRO}
             >
-              {columns.map((column) => (
-                <option key={column.stage.id} value={column.stage.id}>
-                  {column.stage.ordinal}. {column.stage.title}
+              {stages.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.ordinal}. {item.title}
                 </option>
               ))}
             </select>

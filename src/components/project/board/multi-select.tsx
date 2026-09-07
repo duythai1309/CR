@@ -45,7 +45,7 @@ export function useTaskSelection(visible: TaskCard[]) {
 export function TaskList({
   projectId,
   rows,
-  columns,
+  stages,
   stageOf,
   nameOf,
   now,
@@ -60,7 +60,7 @@ export function TaskList({
 }: {
   projectId: string;
   rows: TaskCard[];
-  columns: Array<{ stage: StageView; tasks: TaskCard[] }>;
+  stages: StageView[];
   stageOf: Map<string, StageView>;
   nameOf: (id: string | null) => string;
   now: Date;
@@ -115,20 +115,20 @@ export function TaskList({
           </label>
 
           <label className="flex items-center gap-2 text-sm text-leaf-900">
-            Chuyển bước
+            Đổi mục hồ sơ
             <select
               defaultValue=""
               disabled={pending}
               onChange={(event) => {
-                if (event.target.value) bulk({ stageId: event.target.value }, "chuyển bước");
+                if (event.target.value) bulk({ stageId: event.target.value }, "đổi mục hồ sơ");
                 event.target.value = "";
               }}
               className={CONTROL}
             >
               <option value="">— chọn —</option>
-              {columns.map((column) => (
-                <option key={column.stage.id} value={column.stage.id}>
-                  {column.stage.ordinal}. {column.stage.title}
+              {stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.ordinal}. {stage.title}
                 </option>
               ))}
             </select>
@@ -160,7 +160,7 @@ export function TaskList({
                 </th>
               )}
               <th className="px-3 py-2 font-medium">Công việc</th>
-              <th className="px-3 py-2 font-medium">Bước</th>
+              <th className="px-3 py-2 font-medium">Mục hồ sơ</th>
               <th className="px-3 py-2 font-medium">Trạng thái</th>
               <th className="px-3 py-2 font-medium">Người nhận</th>
               <th className="px-3 py-2 font-medium">Hạn</th>
@@ -202,12 +202,12 @@ export function TaskList({
                         value={task.stageId}
                         disabled={pending}
                         onChange={(event) => onMove(task.id, event.target.value, task.stageId)}
-                        aria-label={`Bước của ${task.title}`}
+                        aria-label={`Mục hồ sơ của ${task.title}`}
                         className={MICRO}
                       >
-                        {columns.map((column) => (
-                          <option key={column.stage.id} value={column.stage.id}>
-                            {column.stage.ordinal}. {column.stage.title}
+                        {stages.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.ordinal}. {item.title}
                           </option>
                         ))}
                       </select>

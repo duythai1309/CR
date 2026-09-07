@@ -9,7 +9,6 @@ import {
   TASK_STATUS_LABEL,
   isFilterActive,
   type StageView,
-  type TaskCard,
   type TaskFilter,
   type TaskSort,
 } from "@/components/project/rules";
@@ -23,7 +22,7 @@ export function BoardToolbar({
   view,
   filter,
   sort,
-  columns,
+  stages,
   members,
   viewerId,
   visibleCount,
@@ -39,7 +38,7 @@ export function BoardToolbar({
   view: BoardView;
   filter: TaskFilter;
   sort: TaskSort;
-  columns: Array<{ stage: StageView; tasks: TaskCard[] }>;
+  stages: StageView[];
   members: Array<{ userId: string; fullName: string }>;
   viewerId: string | null;
   visibleCount: number;
@@ -112,13 +111,13 @@ export function BoardToolbar({
       <select
         value={filter.stageId}
         onChange={(event) => set("stageId", event.target.value)}
-        aria-label="Lọc theo bước"
+        aria-label="Lọc theo mục hồ sơ"
         className={CONTROL}
       >
-        <option value="">Mọi bước</option>
-        {columns.map((column) => (
-          <option key={column.stage.id} value={column.stage.id}>
-            {column.stage.ordinal}. {column.stage.title}
+        <option value="">Mọi mục hồ sơ</option>
+        {stages.map((stage) => (
+          <option key={stage.id} value={stage.id}>
+            {stage.ordinal}. {stage.title}
           </option>
         ))}
       </select>

@@ -119,7 +119,7 @@ export function ShortcutHelp() {
       </dl>
       <p className="mt-3 text-xs text-soil-600">
         Phím tắt tự nhường khi con trỏ đang ở trong một ô nhập. Mọi việc mà kéo-thả làm
-        được đều làm được bằng bàn phím: ô chọn <em>Bước</em> và <em>Trạng thái</em> trên
+        được đều làm được bằng bàn phím: ô chọn <em>Mục hồ sơ</em> và <em>Trạng thái</em> trên
         từng card, hoặc chọn nhiều rồi đổi hàng loạt ở chế độ danh sách.
       </p>
     </div>

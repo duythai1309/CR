@@ -402,6 +402,21 @@ export function groupTasksByStage(
     }));
 }
 
+/** Gom task theo tiến độ công việc, luôn trả đủ bốn trạng thái theo thứ tự chuẩn. */
+export function groupTasksByStatus(
+  tasks: TaskCard[],
+): Array<{ status: TaskStatus; tasks: TaskCard[] }> {
+  const byStatus = new Map<TaskStatus, TaskCard[]>(TASK_STATUSES.map((status) => [status, []]));
+  for (const task of tasks) byStatus.get(task.status)?.push(task);
+
+  return TASK_STATUSES.map((status) => ({
+    status,
+    tasks: (byStatus.get(status) ?? []).sort(
+      (a, b) => a.position - b.position || a.title.localeCompare(b.title, "vi"),
+    ),
+  }));
+}
+
 /** `position` cho card thả vào cuối một cột. Bậc thang 1000 để chèn giữa mà không cần đánh số lại. */
 export function nextPosition(tasksInStage: TaskCard[]): number {
   return tasksInStage.reduce((max, t) => Math.max(max, t.position), 0) + 1000;
@@ -784,4 +799,272 @@ export function orphanedAssignments(
 ): TaskCard[] {
   const known = new Set(memberIds);
   return tasks.filter((t) => t.assigneeId !== null && !known.has(t.assigneeId));
+}
+
+/* --------------------------------------------------- cột kanban do người dùng tự tạo */
+
+/**
+ * Cột của bảng Kanban, đọc từ `project_board_columns` (migration 0021).
+ *
+ * Khác `TASK_STATUSES` ở một điểm quyết định: đây là DỮ LIỆU của từng dự án, không phải
+ * hằng số của hệ thống. Người dùng thêm, đổi tên, xoá và sắp xếp lại tuỳ ý, nên không mã
+ * nào được giả định số cột, tên cột hay ý nghĩa của cột.
+ */
+export interface BoardColumnView {
+  id: string;
+  name: string;
+  position: number;
+}
+
+/**
+ * Card kèm cột kanban đang chứa nó. `columnId` null nghĩa là chưa xếp cột.
+ *
+ * `description` để panel sửa nhanh trên bảng không phải đi mạng thêm một vòng chỉ để lấy
+ * mô tả; nó không tham gia vào việc gom cột hay tính thứ tự.
+ */
+export interface BoardTaskCard extends TaskCard {
+  columnId: string | null;
+  description?: string;
+}
+
+/** Giới hạn khớp `check (length(trim(name)) between 1 and 60)` của 0021. */
+export const COLUMN_NAME_MAX = 60;
+
+/**
+ * Status ứng với một tên cột MẶC ĐỊNH, hoặc null nếu cột do người dùng tự đặt.
+ *
+ * **Chỉ được dùng làm cầu ghi `status` khi thả card** (§5.5 của thiết kế). Bốn cột mặc
+ * định do migration 0021 seed ra trùng tên với `TASK_STATUS_LABEL`, nên thả vào chúng còn
+ * suy được status cũ để năm chỗ đang đọc `status` chưa hỏng ngay.
+ *
+ * TUYỆT ĐỐI KHÔNG dùng hàm này để tính tiến độ, đếm "việc đã xong", hay đoán ý nghĩa của
+ * một cột người dùng tự tạo. Cột tự do nghĩa là hệ thống KHÔNG còn biết thế nào là xong;
+ * đoán sai một con số tiến độ tệ hơn hẳn việc không có con số.
+ */
+export function statusForColumnName(name: unknown): TaskStatus | null {
+  if (typeof name !== "string") return null;
+  const key = name.trim().toLocaleLowerCase("vi");
+  return (
+    TASK_STATUSES.find((status) => TASK_STATUS_LABEL[status].toLocaleLowerCase("vi") === key) ??
+    null
+  );
+}
+
+const byPositionThenTitle = (a: TaskCard, b: TaskCard) =>
+  a.position - b.position || a.title.localeCompare(b.title, "vi");
+
+/**
+ * Gom card về đúng cột kanban, giữ thứ tự `position` rồi tới tiêu đề.
+ *
+ * Card trỏ vào một cột không có trong danh sách — hoặc chưa có cột nào — KHÔNG bị bỏ đi
+ * mà rơi vào `orphans`. Giấu một card là mất việc của người dùng; bảng phải hiện nó ra và
+ * để họ kéo về đúng chỗ.
+ */
+export function groupTasksByColumn(
+  columns: BoardColumnView[],
+  tasks: BoardTaskCard[],
+): {
+  columns: Array<{ column: BoardColumnView; tasks: BoardTaskCard[] }>;
+  orphans: BoardTaskCard[];
+} {
+  const ordered = sortColumns(columns);
+  const byColumn = new Map<string, BoardTaskCard[]>(ordered.map((c) => [c.id, []]));
+  const orphans: BoardTaskCard[] = [];
+
+  for (const task of tasks) {
+    const bucket = task.columnId === null ? undefined : byColumn.get(task.columnId);
+    if (bucket) bucket.push(task);
+    else orphans.push(task);
+  }
+
+  return {
+    columns: ordered.map((column) => ({
+      column,
+      tasks: (byColumn.get(column.id) ?? []).sort(byPositionThenTitle),
+    })),
+    orphans: orphans.sort(byPositionThenTitle),
+  };
+}
+
+/** Thứ tự cột: `position` tăng dần, hoà thì theo tên để hai lần render không đảo nhau. */
+export function sortColumns(columns: BoardColumnView[]): BoardColumnView[] {
+  return [...columns].sort(
+    (a, b) => a.position - b.position || a.name.localeCompare(b.name, "vi"),
+  );
+}
+
+/** `position` cho cột mới thêm vào cuối bảng. Cùng bậc thang 1000 với `nextPosition`. */
+export function nextColumnPosition(columns: BoardColumnView[]): number {
+  return columns.reduce((max, c) => Math.max(max, c.position), 0) + 1000;
+}
+
+/**
+ * Chèn giữa hai `position`, giữ nguyên bậc thang 1000 của `nextPosition`.
+ *
+ * `position` là `numeric` (`0013:124`) nên điểm giữa của hai số nguyên liền nhau vẫn ghi
+ * được. Hai đầu để trống thì lùi/tiến đúng một bậc.
+ */
+export function positionBetween(before: number | null, after: number | null): number {
+  if (before === null && after === null) return 1000;
+  if (before === null) return (after as number) - 1000;
+  if (after === null) return before + 1000;
+  return (before + after) / 2;
+}
+
+/** Đánh số lại cả một cột theo bậc thang 1000 — chỉ dùng khi hết chỗ chèn giữa. */
+function ladder<T extends { id: string }>(items: T[]): Array<{ id: string; position: number }> {
+  return items.map((item, index) => ({ id: item.id, position: (index + 1) * 1000 }));
+}
+
+/**
+ * Những dòng `position` cần GHI sau khi kéo một phần tử tới vị trí `index`.
+ *
+ * `index` đếm trên danh sách ĐÃ BỎ phần tử đang kéo ra — đúng thứ mà giao diện tính được
+ * từ chỗ thả. Nhờ vậy "thả lại chỗ cũ" là `index === vị trí hiện tại`, không phải lệch một.
+ *
+ * Thường chỉ trả một dòng: điểm giữa hai hàng xóm. Chỉ khi bậc thang hết chỗ — hai hàng
+ * xóm trùng `position`, hoặc số thực đã cạn khoảng cách — mới đánh số lại cả cột. Mảng
+ * rỗng nghĩa là không có gì đổi, khỏi đi mạng.
+ */
+function reorderInto<T extends { id: string; position: number }>(
+  ordered: T[],
+  movingId: string,
+  index: number,
+): Array<{ id: string; position: number }> {
+  const currentIndex = ordered.findIndex((item) => item.id === movingId);
+  if (currentIndex < 0) return [];
+
+  const rest = ordered.filter((item) => item.id !== movingId);
+  const target = Math.max(0, Math.min(index, rest.length));
+  if (target === currentIndex) return [];
+
+  return placeInto(rest, ordered[currentIndex], target);
+}
+
+/**
+ * Đặt một phần tử CHƯA có trong danh sách vào vị trí `index`.
+ *
+ * Đây là phần chung của "kéo trong cùng cột" và "thả sang cột khác": cả hai đều quy về
+ * việc tìm chỗ giữa hai hàng xóm trong một danh sách không chứa phần tử đang kéo.
+ */
+function placeInto<T extends { id: string; position: number }>(
+  ordered: T[],
+  moving: T,
+  index: number,
+): Array<{ id: string; position: number }> {
+  const target = Math.max(0, Math.min(index, ordered.length));
+  const before = target > 0 ? ordered[target - 1] : null;
+  const after = target < ordered.length ? ordered[target] : null;
+  const candidate = positionBetween(before?.position ?? null, after?.position ?? null);
+
+  const tooTight =
+    (before !== null && candidate <= before.position) ||
+    (after !== null && candidate >= after.position);
+
+  if (tooTight) {
+    const final = [...ordered];
+    final.splice(target, 0, moving);
+    return ladder(final);
+  }
+
+  return [{ id: moving.id, position: candidate }];
+}
+
+/**
+ * Kéo sắp xếp card trong CÙNG một cột.
+ *
+ * `ordered` phải là danh sách card của đúng cột đó, đã xếp theo thứ tự đang hiển thị.
+ */
+export function reorderWithinColumn(
+  ordered: BoardTaskCard[],
+  movingId: string,
+  index: number,
+): Array<{ id: string; position: number }> {
+  return reorderInto(ordered, movingId, index);
+}
+
+/**
+ * Thả một card SANG CỘT KHÁC, vào vị trí `index` của cột đích.
+ *
+ * `ordered` là card của cột đích, chưa chứa card đang kéo — nên `index` đếm thẳng trên
+ * danh sách đó, không phải lệch một như khi kéo trong cùng cột.
+ */
+export function placeIntoColumn(
+  ordered: BoardTaskCard[],
+  moving: BoardTaskCard,
+  index: number,
+): Array<{ id: string; position: number }> {
+  return placeInto(ordered, moving, index);
+}
+
+/**
+ * Chỗ chèn trong danh sách ĐÃ BỎ card đang kéo ra.
+ *
+ * Nhận `shownIndex` — chỗ chèn tính trên danh sách ĐANG HIỆN — rồi tìm card đầu tiên từ
+ * đó trở đi mà vẫn còn trong danh sách đầy đủ. Phải đi vòng như vậy vì bộ lọc có thể đang
+ * ẩn bớt card: thả "ngay trên card X" phải nghĩa là ngay trên X trong DỮ LIỆU THẬT, chứ
+ * không phải ô thứ `shownIndex` của một danh sách đã bị cắt bớt — nếu không, kéo trong
+ * lúc đang lọc sẽ đặt card vào chỗ hoàn toàn khác với chỗ người dùng nhìn thấy.
+ */
+export function insertIndexFor(
+  full: BoardTaskCard[],
+  shown: BoardTaskCard[],
+  shownIndex: number,
+  movingId: string,
+): number {
+  const rest = full.filter((task) => task.id !== movingId);
+  for (let k = shownIndex; k < shown.length; k += 1) {
+    const candidate = shown[k];
+    if (candidate.id === movingId) continue;
+    const index = rest.findIndex((task) => task.id === candidate.id);
+    if (index >= 0) return index;
+  }
+  return rest.length;
+}
+
+/** Kéo đổi thứ tự cột. Cùng thuật toán chèn giữa với card. */
+export function reorderColumns(
+  ordered: BoardColumnView[],
+  movingId: string,
+  index: number,
+): Array<{ id: string; position: number }> {
+  return reorderInto(sortColumns(ordered), movingId, index);
+}
+
+/**
+ * Tên cột hợp lệ: khớp `check (length(trim(name)) between 1 and 60)` và `unique
+ * (project_id, name)` của 0021.
+ *
+ * `taken` là tên các cột đang có; khi đổi tên thì truyền vào danh sách đã bỏ chính nó ra.
+ */
+export function validateColumnName(raw: unknown, taken: Iterable<string> = []): Validation {
+  const value = String(raw ?? "").trim();
+  if (value.length === 0) return { ok: false, error: "Tên cột không được để trống." };
+  if (value.length > COLUMN_NAME_MAX)
+    return { ok: false, error: `Tên cột tối đa ${COLUMN_NAME_MAX} ký tự.` };
+
+  const key = value.toLocaleLowerCase("vi");
+  for (const other of taken)
+    if (other.trim().toLocaleLowerCase("vi") === key)
+      return { ok: false, error: `Đã có cột tên "${other.trim()}" trong bảng này.` };
+
+  return { ok: true, value };
+}
+
+/**
+ * Vì sao chưa xoá được một cột — null nghĩa là xoá được.
+ *
+ * `column_id` là `on delete restrict` nên Postgres sẽ từ chối; câu này để người dùng biết
+ * TRƯỚC, và biết còn bao nhiêu việc phải chuyển đi, thay vì nhận một lỗi khoá ngoại thô.
+ */
+export function columnDeleteBlocker(
+  columnId: string,
+  tasks: BoardTaskCard[],
+  columnCount: number,
+): string | null {
+  const remaining = tasks.filter((task) => task.columnId === columnId).length;
+  if (remaining > 0)
+    return `Cột này còn ${remaining} công việc. Kéo chúng sang cột khác rồi mới xoá được.`;
+  if (columnCount <= 1) return "Bảng phải còn ít nhất một cột.";
+  return null;
 }
