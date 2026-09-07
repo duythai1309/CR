@@ -533,29 +533,6 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="mt-14 border-t border-white/10 pt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-mint-400">
-              Nguyên tắc sản phẩm
-            </p>
-            <ul className="mt-4 space-y-2 text-xs leading-relaxed text-mint-100/50">
-              <li>
-                Quản lý xuyên suốt bảy bước thiết kế dự án, từ Project Idea đến Project
-                Design Document.
-              </li>
-              <li>
-                Hỗ trợ nhiều Standard; methodology, metric schema, bộ hệ số và template
-                báo cáo đều có phiên bản.
-              </li>
-              <li>
-                Dữ liệu Monitoring được kiểm tra trước khi lưu và được khóa thành snapshot
-                khi sinh báo cáo MRV.
-              </li>
-              <li>Mỗi báo cáo giữ đủ dữ liệu nguồn và vết tính để tái lập kết quả.</li>
-              <li>
-                Ảnh và video trên trang là tư liệu minh hoạ cho bối cảnh dự án carbon.
-              </li>
-            </ul>
-          </div>
         </div>
       </footer>
     </div>
