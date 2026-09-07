@@ -18,7 +18,7 @@ export function ProjectTabs({
   tabs,
 }: {
   projectId: string;
-  tabs: Array<{ slug: string; label: string }>;
+  tabs: Array<{ slug: string; label: string; locked?: boolean; lockReason?: string }>;
 }) {
   const pathname = usePathname();
   const base = `/du-an/${projectId}`;
@@ -29,6 +29,23 @@ export function ProjectTabs({
     <nav className="mt-5 flex flex-wrap gap-1 border-b border-soil-200" aria-label="Trang trong dự án">
       {tabs.map((tab) => {
         const current = tab.slug === active;
+
+        // Tab khoá vẫn hiện, vẫn đọc được lý do. Dùng <span> thay vì <Link> vô hiệu hoá,
+        // và KHÔNG dùng pointer-events:none — người dùng phải rê được vào để thấy title.
+        if (tab.locked) {
+          return (
+            <span
+              key={tab.slug}
+              aria-disabled="true"
+              title={tab.lockReason}
+              className="-mb-px flex cursor-not-allowed items-center gap-1.5 rounded-t-lg border-b-2 border-transparent px-4 py-2 text-sm text-soil-400"
+            >
+              <span aria-hidden="true">◌</span>
+              {tab.label}
+            </span>
+          );
+        }
+
         return (
           <Link
             key={tab.slug}
