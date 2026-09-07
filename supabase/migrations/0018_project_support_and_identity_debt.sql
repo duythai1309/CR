@@ -157,7 +157,7 @@ end;
 $$;
 
 comment on type public.user_role is
-  'Legacy compatibility type. Only platform_admin is privileged; coop_manager, coop_staff and buyer are equivalent unprivileged platform accounts after migration 0016.';
+  'Legacy compatibility type. Only platform_admin is privileged; coop_manager, coop_staff and buyer are equivalent unprivileged platform accounts — no application code reads them apart from display labels.';
 
 -- ---------------------------------------------------------------- quyền hàm
 
