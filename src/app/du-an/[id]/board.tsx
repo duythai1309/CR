@@ -17,7 +17,7 @@ import { TaskList, useTaskSelection } from "@/components/project/board/multi-sel
 import { ShortcutHelp } from "@/components/project/board/shortcut-help";
 import { TaskQuickPanel } from "@/components/project/board/task-panel";
 import { BoardToolbar } from "@/components/project/board/toolbar";
-import { useBoardActions } from "@/components/project/board/use-board-actions";
+import { useBoardActions, useShownBoard } from "@/components/project/board/use-board-actions";
 import { useBoardSession } from "@/components/project/board/use-board-session";
 
 export interface BoardMember {
@@ -68,8 +68,12 @@ export function ProjectBoard({
 }) {
   const session = useBoardSession({ initialFilter, hasNewTaskForm: Boolean(newTaskForm) });
 
+  // Lớp lạc quan phải nằm TRƯỚC bộ lọc: lọc và gom cột đều phải đi từ `board.tasks`, nếu
+  // không thì card đã đổi cột trong lớp lạc quan vẫn bị vẽ theo dữ liệu cũ của máy chủ.
+  const board = useBoardActions({ projectId, boardColumns, tasks, canWrite });
+
   const { allTasks, hidden, listRows, nameOf, now, stageOf, visible } = useFilteredSortedTasks({
-    tasks,
+    tasks: board.tasks,
     stages,
     members,
     filter: session.filter,
@@ -77,7 +81,7 @@ export function ProjectBoard({
     viewerId,
   });
 
-  const board = useBoardActions({ projectId, boardColumns, allTasks, visible, canWrite });
+  const shownBoard = useShownBoard(boardColumns, visible);
   const { selected, setSelected, toggle } = useTaskSelection(visible);
   const dragDrop = useBoardDragDrop();
 
@@ -131,9 +135,9 @@ export function ProjectBoard({
 
       {session.view === "board" ? (
         <BoardColumns
-          columns={board.shownBoard.columns}
+          columns={shownBoard.columns}
           fullColumns={board.fullBoard.columns}
-          orphans={board.shownBoard.orphans}
+          orphans={shownBoard.orphans}
           stages={stages}
           filter={session.filter}
           now={now}

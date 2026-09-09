@@ -30,9 +30,38 @@ import {
 
 type Result = string | null;
 
-const revalidate = (projectId: string) => {
+/**
+ * Làm mới đúng thứ đã đổi, không hơn.
+ *
+ * Bản cũ gọi hai lần cho MỌI thao tác, một lần với `"layout"` — kiểu đó kéo theo cả cây
+ * layout của nhánh `cong-viec`, nên kéo một card cũng dựng lại những trang không liên
+ * quan. Ba hàm dưới đây tách theo đúng thứ mỗi trang thật sự đọc:
+ *
+ * - Bảng công việc là nơi DUY NHẤT hiện cột và thứ tự card.
+ * - Trang chi tiết công việc hiện `status` và `stage`, KHÔNG hiện `column_id` hay
+ *   `position` — nên sắp xếp lại hay đổi cột không cần đụng tới nó.
+ * - Bình luận và tệp đính kèm chỉ hiện ở trang chi tiết, không hiện trên bảng.
+ */
+
+/** Bảng công việc của dự án. */
+const revalidateBoard = (projectId: string) => {
   revalidatePath(`/du-an/${projectId}`);
-  revalidatePath(`/du-an/${projectId}/cong-viec`, "layout");
+};
+
+/** Trang chi tiết của ĐÚNG một công việc. */
+const revalidateTask = (projectId: string, taskId: string) => {
+  revalidatePath(`/du-an/${projectId}/cong-viec/${taskId}`);
+};
+
+/**
+ * Mọi trang chi tiết công việc, khi không biết `taskId`.
+ *
+ * Dạng route động kèm type `"page"` chỉ làm mới phần page của route đó; nó KHÔNG dựng lại
+ * cây layout như `"layout"` của bản cũ. Chỉ dùng cho hai chỗ mà biểu mẫu không gửi kèm
+ * `task_id` (`deleteComment`, `detachFile`) và cho thao tác hàng loạt.
+ */
+const revalidateAnyTask = (projectId: string) => {
+  revalidatePath(`/du-an/${projectId}/cong-viec/[taskId]`, "page");
 };
 
 export async function createTask(_prev: Result, formData: FormData): Promise<Result> {
@@ -73,7 +102,7 @@ export async function createTask(_prev: Result, formData: FormData): Promise<Res
   });
 
   if (error) return taskError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
@@ -111,7 +140,8 @@ export async function updateTask(_prev: Result, formData: FormData): Promise<Res
     .eq("project_id", projectId);
 
   if (error) return taskError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -133,7 +163,8 @@ export async function moveTask(
     .eq("project_id", projectId);
 
   if (error) return taskError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -154,7 +185,8 @@ export async function setTaskStatus(
     .eq("project_id", projectId);
 
   if (error) return taskError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -178,7 +210,8 @@ export async function deleteTask(_prev: Result, formData: FormData): Promise<Res
       ? "Công việc này còn bình luận hoặc tệp đính kèm. Gỡ chúng trước khi xoá."
       : `Không xoá được công việc: ${error.message}`;
 
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -200,7 +233,7 @@ export async function addComment(_prev: Result, formData: FormData): Promise<Res
     .insert({ project_id: projectId, task_id: taskId, body: body.value });
 
   if (error) return `Không gửi được bình luận: ${error.message}`;
-  revalidate(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -219,7 +252,7 @@ export async function deleteComment(_prev: Result, formData: FormData): Promise<
     .eq("project_id", projectId);
 
   if (error) return `Không xoá được bình luận: ${error.message}`;
-  revalidate(projectId);
+  revalidateAnyTask(projectId);
   return null;
 }
 
@@ -237,7 +270,7 @@ export async function detachFile(_prev: Result, formData: FormData): Promise<Res
     .eq("project_id", projectId);
 
   if (error) return `Không gỡ được tệp: ${error.message}`;
-  revalidate(projectId);
+  revalidateAnyTask(projectId);
   return null;
 }
 
@@ -309,7 +342,7 @@ export async function attachFileToTask(_prev: Result, formData: FormData): Promi
   });
   if (linked.error) return `Không gắn được tệp vào công việc: ${linked.error.message}`;
 
-  revalidate(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -357,7 +390,8 @@ export async function bulkUpdateTasks(
     .in("id", ids);
 
   if (error) return taskError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateAnyTask(projectId);
   return null;
 }
 
@@ -412,7 +446,7 @@ export async function createBoardColumn(projectId: string, rawName: string): Pro
   });
 
   if (error) return columnError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
@@ -441,7 +475,7 @@ export async function renameBoardColumn(
     .eq("project_id", projectId);
 
   if (error) return columnError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
@@ -488,7 +522,7 @@ export async function deleteBoardColumn(projectId: string, columnId: string): Pr
     .eq("project_id", projectId);
 
   if (error) return columnError(error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
@@ -517,7 +551,7 @@ export async function applyColumnOrder(
 
   const failed = results.find((result) => result.error);
   if (failed?.error) return columnError(failed.error.message);
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
@@ -558,7 +592,8 @@ export async function moveTaskToColumn(
   const order = await applyTaskOrder(projectId, rows);
   if (order) return order;
 
-  revalidate(projectId);
+  revalidateBoard(projectId);
+  revalidateTask(projectId, taskId);
   return null;
 }
 
@@ -576,7 +611,7 @@ export async function reorderTasksInColumn(
 
   const error = await applyTaskOrder(projectId, rows);
   if (error) return error;
-  revalidate(projectId);
+  revalidateBoard(projectId);
   return null;
 }
 
