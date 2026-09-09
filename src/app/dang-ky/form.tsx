@@ -10,8 +10,8 @@ export function SignupForm() {
     <form action={action} className="mt-6 space-y-4">
       <input type="hidden" name="account_kind" value="du_an" />
       <Alert tone="warn" title="Sau khi tạo tài khoản">
-        Bạn tiếp tục tới Danh mục dự án để tạo dự án đầu tiên. Quyền chủ dự án, đơn vị
-        phát triển và người xem được cấp riêng trên từng dự án.
+        Bạn tiếp tục tới Danh mục dự án để tạo dự án đầu tiên. Ai được mời vào một dự án
+        đều có đủ quyền thao tác trong dự án đó.
       </Alert>
 
       <Field label="Họ và tên" hint="Tên người phụ trách tài khoản.">

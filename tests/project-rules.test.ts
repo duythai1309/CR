@@ -5,10 +5,8 @@ import {
   approvalBlockers,
   approvedCount,
   assignableMembers,
-  atLeast,
   groupTasksByStage,
   isDocumentKind,
-  isProjectRole,
   isTaskStatus,
   nextPosition,
   nextStageToApprove,
@@ -48,57 +46,22 @@ const LOCKED = {
   methodologyLockedAt: "2026-09-02T00:00:00.000Z",
 };
 
-describe("quyền trong dự án — mọi thành viên toàn quyền (chính sách 07/09/2026)", () => {
-  it("owner toàn quyền", () => {
-    const a = abilitiesFor("owner");
-    expect(a.canWriteTasks && a.canManageMembers && a.canApproveStage && a.canDeleteProject).toBe(true);
-  });
-
-  // Ca cũ chốt "developer KHÔNG xoá được dự án". Chính sách mới bỏ phân biệt vai trò, nên
-  // ca này nay canh đúng điều ngược lại — kể cả bốn quyền trước đây chỉ owner mới có.
-  it("developer toàn quyền, gồm cả xoá dự án và duyệt bước", () => {
-    const a = abilitiesFor("developer");
-    expect(a.canWriteTasks).toBe(true);
-    expect(a.canComment).toBe(true);
-    expect(a.canDeleteProject).toBe(true);
-    expect(a.canManageMembers).toBe(true);
-    expect(a.canApproveStage).toBe(true);
-  });
-
-  // Ca cũ chốt "viewer chỉ xem". Viewer nay cũng là thành viên đầy đủ.
-  it("viewer toàn quyền — không còn vai trò nào chỉ được xem", () => {
-    const a = abilitiesFor("viewer");
+describe("quyền trong dự án — không còn vai trò (chính sách 09/09/2026)", () => {
+  it("thành viên có đủ mọi quyền, gồm duyệt bước, quản lý thành viên và xoá dự án", () => {
+    const a = abilitiesFor();
     expect(Object.values(a).every(Boolean)).toBe(true);
   });
 
-  it("ba vai trò cho ra bộ quyền GIỐNG HỆT nhau", () => {
-    const owner = abilitiesFor("owner");
-    expect(abilitiesFor("developer")).toEqual(owner);
-    expect(abilitiesFor("viewer")).toEqual(owner);
+  // Ràng buộc còn lại DUY NHẤT sau khi bỏ phân quyền — phải có test canh.
+  it("dự án đã xoá mềm thì mọi đường ghi đóng lại", () => {
+    const a = abilitiesFor(true);
+    expect(Object.values(a).some(Boolean)).toBe(false);
   });
 
-  // Ràng buộc còn lại DUY NHẤT sau khi bỏ phân quyền — phải có test canh, và phải canh
-  // cho cả ba vai trò chứ không riêng owner như bản cũ.
-  it("dự án đã xoá mềm thì mọi đường ghi đóng lại, với MỌI vai trò", () => {
-    for (const role of ["owner", "developer", "viewer"] as const) {
-      const a = abilitiesFor(role, true);
-      expect(Object.values(a).some(Boolean), role).toBe(false);
-    }
-  });
-
-  // `atLeast` không còn được `abilitiesFor` dùng, nhưng cột `role` vẫn còn trong schema và
-  // chốt "không xoá owner cuối cùng" (`0013:564-565`) vẫn sống, nên thứ tự vai trò vẫn
-  // phải đúng. Giữ nguyên ca này.
-  it("thứ tự vai trò dùng để chặn tối thiểu", () => {
-    expect(atLeast("owner", "developer")).toBe(true);
-    expect(atLeast("developer", "developer")).toBe(true);
-    expect(atLeast("viewer", "developer")).toBe(false);
-  });
-
-  it("nhận diện vai trò lạ", () => {
-    expect(isProjectRole("owner")).toBe(true);
-    expect(isProjectRole("platform_admin")).toBe(false);
-    expect(isProjectRole(null)).toBe(false);
+  // Hàm không còn nhận vai trò: nếu ai đó thêm lại tham số đó, ca này gãy chứ không
+  // âm thầm cho phép giao diện phân biệt vai trò trở lại.
+  it("không nhận vai trò làm tham số nữa", () => {
+    expect(abilitiesFor.length).toBe(0);
   });
 });
 
@@ -203,14 +166,17 @@ describe("bảng kanban", () => {
   });
 });
 
-describe("giao việc chỉ cho Đơn vị phát triển", () => {
-  it("lọc đúng vai trò developer — khớp khoá ngoại ba cột của 0013", () => {
+describe("giao việc cho mọi thành viên", () => {
+  // 0025 thay khoá ngoại ba cột `(project_id, assignee_id, assignee_role)` bằng khoá
+  // ngoại hai cột tới `project_members(project_id, user_id)`. Điều kiện còn lại đúng
+  // bằng "là thành viên", nên danh sách người nhận việc không được lọc bớt ai.
+  it("không lọc bớt ai khỏi danh sách người nhận việc", () => {
     const members = [
       { userId: "u1", role: "owner" as const },
       { userId: "u2", role: "developer" as const },
       { userId: "u3", role: "viewer" as const },
     ];
-    expect(assignableMembers(members).map((m) => m.userId)).toEqual(["u2"]);
+    expect(assignableMembers(members).map((m) => m.userId)).toEqual(["u1", "u2", "u3"]);
   });
 });
 

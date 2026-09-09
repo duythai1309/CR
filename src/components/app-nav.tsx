@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth-actions";
-import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
+import { ROLE_LABEL } from "@/lib/labels";
 import { BrandLogo } from "@/components/brand-logo";
-import type { Profile, ProjectRole } from "@/lib/auth";
+import type { Profile } from "@/lib/auth";
 
 const PROJECT_LINK = { href: "/du-an", label: "Dự án carbon" };
 
@@ -31,14 +31,11 @@ function accountLabel(profile: Profile, coopName?: string): string {
 export function AppNav({
   profile,
   coopName,
-  projectRole,
 }: {
   profile: Profile;
   coopName?: string;
-  /** Có mặt khi đang mở một dự án: thanh điều hướng chuyển sang nền tảng dự án. */
-  projectRole?: ProjectRole;
 }) {
-  const links = profile.role === "platform_admin" && !projectRole ? ADMIN_LINKS : PROJECT_LINKS;
+  const links = profile.role === "platform_admin" ? ADMIN_LINKS : PROJECT_LINKS;
 
   return (
     <header className="border-b border-soil-200 bg-white">
@@ -60,11 +57,7 @@ export function AppNav({
         <div className="ml-auto flex items-center gap-3 text-sm">
           <div className="text-right leading-tight">
             <div className="font-medium text-soil-900">{profile.full_name}</div>
-            <div className="text-xs text-soil-600">
-              {projectRole
-                ? PROJECT_ROLE_LABEL[projectRole]
-                : accountLabel(profile, coopName)}
-            </div>
+            <div className="text-xs text-soil-600">{accountLabel(profile, coopName)}</div>
           </div>
           <form action={signOut}>
             <button

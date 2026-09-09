@@ -127,7 +127,7 @@ export function TaskQuickPanel({
         {!canWrite ? (
           <div className="px-5 py-4">
             <Alert tone="warn" title="Chỉ xem">
-              Vai trò của bạn trong dự án này không cho phép sửa công việc.
+              Dự án đã bị xoá nên không sửa được công việc.
             </Alert>
           </div>
         ) : (

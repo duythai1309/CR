@@ -7,7 +7,6 @@ import type {
   Project,
   ProjectDocument,
   ProjectFile,
-  ProjectRole,
   ProjectStage,
   ProjectTask,
   Standard,
@@ -35,22 +34,21 @@ import type {
  * câu mà người làm nhiều dự án hỏi trước tiên: đang ở bước mấy, Standard/Methodology
  * nào, kỳ giám sát gần nhất ra sao, cái gì đang chặn.
  *
- * Sáu truy vấn, không truy vấn nào theo từng dự án: PostgREST trả về mọi dòng mà RLS cho
+ * Năm truy vấn, không truy vấn nào theo từng dự án: PostgREST trả về mọi dòng mà RLS cho
  * phép, và việc gom nhóm làm ở đây. Với vài chục dự án thì rẻ hơn hẳn N+1.
  *
- * `assignee_id` được đối chiếu với `profile.id` để đếm "việc của tôi"; vai trò của tôi
- * cũng lọc theo `user_id` chứ không lấy dòng `project_members` đầu tiên — policy cho
- * thấy cả đồng đội, nên "dòng đầu tiên" hoàn toàn có thể là vai trò của người khác.
+ * `assignee_id` được đối chiếu với `profile.id` để đếm "việc của tôi". Truy vấn
+ * `project_members` đã bỏ cùng cột vai trò: danh mục không còn hiện hay lọc theo vai
+ * trò, và RLS của `projects` vốn đã chỉ trả về dự án mà người này là thành viên.
  */
 export const listPortfolio = cache(async function listPortfolio(): Promise<PortfolioRow[]> {
   const profile = await requireProfile();
   const db = await projectClient();
   const now = new Date();
 
-  const [{ data: projects }, { data: members }, { data: stages }, { data: tasks }, { data: periods }] =
+  const [{ data: projects }, { data: stages }, { data: tasks }, { data: periods }] =
     await Promise.all([
       db.from("projects").select("*").order("updated_at", { ascending: false }),
-      db.from("project_members").select("project_id, user_id, role").eq("user_id", profile.id),
       db.from("project_stages").select("project_id, id, ordinal, title, approved_at").order("ordinal"),
       db
         .from("project_tasks")
@@ -80,10 +78,6 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
       >
     ).map((m) => [m.id, m]),
   );
-
-  const myRole = new Map<string, ProjectRole>();
-  for (const m of (members ?? []) as Array<{ project_id: string; role: ProjectRole }>)
-    myRole.set(m.project_id, m.role);
 
   const stagesByProject = new Map<string, Array<Pick<ProjectStage, "ordinal" | "title" | "approved_at">>>();
   for (const s of (stages ?? []) as Array<
@@ -135,7 +129,6 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
       id: p.id,
       name: p.name,
       description: p.description,
-      role: myRole.get(p.id) ?? "viewer",
       deletedAt: p.deleted_at,
       standardCode: p.standard_id ? (standardById.get(p.standard_id)?.code ?? null) : null,
       methodologyCode: methodology ? methodology.code : null,

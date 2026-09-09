@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth-actions";
-import { PROJECT_ROLE_LABEL } from "@/lib/labels";
-import type { Profile, ProjectRole } from "@/lib/auth";
+import type { Profile } from "@/lib/auth";
 
 /**
  * Thanh điều hướng của nền tảng dự án.
@@ -15,12 +14,9 @@ import type { Profile, ProjectRole } from "@/lib/auth";
  */
 export function ProjectTopBar({
   profile,
-  role,
   projectName,
 }: {
   profile: Profile;
-  /** Có mặt khi đang mở một dự án cụ thể. */
-  role?: ProjectRole;
   projectName?: string;
 }) {
   return (
@@ -59,9 +55,7 @@ export function ProjectTopBar({
         <div className="ml-auto flex items-center gap-3 text-sm">
           <div className="text-right leading-tight">
             <div className="font-medium text-soil-900">{profile.full_name}</div>
-            <div className="text-xs text-soil-600">
-              {role ? PROJECT_ROLE_LABEL[role] : "Tài khoản nền tảng"}
-            </div>
+            <div className="text-xs text-soil-600">Tài khoản nền tảng</div>
           </div>
           <form action={signOut}>
             <button

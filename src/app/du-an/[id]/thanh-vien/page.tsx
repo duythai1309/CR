@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectMembers, requireProjectMember } from "@/lib/auth";
-import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import {
   Alert,
   Badge,
@@ -25,11 +24,13 @@ import { InviteForm, MemberRow } from "./forms";
 export const metadata: Metadata = { title: "Thành viên" };
 
 /**
- * Thành viên dự án — ai giữ vai trò gì, và ai đang gánh việc gì.
+ * Thành viên dự án — ai ở trong dự án, và ai đang gánh việc gì.
  *
- * Hai cột đó phải nằm cạnh nhau: người quản lý một đội làm hồ sơ nhiều tháng không hỏi
- * "ai là developer", họ hỏi "ai đang quá tải" và "việc này còn ai nhận". Khối lượng đọc
- * từ `project_tasks` chứ không phải một bảng thống kê nào — không có bảng đó.
+ * Không còn cột vai trò: mọi thành viên có cùng quyền và ai cũng nhận được việc
+ * (0022 ở tầng hàm, 0025 ở tầng bảng). Câu hỏi thật của người quản lý một đội làm hồ sơ
+ * nhiều tháng vốn cũng không phải "ai là developer" mà là "ai đang quá tải" và "việc này
+ * còn ai nhận". Khối lượng đọc từ `project_tasks` chứ không phải một bảng thống kê nào —
+ * không có bảng đó.
  *
  * Không chỗ nào hiện UUID trần (mục C5 trong `schema-review-findings.md`). Tên lấy từ
  * `project_member_directory` (`0015`), email chỉ có khi người xem là chủ dự án vì RPC chỉ
@@ -37,7 +38,7 @@ export const metadata: Metadata = { title: "Thành viên" };
  */
 export default async function MembersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { role, profile } = await requireProjectMember(id);
+  const { profile } = await requireProjectMember(id);
 
   const [project, members, tasks] = await Promise.all([
     getProject(id),
@@ -46,9 +47,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
   ]);
   if (!project) notFound();
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
-  const owners = members.filter((m) => m.role === "owner").length;
-  const developers = members.filter((m) => m.role === "developer");
+  const abilities = abilitiesFor(project.deleted_at !== null);
 
   const cards = tasks.map(toTaskCard);
   const workload = workloadByAssignee(cards, new Date());
@@ -62,16 +61,9 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
     <div className="space-y-6">
       <SectionHeader
         title="Đội ngũ dự án"
-        description="Quản lý vai trò và theo dõi khối lượng công việc của từng thành viên."
+        description="Mời người vào dự án và theo dõi khối lượng công việc của từng người."
         aside={<Badge tone="soil">{members.length} thành viên</Badge>}
       />
-
-      {developers.length === 0 && (
-        <Locked
-          title="Chưa thể giao công việc"
-          reason="Dự án chưa có thành viên giữ vai trò Đơn vị phát triển. Khối giao việc mở khi chủ dự án mời thêm người hoặc đổi vai trò một thành viên hiện có sang Đơn vị phát triển."
-        />
-      )}
 
       {orphans.length > 0 && (
         <Alert tone="warn" title={`${orphans.length} công việc đang giao cho người đã rời dự án`}>
@@ -104,8 +96,8 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
           </Card>
         ) : (
           <Locked
-            title="Bạn chưa thể quản lý thành viên"
-            reason="Chỉ Chủ dự án được mời, gỡ hoặc đổi vai trò thành viên. Khối này mở khi một Chủ dự án cấp vai trò Chủ dự án cho bạn."
+            title="Dự án đã bị xoá"
+            reason="Dự án ở trạng thái xoá mềm: lịch sử vẫn đọc được nhưng mọi đường ghi, kể cả mời thành viên, đã đóng lại."
           />
         )}
       </section>
@@ -113,11 +105,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
       <section>
         <SectionHeader
           title="Thành viên dự án"
-          description={
-            abilities.canManageMembers
-              ? "Đổi vai trò có hiệu lực ngay và chỉ trong dự án này; một người có thể là chủ dự án ở đây và người xem ở dự án khác."
-              : "Bạn có thể xem vai trò và khối lượng việc; chỉ Chủ dự án mới thay đổi thành viên."
-          }
+          description="Mọi thành viên có cùng quyền trong dự án này và ai cũng nhận được việc."
         />
         <Card>
           {members.length === 0 ? (
@@ -136,8 +124,8 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
                 <Table
                   head={
                     abilities.canManageMembers
-                      ? ["Thành viên", "Vai trò", "Việc đang giữ", ""]
-                      : ["Thành viên", "Vai trò", "Việc đang giữ"]
+                      ? ["Thành viên", "Việc đang giữ", ""]
+                      : ["Thành viên", "Việc đang giữ"]
                   }
                 >
                   {members.map((m) => (
@@ -147,7 +135,6 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
                       member={m}
                       canManage={abilities.canManageMembers}
                       isSelf={m.userId === profile.id}
-                      isLastOwner={m.role === "owner" && owners === 1}
                       workload={workload.get(m.userId) ?? null}
                     />
                   ))}
@@ -168,41 +155,6 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
         </Card>
       </section>
 
-      <section>
-        <SectionHeader
-          title="Ba vai trò làm được gì"
-          description="Quyền có hiệu lực theo từng dự án, tách khỏi vai trò tài khoản trên nền tảng."
-        />
-        <Card>
-        <ul className="space-y-3 text-sm text-soil-700">
-          {(
-            [
-              [
-                "owner",
-                "Quản lý thành viên, chọn và khoá Standard/Methodology, duyệt hồ sơ, tạo và khoá monitoring period, xoá dự án.",
-              ],
-              [
-                "developer",
-                "Quản lý công việc, bình luận, đính kèm, nhập observation data và chuẩn bị báo cáo. Người duy nhất nhận được việc.",
-              ],
-              ["viewer", "Chỉ đọc dữ liệu của dự án. Không ghi được gì, kể cả bình luận."],
-            ] as const
-          ).map(([r, what]) => (
-            <li key={r} className="flex gap-3">
-              <span className="w-36 shrink-0">
-                <Badge tone={r === "owner" ? "leaf" : "soil"}>{PROJECT_ROLE_LABEL[r]}</Badge>
-              </span>
-              <span>{what}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 border-t border-soil-100 pt-3 text-xs text-soil-600">
-          Ẩn nút theo vai trò ở đây chỉ phục vụ trải nghiệm. Lớp chặn thật là RLS trong
-          PostgreSQL: bỏ qua giao diện thì policy vẫn giới hạn người dùng vào đúng dự án họ
-          là thành viên.
-        </p>
-        </Card>
-      </section>
     </div>
   );
 }

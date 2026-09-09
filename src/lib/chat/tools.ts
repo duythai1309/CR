@@ -48,7 +48,7 @@ export const TOOLS: ToolSpec[] = [
   {
     name: "liet_ke_du_an",
     description:
-      "Danh sách dự án carbon mà người đang hỏi là thành viên: tên, vai trò trong dự án, " +
+      "Danh sách dự án carbon mà người đang hỏi là thành viên: tên, " +
       "số bước thiết kế đã duyệt trên tổng bảy bước, Standard và Methodology đã chọn, số " +
       "thành viên. PHẢI gọi khi hỏi có những dự án nào, dự án tên gì, quy trình có bao " +
       "nhiêu bước, hoặc cần xác định dự án trước khi gọi tool chi tiết.",
@@ -68,8 +68,8 @@ export const TOOLS: ToolSpec[] = [
   {
     name: "yeu_cau_cua_buoc",
     description:
-      "Một bước trong bảy bước thiết kế cần thoả điều kiện gì thì chủ dự án mới duyệt " +
-      "được, và hiện đã thoả tới đâu. Điều kiện lấy từ đúng luật mà cơ sở dữ liệu áp " +
+      "Một bước trong bảy bước thiết kế cần thoả điều kiện gì thì mới duyệt được, và " +
+      "hiện đã thoả tới đâu. Điều kiện lấy từ đúng luật mà cơ sở dữ liệu áp " +
       "khi duyệt, không phải quy trình chung của ngành. PHẢI gọi cho mọi câu hỏi kiểu " +
       "'làm sao qua được bước này', 'còn thiếu gì để duyệt'.",
     parameters: {
@@ -228,7 +228,7 @@ export const TOOLS: ToolSpec[] = [
     description:
       "Danh sách thành viên dự án và các công việc đang giao cho từng người. Danh tính lấy " +
       "qua project_member_directory, không đọc trực tiếp profiles. PHẢI gọi trước khi nói " +
-      "ai là thành viên, vai trò/quyền trong dự án hoặc ai đang được giao việc.",
+      "ai là thành viên hoặc ai đang được giao việc.",
     parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
     roles: ALL,
   },

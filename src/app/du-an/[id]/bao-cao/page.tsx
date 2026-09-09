@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: "Báo cáo MRV" };
 
 export default async function ReportsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { role } = await requireProjectMember(id);
+  await requireProjectMember(id);
 
   const [project, periods, reports] = await Promise.all([
     getProject(id),
@@ -31,7 +31,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
   ]);
   if (!project) notFound();
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const locked = periods.filter((p) => p.status === "locked");
   const methodology = await getMethodology(project.methodology_id);
   const standard = await getStandard(project.standard_id);
@@ -125,13 +125,8 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
 
       {!abilities.canWriteTasks && locked.length > 0 && (
         <Locked
-          title="Bạn chưa thể sinh báo cáo"
-          reason="Chỉ Chủ dự án hoặc Đơn vị phát triển được sinh báo cáo từ kỳ giám sát đã khoá."
-          unlock={
-            <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
-              Xem thành viên dự án
-            </LinkButton>
-          }
+          title="Chưa thể sinh báo cáo"
+          reason="Dự án đã bị xoá nên mọi đường ghi, kể cả sinh báo cáo, đã đóng lại."
         />
       )}
 

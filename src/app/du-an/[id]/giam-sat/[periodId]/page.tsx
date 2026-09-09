@@ -37,7 +37,7 @@ export default async function PeriodPage({
   params: Promise<{ id: string; periodId: string }>;
 }) {
   const { id, periodId } = await params;
-  const { role } = await requireProjectMember(id);
+  await requireProjectMember(id);
 
   const [project, period] = await Promise.all([getProject(id), getPeriod(id, periodId)]);
   if (!project || !period) notFound();
@@ -53,7 +53,7 @@ export default async function PeriodPage({
   const assistantConfigured = (await loadChatConfig(supabase)) !== null;
   const actorName = new Map(actors.map((actor) => [actor.userId, actor.fullName]));
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const open = period.status === "open";
   const canEdit = abilities.canWriteTasks && open;
 
@@ -293,10 +293,10 @@ export default async function PeriodPage({
           title={open ? "Bạn đang xem ở chế độ chỉ đọc" : "Không thể nhập thêm dữ liệu"}
           reason={
             !open
-              ? "Kỳ đã khoá và dữ liệu đã đóng băng. Muốn hiệu chỉnh, chủ dự án cần tạo một kỳ bản mới."
+              ? "Kỳ đã khoá và dữ liệu đã đóng băng. Muốn hiệu chỉnh, hãy tạo một kỳ bản mới."
               : project.deleted_at
                 ? "Dự án đã xoá nên mọi thao tác ghi đều bị chặn."
-                : "Chỉ chủ dự án hoặc thành viên có vai trò Đơn vị phát triển mới được nhập dữ liệu giám sát."
+                : "Dự án đã bị xoá nên mọi đường ghi, kể cả nhập dữ liệu giám sát, đã đóng lại."
           }
           unlock={
             project.deleted_at ? undefined : open ? (

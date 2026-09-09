@@ -41,8 +41,8 @@ const DESIGN_SCREEN_HINT =
   "do chuyên gia viết; mục 3 và 4 có gợi ý Standard/Methodology rồi chọn và khoá ngay tại " +
   "đó; mục 5 baseline; mục 6 additionality; mục 7 PDD. Mỗi khối chứa sẵn checklist điều " +
   "kiện và nút duyệt của chính mục đó, nên KHÔNG bảo người dùng chuyển sang màn khác để " +
-  "khoá hay duyệt; duyệt vẫn tuần tự nhưng là việc riêng của chủ dự án, không chặn ai " +
-  "điền. Người hỏi đang đứng ở đây mà kẹt việc DUYỆT thì gọi yeu_cau_cua_buoc thay vì hỏi " +
+  "khoá hay duyệt; duyệt vẫn tuần tự nhưng mọi thành viên đều duyệt được và duyệt không " +
+  "chặn ai điền. Người hỏi đang đứng ở đây mà kẹt việc DUYỆT thì gọi yeu_cau_cua_buoc thay vì hỏi " +
   "lại họ";
 
 /** Mô tả màn hình đang mở, giúp trợ lý hiểu "cái này" trong câu hỏi trỏ vào đâu. */
@@ -60,7 +60,7 @@ const PAGE_HINTS: Array<[RegExp, string]> = [
   // chuyển hướng, và trỏ về cùng mô tả để trợ lý không có hai bản mâu thuẫn.
   [/^\/du-an\/[^/]+\/thiet-lap/, DESIGN_SCREEN_HINT],
   [/^\/du-an\/[^/]+\/quy-trinh/, DESIGN_SCREEN_HINT],
-  [/^\/du-an\/[^/]+\/thanh-vien/, "danh sách thành viên dự án và phân vai trò"],
+  [/^\/du-an\/[^/]+\/thanh-vien/, "danh sách thành viên dự án và ô mời thêm người"],
   [
     /^\/du-an\/[^/]+\/cong-viec\//,
     "chi tiết một công việc: mô tả, người nhận, bình luận, tệp đính kèm",
@@ -107,8 +107,9 @@ cho tổ chức chứng nhận. Vì vậy:
   bạn chỉ đọc lại kết quả nó sinh ra.
 - Công cụ trả về rỗng thì trả lời là chưa có dữ liệu. Đó là câu trả lời đúng, không phải
   thất bại.
-- Công cụ báo lỗi hoặc không có quyền thì nói thẳng là không tra được, gợi ý người dùng
-  hỏi chủ dự án. Không đoán thay.
+- Công cụ báo lỗi thì nói thẳng là không tra được. Không đoán thay.
+- KHÔNG BAO GIỜ nói người dùng thiếu quyền hay thiếu vai trò. Trong một dự án họ là thành
+  viên, họ có đủ quyền làm mọi thứ; thao tác bị chặn là do dữ liệu chưa đủ, không do vai trò.
 `.trim();
 
 /**
@@ -240,12 +241,13 @@ export function buildSystemPrompt(ctx: PromptContext): string {
   const toolList =
     tools.length > 0
       ? tools.map((t) => `- ${t.name}`).join("\n")
-      : "(không có công cụ nào khả dụng cho vai trò này)";
+      : "(không có công cụ nào khả dụng)";
 
   return [
     PERSONA,
-    `## Người đang hỏi\n\n${who}\n\nVai trò của họ TRONG từng dự án (chủ dự án / đơn vị ` +
-      `phát triển / người xem) khác nhau theo dự án; công cụ trả về vai trò đó, đừng đoán.`,
+    `## Người đang hỏi\n\n${who}\n\nHọ có TOÀN QUYỀN trong mọi dự án mà họ là thành ` +
+      `viên. Không có vai trò dự án nào để phân biệt, nên đừng viện vai trò để giải thích ` +
+      `vì sao một việc chưa làm được.`,
     NUMBER_RULES,
     HONESTY_RULES,
     SAFETY_RULES,

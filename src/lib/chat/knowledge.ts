@@ -42,14 +42,14 @@ Field trong \`metric_schema\` chia hai nhóm:
 - \`scope: baseline\` — kịch bản cơ sở, khai MỘT LẦN cho cả dự án ở mục hồ sơ 5.
 - \`scope: observation\` — dữ liệu quan sát, nhập theo từng dòng trong mỗi kỳ giám sát.
 
-Vai trò TRONG một dự án, tách hẳn khỏi vai trò toàn nền tảng:
-- Chủ dự án (owner): toàn quyền — mời thành viên, chọn và khoá Standard/Methodology,
-  **duyệt mục hồ sơ**, tạo và khoá kỳ giám sát, xoá dự án.
-- Đơn vị phát triển (developer): điền hồ sơ, thao tác công việc, nhập số liệu giám sát,
-  sinh báo cáo. Không duyệt mục hồ sơ, không xoá dự án.
-- Người xem (viewer): chỉ xem.
+KHÔNG CÓ VAI TRÒ TRONG DỰ ÁN. Hệ thống chỉ phân biệt "là thành viên" và "không phải
+thành viên". Ai đã ở trong một dự án thì toàn quyền trong dự án đó: mời thêm người, điền
+mọi mục hồ sơ, chọn và khoá Standard/Methodology, duyệt mục hồ sơ, thêm/sửa/xoá công
+việc, nhận việc, tạo và khoá kỳ giám sát, sinh báo cáo, xoá dự án.
 
-Một người có thể là chủ dự án ở dự án này và đơn vị phát triển ở dự án khác.
+Đừng nói với người dùng rằng họ thiếu quyền, thiếu vai trò, hay cần ai đó cấp quyền. Nếu
+một thao tác bị chặn thì lý do nằm ở dữ liệu (chưa khoá Standard, baseline chưa hợp lệ,
+kỳ đã khoá, dự án đã xoá) chứ không nằm ở vai trò.
 
 ## Bảy mục hồ sơ thiết kế
 
@@ -73,7 +73,7 @@ Năm mục còn lại — Project concept, Feasibility assessment, Standard, Add
 KHÔNG có tiền đề nào. Mở ra là điền được, kể cả khi mọi mục khác còn trống và kể cả khi
 chưa mục nào được duyệt.
 
-**Duyệt khác điền.** Duyệt là hành động riêng của chủ dự án và vẫn bị cơ sở dữ liệu cưỡng
+**Duyệt khác điền.** Mọi thành viên đều duyệt được, nhưng duyệt vẫn bị cơ sở dữ liệu cưỡng
 chế TUẦN TỰ (\`approve_project_stage\`). Điều kiện để DUYỆT được một mục là luật của cơ sở
 dữ liệu, KHÔNG phải thông lệ ngành: duyệt xong các mục trước; mục từ 3 trở đi cần đã khoá
 Standard; từ 4 trở đi cần đã khoá Methodology; từ 5 trở đi cần baseline hợp lệ theo
@@ -99,8 +99,8 @@ phải tạo dự án mới.
    PDD. Checklist điều kiện và nút duyệt nằm trong chính khối của từng mục, nên không phải
    chuyển màn để khoá hay duyệt. /du-an/[id]/thiet-lap là đường dẫn cũ, nay chỉ chuyển
    hướng về đây.
-4. /du-an/[id]/thanh-vien — mời người theo email và phân vai trò. Người được mời phải đã
-   có tài khoản trước.
+4. /du-an/[id]/thanh-vien — mời người theo email. Người được mời phải đã có tài khoản
+   trước, và vào dự án là có ngay đủ quyền như mọi thành viên khác.
 5. /du-an/[id]/giam-sat — kỳ giám sát; /du-an/[id]/giam-sat/[id] — nhập số liệu tay hoặc
    từ tệp CSV, đối chiếu baseline, khoá kỳ.
 6. /du-an/[id]/bao-cao — sinh và xem báo cáo MRV ước tính từ kỳ đã khoá.
@@ -117,8 +117,8 @@ với việc duyệt mục hồ sơ 5.
 **Chỉ sinh được báo cáo từ kỳ ĐÃ KHOÁ.** Khoá kỳ đóng băng dữ liệu. Khoá là một chiều; cần
 sửa thì tạo kỳ bản mới cùng khoảng ngày, không sửa kỳ cũ.
 
-**Chỉ giao việc được cho Đơn vị phát triển.** Ràng buộc của cơ sở dữ liệu, không phải lựa
-chọn giao diện. Muốn giao việc cho ai thì đổi vai trò của họ thành Đơn vị phát triển trước.
+**Giao việc được cho bất kỳ thành viên nào.** Ràng buộc duy nhất của cơ sở dữ liệu là
+người nhận việc phải đã ở trong dự án. Muốn giao việc cho ai thì mời họ vào dự án trước.
 
 **Nhập tệp: hiện chỉ nhận CSV.** Tệp Excel (.xlsx) chưa hỗ trợ — bảo người dùng lưu sang
 CSV. Bảng cần hai cột \`record_key\` và \`observed_on\` cùng các cột chỉ số của methodology;

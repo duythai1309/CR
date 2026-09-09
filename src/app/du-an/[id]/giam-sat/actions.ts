@@ -257,9 +257,8 @@ function pickDelimiter(value: string): "," | ";" | "\t" {
 function periodError(message: string): string {
   if (message.includes("Kỳ khóa hoặc revision đã thay đổi"))
     return "Dữ liệu vừa thay đổi ở nơi khác, hoặc kỳ đã khoá. Tải lại trang rồi thử lại.";
-  if (message.includes("Chỉ owner")) return "Chỉ chủ dự án làm được việc này.";
-  if (message.includes("Không có quyền nhập monitoring"))
-    return "Vai trò của bạn không được nhập số liệu giám sát.";
+  if (message.includes("Chỉ thành viên") || message.includes("Không có quyền nhập monitoring"))
+    return "Bạn không còn là thành viên của dự án này.";
   if (message.includes("Phải khóa lựa chọn methodology"))
     return "Phải khoá Methodology ở bước 4 trước khi tạo kỳ giám sát.";
   if (message.includes("Kỳ chưa có dữ liệu"))

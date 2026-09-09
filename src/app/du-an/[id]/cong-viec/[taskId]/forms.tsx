@@ -56,7 +56,7 @@ export function EditTaskForm({
         </Field>
         <Field
           label="Giao cho"
-          hint={members.length === 0 ? "Chưa có Đơn vị phát triển nào trong dự án." : undefined}
+          hint={members.length === 0 ? "Dự án chưa có thành viên nào." : undefined}
         >
           <Select name="assignee_id" defaultValue={task.assigneeId ?? ""}>
             <option value="">Chưa giao</option>
@@ -112,7 +112,7 @@ export function AttachForm({ projectId, taskId }: { projectId: string; taskId: s
       <input type="hidden" name="task_id" value={taskId} />
       <Field
         label="Tệp đính kèm cho công việc"
-        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB."
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 4 MB."
       >
         <input
           type="file"

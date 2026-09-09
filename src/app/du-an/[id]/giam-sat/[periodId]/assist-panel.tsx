@@ -45,7 +45,7 @@ export function MonitoringAssistPanel({
       {!canUse ? (
         <Locked
           title="Không thể chạy trợ lý ở chế độ chỉ đọc"
-          reason="Cần vai trò Chủ dự án hoặc Đơn vị phát triển trên một dự án đang hoạt động để rà soát kỳ."
+          reason="Dự án đã bị xoá nên trợ lý chỉ đọc được, không rà soát kỳ được nữa."
         />
       ) : !configured ? (
         <Locked

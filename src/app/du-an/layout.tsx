@@ -24,7 +24,9 @@ export default async function ProjectPlatformLayout({ children }: { children: Re
 
   return (
     <div className="min-h-dvh bg-soil-50">
-      <ProjectTopBar profile={profile} />
+      <div className="sticky top-0 z-40" data-project-app-nav>
+        <ProjectTopBar profile={profile} />
+      </div>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
       {/*
         Trợ lý có mặt trong sản phẩm mới. Trước bước này, cả bốn điểm gắn widget đều nằm
@@ -34,7 +36,7 @@ export default async function ProjectPlatformLayout({ children }: { children: Re
 
         `audience` để mặc định: `ChatPanel` tự nhận ngữ cảnh dự án từ đường dẫn.
       */}
-      <ChatWidget />
+      <ChatWidget anchorSelector="[data-project-app-nav] .ml-auto" />
     </div>
   );
 }

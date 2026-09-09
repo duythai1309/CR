@@ -391,20 +391,20 @@ const ctx = (data: Record<string, unknown[]> = DATA, calls: string[] = []) =>
 const withOverrides = (overrides: Record<string, unknown[]>) => ({ ...DATA, ...overrides });
 
 describe("liet_ke_du_an", () => {
-  it("trả dự án kèm vai trò của chính người hỏi, không phải vai trò người khác", async () => {
+  it("trả dự án kèm cấu hình và số thành viên, không còn vai trò", async () => {
     const out = (await HANDLERS.liet_ke_du_an(ctx(), {})) as {
       du_an: Array<Record<string, unknown>>;
     };
     expect(out.du_an).toHaveLength(2);
     expect(out.du_an[0]).toMatchObject({
       ten: "Rừng ngập mặn Cà Mau",
-      vai_tro_trong_du_an: "chủ dự án",
       standard: "VCS",
       methodology: "DEMO-VCS-FOREST · demo-1.0",
       loai_hinh: "afolu",
       so_thanh_vien: 2,
     });
-    expect(out.du_an[1].vai_tro_trong_du_an).toBe("đơn vị phát triển");
+    // Vai trò không còn được kể cho trợ lý: mọi thành viên có cùng quyền (0022/0025).
+    expect(out.du_an[0].vai_tro_trong_du_an).toBeUndefined();
     expect(out.du_an[1].methodology).toBeNull();
   });
 
@@ -581,21 +581,23 @@ describe("yeu_cau_cua_buoc", () => {
     expect(out.dieu_kien.find((c) => c.dieu_kien === "Đã KHOÁ Standard")?.dat).toBe(false);
   });
 
-  it("chỉ chủ dự án duyệt được, và hàm nói rõ người hỏi có phải chủ không", async () => {
+  it("mọi thành viên duyệt được — trợ lý không được nói ngược lại", async () => {
     const asOwner = (await HANDLERS.yeu_cau_cua_buoc(ctx(), { buoc: 3 })) as {
       ai_duyet_duoc: string;
-      nguoi_hoi_duyet_duoc: boolean;
+      nguoi_hoi_duyet_duoc?: boolean;
     };
-    expect(asOwner.ai_duyet_duoc).toContain("chủ dự án");
-    expect(asOwner.nguoi_hoi_duyet_duoc).toBe(true);
+    expect(asOwner.ai_duyet_duoc).toContain("Mọi thành viên");
+    expect(asOwner.nguoi_hoi_duyet_duoc).toBeUndefined();
 
+    // Người hỏi mang role `developer` phải nhận đúng câu trả lời đó, không phải một
+    // câu nói họ không duyệt được: 0022 đã gỡ vế owner khỏi `approve_project_stage`.
     const data = withOverrides({
       project_members: [{ project_id: "p-1", user_id: "u-1", role: "developer" }],
     });
     const asDev = (await HANDLERS.yeu_cau_cua_buoc(ctx(data), { buoc: 3 })) as {
-      nguoi_hoi_duyet_duoc: boolean;
+      ai_duyet_duoc: string;
     };
-    expect(asDev.nguoi_hoi_duyet_duoc).toBe(false);
+    expect(asDev.ai_duyet_duoc).toContain("Mọi thành viên");
   });
 
   it("số bước ngoài 1..7 bị từ chối chứ không im lặng lấy bước khác", async () => {
@@ -872,9 +874,10 @@ describe("cong_viec_theo_buoc", () => {
     expect(sai.theo_buoc).toBeUndefined();
   });
 
-  it("nhắc ràng buộc chỉ giao việc được cho Đơn vị phát triển", async () => {
+  it("nhắc đúng ràng buộc còn lại: người nhận việc phải là thành viên dự án", async () => {
     const out = (await HANDLERS.cong_viec_theo_buoc(ctx(), {})) as { ghi_chu: string };
-    expect(out.ghi_chu).toContain("Đơn vị phát triển");
+    expect(out.ghi_chu).toContain("thành viên nào của dự án");
+    expect(out.ghi_chu).not.toContain("Đơn vị phát triển");
   });
 });
 
@@ -972,10 +975,10 @@ describe("công cụ thành viên, tài liệu và catalog", () => {
     };
     expect(out.thanh_vien[1]).toMatchObject({
       ho_ten: "Trần Thị Bích",
-      vai_tro: "đơn vị phát triển",
       email: "dev@example.test",
       so_viec_dang_mo: 1,
     });
+    expect(out.thanh_vien[1].vai_tro).toBeUndefined();
     expect(out.viec_chua_giao).toEqual(["Nhập baseline vào hệ thống", "Đối chiếu hai Standard"]);
     expect(calls).toContain("rpc:project_member_directory");
     expect(calls).not.toContain("profiles");

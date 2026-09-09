@@ -73,8 +73,6 @@ export async function projectClient(): Promise<SupabaseClient> {
   return supabase as unknown as SupabaseClient;
 }
 
-const PROJECT_ROLE_RANK: Record<ProjectRole, number> = { viewer: 0, developer: 1, owner: 2 };
-
 function asProjectRole(value: unknown): ProjectRole | null {
   return value === "owner" || value === "developer" || value === "viewer" ? value : null;
 }
@@ -97,7 +95,11 @@ export const getProjectRole = cache(async function getProjectRole(
 });
 
 /**
- * Chặn trang/hành động của một dự án theo vai trò dự án.
+ * Chặn trang/hành động của một dự án: người gọi phải là THÀNH VIÊN của dự án đó.
+ *
+ * Không còn tham số vai trò tối thiểu. Sau 0022 và 0025 mọi thành viên có cùng quyền
+ * bên trong dự án, nên điều kiện duy nhất còn lại là có mặt trong `project_members` —
+ * đúng cái mà `app_project_role(...) is not null` trả lời.
  *
  * Người không phải thành viên nhận 404 chứ không phải 403: 403 xác nhận dự án có tồn
  * tại. Cơ sở dữ liệu cũng hành xử đúng như vậy — người ngoài truy vấn được nhưng nhận về
@@ -106,15 +108,11 @@ export const getProjectRole = cache(async function getProjectRole(
  * Đây là lớp phòng thủ THỨ HAI cho trải nghiệm người dùng. Lớp chặn thật là RLS: kể cả
  * hàm này bị quên gọi, Postgres vẫn từ chối dữ liệu ngoài phạm vi.
  */
-export async function requireProjectMember(
-  projectId: string,
-  minimum: ProjectRole = "viewer",
-): Promise<{ profile: Profile; role: ProjectRole }> {
+export async function requireProjectMember(projectId: string): Promise<{ profile: Profile }> {
   const profile = await requireProfile();
-  const role = await getProjectRole(projectId);
-  if (!role) notFound();
-  if (PROJECT_ROLE_RANK[role] < PROJECT_ROLE_RANK[minimum]) notFound();
-  return { profile, role };
+  const isMember = (await getProjectRole(projectId)) !== null;
+  if (!isMember) notFound();
+  return { profile };
 }
 
 export interface ProjectMemberEntry {

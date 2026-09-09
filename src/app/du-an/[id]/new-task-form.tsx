@@ -5,7 +5,7 @@ import { Alert, Button, Field, Input, Select } from "@/components/ui";
 import { createTask } from "./actions";
 
 /**
- * Ô chọn người nhận việc chỉ liệt kê thành viên có vai trò Đơn vị phát triển — đó là
+ * Ô chọn người nhận việc liệt kê MỌI thành viên dự án — sau 0025 đó là
  * ràng buộc cơ sở dữ liệu (khoá ngoại ba cột ở `0013:131-132`), không phải lựa chọn giao
  * diện. Danh sách rỗng thì nói rõ vì sao thay vì hiện một ô chọn trống.
  */
@@ -53,8 +53,8 @@ export function NewTaskForm({
           label="Giao cho"
           hint={
             members.length === 0
-              ? "Chưa có thành viên nào giữ vai trò Đơn vị phát triển — mời thêm ở tab Thành viên."
-              : "Chỉ giao được cho Đơn vị phát triển của dự án này."
+              ? "Dự án chưa có thành viên nào — mời thêm ở tab Thành viên."
+              : "Giao được cho bất kỳ thành viên nào của dự án này."
           }
         >
           <Select name="assignee_id" defaultValue="">

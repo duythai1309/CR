@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { homePathFor } from "@/lib/auth";
-import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
+import { ROLE_LABEL } from "@/lib/labels";
 
 /**
  * Bước 3 chốt: KHÔNG thêm giá trị vào enum `user_role`; vai trò dự án là trục thứ hai
@@ -48,11 +48,6 @@ describe("homePathFor — điều hướng theo trạng thái", () => {
 });
 
 describe("nhãn vai trò", () => {
-  it("nhãn dự án phủ đủ ba vai trò và tách khỏi nhãn toàn cục", () => {
-    expect(Object.keys(PROJECT_ROLE_LABEL).sort()).toEqual(["developer", "owner", "viewer"]);
-    for (const label of Object.values(PROJECT_ROLE_LABEL)) expect(label.length).toBeGreaterThan(0);
-  });
-
   it("ROLE_LABEL giữ nguyên bốn giá trị — enum user_role không bị đụng", () => {
     expect(Object.keys(ROLE_LABEL).sort()).toEqual([
       "buyer",

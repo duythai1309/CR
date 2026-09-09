@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Empty, Kbd, ProgressBar, Toolbar } from "@/components/ui";
-import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import {
   EMPTY_PORTFOLIO_FILTER,
   PORTFOLIO_SORTS,
@@ -106,18 +105,6 @@ export function ProjectPortfolio({
           aria-label="Tìm dự án"
           className={`${CONTROL} min-w-[14rem] flex-1`}
         />
-
-        <select
-          value={filter.role}
-          onChange={(e) => set("role", e.target.value)}
-          aria-label="Lọc theo vai trò của tôi"
-          className={CONTROL}
-        >
-          <option value="">Mọi vai trò</option>
-          <option value="owner">{PROJECT_ROLE_LABEL.owner}</option>
-          <option value="developer">{PROJECT_ROLE_LABEL.developer}</option>
-          <option value="viewer">{PROJECT_ROLE_LABEL.viewer}</option>
-        </select>
 
         <select
           value={filter.standard}
@@ -230,9 +217,6 @@ function PortfolioRowItem({ row }: { row: PortfolioRow }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-soil-900">{row.name}</span>
-            <Badge tone={row.role === "owner" ? "leaf" : "soil"}>
-              {PROJECT_ROLE_LABEL[row.role]}
-            </Badge>
             {row.methodologyIsSample && <Badge tone="carbon">Methodology MẪU</Badge>}
             {row.deletedAt && <Badge tone="red">Đã xoá</Badge>}
           </div>

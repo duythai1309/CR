@@ -1,5 +1,3 @@
-import type { ProjectRole } from "@/types/project-platform";
-
 /**
  * Quy tắc nghiệp vụ thuần của Module A — không import Supabase, không async.
  *
@@ -80,33 +78,23 @@ export function isDocumentKind(value: unknown): value is DocumentKind {
   return typeof value === "string" && (DOCUMENT_KINDS as readonly string[]).includes(value);
 }
 
-/* ------------------------------------------------------------------ quyền theo vai trò */
-
-const RANK: Record<ProjectRole, number> = { viewer: 0, developer: 1, owner: 2 };
-
-export function isProjectRole(value: unknown): value is ProjectRole {
-  return value === "owner" || value === "developer" || value === "viewer";
-}
-
-export function atLeast(role: ProjectRole, minimum: ProjectRole): boolean {
-  return RANK[role] >= RANK[minimum];
-}
+/* ------------------------------------------------------------------------ quyền ghi */
 
 /**
  * Quyền trong một dự án.
  *
- * **Chính sách (07/09/2026): mọi THÀNH VIÊN dự án đều toàn quyền**, bất kể `owner` /
- * `developer` / `viewer`. Đây là quyết định sản phẩm, không phải sửa lỗi — mô hình cũ
- * (`atLeast`, grant, `app_project_can_write`) vốn đúng với ý định cũ của nó.
+ * **Chính sách (09/09/2026): không còn vai trò dự án.** Ai là thành viên thì toàn quyền
+ * xem, thêm, sửa, xoá bên trong dự án đó — kể cả duyệt bước và nhận việc.
  *
  * **Lớp kiểm THÀNH VIÊN vẫn còn nguyên và là thứ giữ an toàn.** Người không phải thành
  * viên vẫn không đọc và không ghi được gì: `requireProjectMember` trả 404, còn RLS đòi
  * `app_project_role(...) is not null`. Cái được gỡ là phân biệt GIỮA các vai trò, không
  * phải hàng rào quanh dự án.
  *
- * Tương ứng ở tầng DB là migration 0022 (`app_project_can_write`, `approve_project_stage`,
- * `set_project_member`, `create_mrv_report`). Trước khi 0022 được áp, hàm này rộng hơn
- * những gì Postgres cho phép, nên giao diện sẽ mở nút mà cơ sở dữ liệu còn từ chối.
+ * Tương ứng ở tầng cơ sở dữ liệu là 0022 (`app_project_can_write`, `approve_project_stage`,
+ * `set_project_member`, `create_mrv_report`) và 0025 (khoá ngoại người nhận việc). Cột
+ * `project_members.role` vẫn còn vì chốt "không xoá owner cuối cùng" (`0013:564`) đọc nó,
+ * nhưng không màn hình nào hỏi hay hiện nó nữa.
  */
 export interface ProjectAbilities {
   canWriteTasks: boolean;
@@ -119,16 +107,7 @@ export interface ProjectAbilities {
   canDeleteProject: boolean;
 }
 
-export function abilitiesFor(
-  /**
-   * Vai trò cố ý KHÔNG còn được đọc: mọi thành viên có cùng quyền. Giữ tham số để 8 chỗ
-   * gọi không phải đổi, và để siết lại sau này chỉ phải sửa đúng một hàm.
-   */
-  role: ProjectRole,
-  projectDeleted = false,
-): ProjectAbilities {
-  void role;
-
+export function abilitiesFor(projectDeleted = false): ProjectAbilities {
   // Ràng buộc CÒN LẠI DUY NHẤT: dự án đã xoá mềm thì đọc lịch sử vẫn được, mọi đường ghi
   // đóng lại. Đây là điều kiện `p.deleted_at is null` bên trong `app_project_can_write`
   // — 0022 giữ nguyên nó — chứ không phải phân quyền, nên nó không bị gỡ cùng.
@@ -183,8 +162,6 @@ export interface ApprovalCheck {
 }
 
 export interface ApprovalContext extends ProjectGate {
-  /** `app_project_role(project) = 'owner'` — vế thứ hai của dòng 701. */
-  isOwner?: boolean;
   /** `deleted_at is null` — vế `for update` ở dòng 700. */
   projectDeleted?: boolean;
   /**
@@ -210,14 +187,6 @@ export function approvalChecklist(
       source: "0013:700",
       state: ctx.projectDeleted ? "fail" : "pass",
       detail: ctx.projectDeleted ? "Dự án đã bị xoá mềm; mọi đường ghi đóng lại." : undefined,
-    },
-    {
-      id: "owner",
-      requirement: "Người bấm duyệt là chủ dự án (`app_project_role = 'owner'`)",
-      source: "0013:701",
-      state: ctx.isOwner === undefined ? "unknown" : ctx.isOwner ? "pass" : "fail",
-      detail:
-        ctx.isOwner === false ? "Vai trò của bạn trong dự án này không phải chủ dự án." : undefined,
     },
     {
       id: "ordinal_range",
@@ -320,7 +289,6 @@ export function approvalBlockers(
   const failed = approvalChecklist(stages, ordinal, project).filter((c) => c.state === "fail");
   const label: Record<string, string> = {
     project_active: "Dự án đã bị xoá.",
-    owner: "Chỉ chủ dự án được duyệt bước.",
     ordinal_range: "Bước không hợp lệ.",
     standard_locked: "Chưa khoá Standard (bước 3).",
     methodology_locked: "Chưa khoá Methodology (bước 4).",
@@ -443,14 +411,16 @@ export function nextPosition(tasksInStage: TaskCard[]): number {
 }
 
 /**
- * Chỉ những người có vai trò `developer` mới được giao việc.
+ * Ai nhận được việc: MỌI thành viên của dự án.
  *
- * Không phải lựa chọn giao diện mà là ràng buộc cơ sở dữ liệu: cột hằng
- * `assignee_role = 'developer'` cộng khoá ngoại ba cột tới `project_members`
- * (`0013:121-132`). Lọc ở đây để người dùng không chọn được thứ chắc chắn bị từ chối.
+ * Trước 0025 đây là một bộ lọc thật — cột hằng `assignee_role = 'developer'` cộng khoá
+ * ngoại ba cột (`0013:121-132`) khiến chủ dự án không tự giao việc cho mình được.
+ * `0025_flat_task_assignee.sql` thay bằng khoá ngoại hai cột tới
+ * `project_members(project_id, user_id)`, nên điều kiện còn lại đúng bằng "là thành
+ * viên", và hàm này chỉ còn là chỗ ghi lại điều đó cho tám nơi gọi.
  */
-export function assignableMembers<T extends { role: ProjectRole }>(members: T[]): T[] {
-  return members.filter((m) => m.role === "developer");
+export function assignableMembers<T>(members: T[]): T[] {
+  return members;
 }
 
 /* ------------------------------------------------------------------ chuyển đổi hàng DB */
@@ -655,7 +625,6 @@ export interface PortfolioRow {
   id: string;
   name: string;
   description: string;
-  role: ProjectRole;
   deletedAt: string | null;
   standardCode: string | null;
   methodologyCode: string | null;
@@ -713,8 +682,6 @@ export const PORTFOLIO_SORT_LABEL: Record<PortfolioSort, string> = {
 
 export interface PortfolioFilter {
   text: string;
-  /** `""` là không lọc. */
-  role: string;
   standard: string;
   /** `""` | `"planning"` (chưa duyệt hết) | `"designed"` (đủ 7/7). */
   progress: string;
@@ -724,7 +691,6 @@ export interface PortfolioFilter {
 
 export const EMPTY_PORTFOLIO_FILTER: PortfolioFilter = {
   text: "",
-  role: "",
   standard: "",
   progress: "",
   onlyAttention: false,
@@ -736,7 +702,6 @@ export function filterProjects(rows: PortfolioRow[], filter: PortfolioFilter): P
   return rows.filter((row) => {
     if (!filter.includeDeleted && row.deletedAt) return false;
     if (needle && !normalize(`${row.name} ${row.description}`).includes(needle)) return false;
-    if (filter.role && row.role !== filter.role) return false;
     if (filter.standard && (row.standardCode ?? "") !== filter.standard) return false;
     if (filter.progress === "planning" && row.approvedStages >= 7) return false;
     if (filter.progress === "designed" && row.approvedStages < 7) return false;

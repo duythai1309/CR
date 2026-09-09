@@ -68,7 +68,7 @@ export default async function ProjectBoardPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const { role, profile } = await requireProjectMember(id);
+  const { profile } = await requireProjectMember(id);
 
   const [project, stages, tasks, members, boardColumns] = await Promise.all([
     getProject(id),
@@ -79,7 +79,7 @@ export default async function ProjectBoardPage({
   ]);
   if (!project) notFound();
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const stageViews = stages.map(toStageView);
 
   const taskCards: BoardTaskCard[] = (tasks as TaskRow[]).map((row) => ({

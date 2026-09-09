@@ -14,12 +14,12 @@ export const metadata: Metadata = { title: "Giám sát" };
 
 export default async function MonitoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { role } = await requireProjectMember(id);
+  await requireProjectMember(id);
 
   const [project, periods] = await Promise.all([getProject(id), listPeriods(id)]);
   if (!project) notFound();
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const ready = project.methodology_locked_at !== null;
   const periodReadiness = new Map(
     await Promise.all(
@@ -96,7 +96,7 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
             hint={
               abilities.canApproveStage
                 ? "Tạo kỳ đầu tiên để chụp cấu hình hiện tại và bắt đầu nhập dữ liệu quan sát."
-                : "Chủ dự án cần tạo kỳ đầu tiên trước khi nhóm có thể nhập dữ liệu quan sát."
+                : "Hãy tạo kỳ đầu tiên trước khi nhập dữ liệu quan sát."
             }
             action={
               abilities.canApproveStage ? (

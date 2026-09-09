@@ -18,7 +18,7 @@ export default function NewProjectPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Tạo dự án"
-        description="Bạn sẽ là chủ dự án. Bảy stage thiết kế được dựng sẵn trong cùng một transaction ngay khi tạo xong."
+        description="Bảy mục hồ sơ thiết kế được dựng sẵn trong cùng một transaction ngay khi tạo xong."
       />
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
@@ -30,7 +30,7 @@ export default function NewProjectPage() {
           <Card title="Tạo xong thì có gì">
             <ul className="space-y-2 text-sm text-soil-700">
               <li>Bảy stage từ Project concept tới PDD, đúng thứ tự, duyệt tuần tự.</li>
-              <li>Bạn là chủ dự án; mời thêm Đơn vị phát triển và Người xem ở tab Thành viên.</li>
+              <li>Mời thêm người cùng làm ở tab Thành viên; ai vào dự án cũng có đủ quyền.</li>
               <li>Một bảng công việc rỗng — mỗi stage là một cột.</li>
             </ul>
           </Card>

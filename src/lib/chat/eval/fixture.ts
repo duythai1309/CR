@@ -229,7 +229,6 @@ export const FIXTURE_RESULTS: Record<
       {
         ten: FIXTURE_PROJECT,
         mo_ta: "Trồng lại rừng ngập mặn ven biển, giai đoạn 1.",
-        vai_tro_trong_du_an: "chủ dự án",
         buoc_da_duyet: "4/7",
         so_thanh_vien: 3,
         standard: "VCS",
@@ -244,7 +243,6 @@ export const FIXTURE_RESULTS: Record<
       {
         ten: "Biogas hộ gia đình Đồng Tháp",
         mo_ta: null,
-        vai_tro_trong_du_an: "đơn vị phát triển",
         buoc_da_duyet: "2/7",
         so_thanh_vien: 2,
         standard: "GS",
@@ -269,7 +267,6 @@ export const FIXTURE_RESULTS: Record<
     if (name !== FIXTURE_PROJECT)
       return {
         du_an: name,
-        vai_tro_cua_nguoi_hoi: "đơn vị phát triển",
         da_xoa: false,
         standard_da_khoa: false,
         methodology_da_khoa: false,
@@ -301,13 +298,11 @@ export const FIXTURE_RESULTS: Record<
         ghi_chu:
           "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
           "thẩm định độc lập và không phải tín chỉ đã được phát hành. " +
-          "Chỉ chủ dự án mới duyệt được bước. " +
           CANH_BAO_MAU,
       };
 
     return {
       du_an: FIXTURE_PROJECT,
-      vai_tro_cua_nguoi_hoi: "chủ dự án",
       da_xoa: false,
       standard_da_khoa: true,
       methodology_da_khoa: true,
@@ -347,7 +342,6 @@ export const FIXTURE_RESULTS: Record<
       ghi_chu:
         "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
         "thẩm định độc lập và không phải tín chỉ đã được phát hành. " +
-        "Chỉ chủ dự án mới duyệt được bước. " +
         CANH_BAO_MAU,
     };
   },
@@ -381,8 +375,7 @@ export const FIXTURE_RESULTS: Record<
       duyet_luc: stage.duyet_luc,
       dieu_kien: dieuKien,
       con_vuong: dieuKien.filter((c) => !c.dat).map((c) => c.dieu_kien),
-      ai_duyet_duoc: "Chỉ chủ dự án (owner).",
-      nguoi_hoi_duyet_duoc: true,
+      ai_duyet_duoc: "Mọi thành viên của dự án.",
       ghi_chu:
         "Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước " +
         "(hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu " +
@@ -551,8 +544,8 @@ export const FIXTURE_RESULTS: Record<
       so_viec_khop_bo_loc: loc.reduce((n, s) => n + s.viec.length, 0),
       theo_buoc: loc.map((s) => ({ ...s, so_viec: s.viec.length })),
       ghi_chu:
-        "Chỉ giao việc được cho thành viên có vai trò Đơn vị phát triển — đó là ràng " +
-        "buộc của cơ sở dữ liệu, không phải lựa chọn giao diện.",
+        "Giao việc được cho bất kỳ thành viên nào của dự án; ràng buộc duy nhất của cơ " +
+        "sở dữ liệu là người nhận phải đã ở trong dự án.",
     };
   },
 
@@ -730,12 +723,12 @@ export const FIXTURE_RESULTS: Record<
     return {
       du_an: FIXTURE_PROJECT,
       thanh_vien: [
-        { user_id: "u-1", ho_ten: FIXTURE_USER, vai_tro: "chủ dự án", email: "cuong@example.test", so_viec_dang_mo: 0, viec_dang_mo: [] },
-        { user_id: "u-2", ho_ten: "Trần Thị Bích", vai_tro: "đơn vị phát triển", email: "bich@example.test", so_viec_dang_mo: 2, viec_dang_mo: [
+        { user_id: "u-1", ho_ten: FIXTURE_USER, email: "cuong@example.test", so_viec_dang_mo: 0, viec_dang_mo: [] },
+        { user_id: "u-2", ho_ten: "Trần Thị Bích", email: "bich@example.test", so_viec_dang_mo: 2, viec_dang_mo: [
           { tieu_de: "Đo trữ lượng carbon nền trên 12 ô mẫu", trang_thai: "đang làm", han: "2026-09-30" },
           { tieu_de: "Thu thập chứng cứ rào cản đầu tư", trang_thai: "vướng", han: null },
         ] },
-        { user_id: "u-3", ho_ten: "Lê Minh An", vai_tro: "người xem", email: "an@example.test", so_viec_dang_mo: 0, viec_dang_mo: [] },
+        { user_id: "u-3", ho_ten: "Lê Minh An", email: "an@example.test", so_viec_dang_mo: 0, viec_dang_mo: [] },
       ],
       viec_chua_giao: ["Nhập baseline vào hệ thống"],
       da_doc_het_cong_viec: true,

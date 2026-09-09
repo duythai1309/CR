@@ -10,7 +10,7 @@ import { readSupabaseConfig } from "@/lib/supabase/config";
  * chủ gọi nó, sau khi đã tự xác thực người dùng**.
  *
  * Vì vậy mọi lời gọi phải theo đúng trình tự này, không được rút gọn:
- *   1. `requireProjectMember(projectId, 'developer')` bằng PHIÊN của người dùng.
+ *   1. `requireProjectMember(projectId)` bằng PHIÊN của người dùng.
  *   2. Đọc kỳ và dữ liệu bằng client của NGƯỜI DÙNG — để RLS vẫn là thứ quyết định.
  *   3. Tính bằng hàm thuần.
  *   4. Chỉ bước ghi cuối cùng mới dùng client này, và `p_requested_by` lấy từ phiên đã
