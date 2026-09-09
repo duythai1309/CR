@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProjectMember } from "@/lib/auth";
 import { Badge, Card, Empty, LinkButton, Locked, SectionHeader, Table } from "@/components/ui";
@@ -38,6 +37,21 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
       }),
     ),
   );
+  const periodRows = periods.map((period) => {
+    const readiness = periodReadiness.get(period.id) ?? { records: 0, incomplete: 0 };
+    const readyToLock =
+      readiness.records === 0
+        ? "Chưa có dữ liệu"
+        : readiness.incomplete > 0
+          ? `${readiness.incomplete} dòng thiếu field`
+          : "Đủ dữ liệu bắt buộc";
+    return {
+      period,
+      readiness,
+      readyToLock: period.status === "locked" ? "Snapshot đã đóng băng" : readyToLock,
+      actionLabel: period.status === "locked" ? "Xem dữ liệu" : "Nhập dữ liệu",
+    };
+  });
 
   // Tab đã bị khoá ở điều hướng, nhưng vào thẳng URL vẫn tới được đây. Không có cổng
   // này thì form tạo kỳ vẫn hiện và chết ở DB bằng một lỗi thô — tệ hơn là không hiện.
@@ -95,62 +109,104 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[64rem]">
-              <Table
-                head={[
-                  "Kỳ",
-                  "Khoảng thời gian",
-                  "Bản",
-                  "Trạng thái",
-                  "Quan sát",
-                  "Data revision",
-                  "Sẵn sàng khoá",
-                  "",
-                ]}
-              >
-                {periods.map((p) => {
-                  const readiness = periodReadiness.get(p.id) ?? {
-                    records: 0,
-                    incomplete: 0,
-                  };
-                  const blockers =
-                    readiness.records === 0
-                      ? "Chưa có dữ liệu"
-                      : readiness.incomplete > 0
-                        ? `${readiness.incomplete} dòng thiếu field`
-                        : "Đủ dữ liệu bắt buộc";
-                  return (
-                    <tr key={p.id} className="border-b border-soil-100 last:border-0">
-                      <td className="px-3 py-2.5 font-medium text-soil-900">{p.name}</td>
-                      <td className="px-3 py-2.5 text-soil-700">
-                        {p.start_date} → {p.end_date}
-                      </td>
-                      <td className="px-3 py-2.5 text-soil-700">{p.version}</td>
+          <>
+            {/*
+              Không đặt hành động chính ở cuối một bảng cuộn ngang: trên màn hẹp, nút vẫn
+              tồn tại trong DOM nhưng biến khỏi tầm nhìn và người dùng tưởng không có lối
+              nhập dữ liệu. Thẻ dưới đây giữ hành động trong viewport; bảng desktop vẫn
+              giữ đủ cột và đưa hành động lên đầu dòng.
+            */}
+            <div className="grid min-w-0 gap-3 lg:hidden">
+              {periodRows.map(({ period, readiness, readyToLock, actionLabel }) => (
+                <section
+                  key={period.id}
+                  className="min-w-0 rounded-lg border border-soil-200 bg-white p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="break-words font-medium text-soil-900">{period.name}</h3>
+                      <p className="mt-1 text-sm text-soil-600">
+                        {period.start_date} → {period.end_date}
+                      </p>
+                    </div>
+                    <Badge tone={period.status === "locked" ? "leaf" : "carbon"}>
+                      {period.status === "locked" ? "Đã khoá" : "Đang mở"}
+                    </Badge>
+                  </div>
+
+                  <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <div>
+                      <dt className="text-soil-600">Bản</dt>
+                      <dd className="font-medium text-soil-900">{period.version}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-soil-600">Quan sát</dt>
+                      <dd className="font-medium text-soil-900">{readiness.records}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-soil-600">Data revision</dt>
+                      <dd className="font-medium text-soil-900">{period.data_revision}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-soil-600">Sẵn sàng khoá</dt>
+                      <dd className="break-words text-soil-900">{readyToLock}</dd>
+                    </div>
+                  </dl>
+
+                  <LinkButton
+                    href={`/du-an/${id}/giam-sat/${period.id}`}
+                    className="mt-4 w-full"
+                  >
+                    {actionLabel}
+                  </LinkButton>
+                </section>
+              ))}
+            </div>
+
+            <div className="hidden min-w-0 overflow-x-auto lg:block">
+              <div className="min-w-[64rem]">
+                <Table
+                  head={[
+                    "Thao tác",
+                    "Kỳ",
+                    "Khoảng thời gian",
+                    "Bản",
+                    "Trạng thái",
+                    "Quan sát",
+                    "Data revision",
+                    "Sẵn sàng khoá",
+                  ]}
+                >
+                  {periodRows.map(({ period, readiness, readyToLock, actionLabel }) => (
+                    <tr key={period.id} className="border-b border-soil-100 last:border-0">
                       <td className="px-3 py-2.5">
-                        <Badge tone={p.status === "locked" ? "leaf" : "carbon"}>
-                          {p.status === "locked" ? "Đã khoá" : "Đang mở"}
+                        <LinkButton
+                          href={`/du-an/${id}/giam-sat/${period.id}`}
+                          variant="secondary"
+                          className="whitespace-nowrap px-3 py-1.5"
+                        >
+                          {actionLabel}
+                        </LinkButton>
+                      </td>
+                      <td className="px-3 py-2.5 font-medium text-soil-900">{period.name}</td>
+                      <td className="px-3 py-2.5 text-soil-700">
+                        {period.start_date} → {period.end_date}
+                      </td>
+                      <td className="px-3 py-2.5 text-soil-700">{period.version}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge tone={period.status === "locked" ? "leaf" : "carbon"}>
+                          {period.status === "locked" ? "Đã khoá" : "Đang mở"}
                         </Badge>
                       </td>
                       <td className="px-3 py-2.5 text-soil-700">{readiness.records}</td>
-                      <td className="px-3 py-2.5 text-soil-700">{p.data_revision}</td>
-                      <td className="px-3 py-2.5 text-xs text-soil-700">
-                        {p.status === "locked" ? "Snapshot đã đóng băng" : blockers}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <Link
-                          href={`/du-an/${id}/giam-sat/${p.id}`}
-                          className="text-sm font-medium text-leaf-700 hover:underline"
-                        >
-                          Mở
-                        </Link>
-                      </td>
+                      <td className="px-3 py-2.5 text-soil-700">{period.data_revision}</td>
+                      <td className="px-3 py-2.5 text-xs text-soil-700">{readyToLock}</td>
                     </tr>
-                  );
-                })}
-              </Table>
+                  ))}
+                </Table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </Card>
 
