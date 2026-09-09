@@ -16,7 +16,13 @@ export function LoginForm({ next }: { next: string }) {
       <Field label="Mật khẩu">
         <Input name="password" type="password" required autoComplete="current-password" />
       </Field>
-      {error && <Alert tone="error">{error}</Alert>}
+      {error && (
+        <div role="alert" aria-live="polite">
+          <Alert tone="error" title="Chưa thể đăng nhập">
+            {error}
+          </Alert>
+        </div>
+      )}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Đang đăng nhập…" : "Đăng nhập"}
       </Button>

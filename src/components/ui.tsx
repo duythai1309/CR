@@ -132,11 +132,112 @@ export function Badge({
   );
 }
 
-export function Empty({ title, hint }: { title: string; hint?: ReactNode }) {
+/**
+ * Trạng thái rỗng. `action` là lối đi tiếp — một màn rỗng không nói được phải làm gì
+ * tiếp thì bắt người dùng tự đoán, và đó là chỗ họ bỏ cuộc.
+ */
+export function Empty({
+  title,
+  hint,
+  action,
+}: {
+  title: string;
+  hint?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="rounded-lg border border-dashed border-soil-200 px-4 py-10 text-center">
       <p className="font-medium text-soil-800">{title}</p>
       {hint && <p className="mx-auto mt-1 max-w-md text-sm text-soil-600">{hint}</p>}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
+    </div>
+  );
+}
+
+/**
+ * Khối chưa dùng được.
+ *
+ * Khác `Empty` ở chỗ đây không phải "chưa có dữ liệu" mà là "chưa tới lượt". `reason` bắt
+ * buộc: khoá mà không nói lý do thì người dùng tưởng hỏng. Cố ý KHÔNG ẩn màn bị khoá —
+ * bảy bước là chuẩn của Standard, giấu đi sẽ phá bản đồ nghiệp vụ trong đầu người dùng.
+ */
+export function Locked({
+  title,
+  reason,
+  unlock,
+}: {
+  title: string;
+  reason: string;
+  unlock?: ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-soil-200 bg-soil-50 px-4 py-10 text-center">
+      <p className="font-medium text-soil-700">
+        <span aria-hidden="true" className="mr-2 text-soil-400">
+          ◌
+        </span>
+        {title}
+      </p>
+      <p className="mx-auto mt-1 max-w-md text-sm text-soil-600">{reason}</p>
+      {unlock && <div className="mt-4 flex justify-center">{unlock}</div>}
+    </div>
+  );
+}
+
+/**
+ * "Việc cần làm tiếp theo" thành thành phần hạng nhất.
+ *
+ * Đây là câu người quay lại một dự án sau hai tuần hỏi trước tiên. Trước đây nó là một
+ * dòng chữ lẫn trong tiêu đề; giờ nó là một đích bấm được.
+ */
+export function NextAction({
+  label,
+  href,
+  note,
+}: {
+  label: string;
+  href: string;
+  note?: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-lg border border-leaf-200 bg-leaf-50 px-4 py-3 transition hover:border-leaf-400 hover:bg-leaf-100"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-medium uppercase tracking-wide text-leaf-700">
+          Việc cần làm tiếp theo
+        </span>
+        <span className="block truncate font-medium text-soil-900">{label}</span>
+        {note && <span className="mt-0.5 block text-sm text-soil-600">{note}</span>}
+      </span>
+      <span
+        aria-hidden="true"
+        className="text-leaf-600 transition group-hover:translate-x-0.5"
+      >
+        →
+      </span>
+    </Link>
+  );
+}
+
+/** Phân cấp chữ thống nhất cho một khối trong trang. */
+export function SectionHeader({
+  title,
+  description,
+  aside,
+}: {
+  title: string;
+  description?: ReactNode;
+  aside?: ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold text-soil-900">{title}</h2>
+        {description && <p className="mt-1 max-w-2xl text-sm text-soil-600">{description}</p>}
+      </div>
+      {aside && <div className="shrink-0">{aside}</div>}
     </div>
   );
 }

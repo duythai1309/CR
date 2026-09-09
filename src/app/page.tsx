@@ -11,16 +11,16 @@ const SLIDES: HeroSlide[] = [
     poster: "/anh/poster-hero.jpg",
     media: "Flycam cảnh quan dự án carbon tại vùng núi phía Bắc",
     headline: "Từ ý tưởng đến hồ sơ đăng ký,",
-    accent: "một vòng đời dự án liền mạch.",
+    accent: "một vòng đời liền mạch.",
     body:
-      "C-route giúp đơn vị phát triển dự án điều phối bảy bước thiết kế, phân công công việc và tập trung bằng chứng trên cùng một không gian làm việc.",
+      "C-ROUTE giúp đơn vị phát triển dự án điều phối bảy bước thiết kế, phân công công việc và tập trung bằng chứng trên cùng một không gian làm việc.",
   },
   {
     video: "/video/thua-ruong-flycam.mp4",
     poster: "/anh/poster-thua-ruong.jpg",
     media: "Flycam toàn cảnh một vùng dự án carbon",
     headline: "Methodology có phiên bản,",
-    accent: "dữ liệu luôn đúng ngữ cảnh.",
+    accent: "dữ liệu đúng ngữ cảnh.",
     body:
       "Mỗi dự án chọn Standard và đúng phiên bản methodology. Schema chỉ số, bộ hệ số và biểu mẫu báo cáo đi cùng phiên bản để đội ngũ không dùng nhầm tài liệu.",
   },
@@ -28,7 +28,7 @@ const SLIDES: HeroSlide[] = [
     poster: "/anh/lua-chin.jpg",
     media: "Cảnh quan thiên nhiên trong một vùng dự án carbon",
     headline: "Mỗi con số MRV",
-    accent: "đều có thể lần ngược nguồn.",
+    accent: "đều lần ngược được nguồn.",
     body:
       "Dữ liệu giám sát, phiên bản hệ số, kết quả tính và báo cáo được nối thành một vết kiểm toán rõ ràng, sẵn sàng cho rà soát nội bộ và làm việc với VVB.",
   },
@@ -84,7 +84,7 @@ const STORIES = [
     title: "Báo cáo giữ nguyên vết tính",
     body:
       "Mỗi kết quả gắn với dữ liệu nguồn, phiên bản methodology, bộ hệ số và mẫu báo cáo đã dùng tại thời điểm tạo.",
-    href: "#cong-cu",
+    href: "#phuong-phap",
   },
 ];
 
@@ -110,11 +110,50 @@ export default async function Home() {
           secondary={{ href: "/du-an", label: "Mở không gian dự án" }}
         />
 
+        {/* ----------------------------------------------------------- cách làm */}
+        <section id="cach-lam" className="bg-forest-800">
+          <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
+            <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+              C-ROUTE, <span className="text-mint-400">từ ý tưởng đến hồ sơ</span>
+            </h2>
+            <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
+              Mỗi bước có đầu việc, người phụ trách, thời hạn, bình luận và tài liệu. Tiến
+              độ luôn hiện rõ để đội ngũ xử lý điểm nghẽn trước khi hồ sơ sang vòng kế tiếp.
+            </p>
+
+            <figure className="mt-14">
+              <div className="overflow-hidden rounded-3xl">
+                <LazyVideo
+                  src="/video/thua-ruong-flycam.mp4"
+                  poster="/anh/poster-thua-ruong.jpg"
+                  label="Flycam cảnh quan minh hoạ cho vùng triển khai dự án carbon"
+                  className="aspect-video w-full bg-forest-900 object-cover"
+                />
+              </div>
+              <figcaption className="mt-5 text-center text-mint-400">
+                Mỗi địa bàn dự án đều cần một hồ sơ nhất quán từ thiết kế đến giám sát
+              </figcaption>
+            </figure>
+
+            <div className="mt-20 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+              {STEPS.map((s) => (
+                <div key={s.n}>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-mint-500 text-sm font-bold text-forest-950">
+                    {s.n}
+                  </div>
+                  <h3 className="mt-6 text-xl font-bold text-white">{s.title}</h3>
+                  <p className="mt-3 leading-relaxed text-mint-100/80">{s.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ------------------------------------------------------------- cơ hội */}
         <section id="co-hoi" className="bg-mint-100">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-forest-900 sm:text-5xl lg:text-6xl">
-              Hạ tầng vận hành cho đội ngũ phát triển dự án carbon
+              Hạ tầng vận hành cho dự án carbon
             </h2>
 
             <div className="mt-10 flex max-w-4xl gap-5">
@@ -127,7 +166,7 @@ export default async function Home() {
                   nhiều vòng tài liệu và các kỳ giám sát kéo dài trong nhiều năm.
                 </p>
                 <p>
-                  C-route giữ công việc, methodology, dữ liệu MRV và báo cáo trong
+                  C-ROUTE giữ công việc, methodology, dữ liệu MRV và báo cáo trong
                   một cấu trúc thống nhất để đội ngũ tập trung vào chất lượng hồ sơ.
                 </p>
               </div>
@@ -253,104 +292,13 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ----------------------------------------------------------- cách làm */}
-        <section id="cach-lam" className="bg-forest-800">
-          <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
-            <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
-              Bảy bước, <span className="text-mint-400">từ ý tưởng đến hồ sơ dự án</span>
-            </h2>
-            <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
-              Mỗi bước có đầu việc, người phụ trách, thời hạn, bình luận và tài liệu. Tiến
-              độ luôn hiện rõ để đội ngũ xử lý điểm nghẽn trước khi hồ sơ sang vòng kế tiếp.
-            </p>
 
-            <figure className="mt-14">
-              <div className="overflow-hidden rounded-3xl">
-                <LazyVideo
-                  src="/video/thua-ruong-flycam.mp4"
-                  poster="/anh/poster-thua-ruong.jpg"
-                  label="Flycam cảnh quan minh hoạ cho vùng triển khai dự án carbon"
-                  className="aspect-video w-full bg-forest-900 object-cover"
-                />
-              </div>
-              <figcaption className="mt-5 text-center text-mint-400">
-                Mỗi địa bàn dự án đều cần một hồ sơ nhất quán từ thiết kế đến giám sát
-              </figcaption>
-            </figure>
-
-            <div className="mt-20 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map((s) => (
-                <div key={s.n}>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-mint-500 text-sm font-bold text-forest-950">
-                    {s.n}
-                  </div>
-                  <h3 className="mt-6 text-xl font-bold text-white">{s.title}</h3>
-                  <p className="mt-3 leading-relaxed text-mint-100/80">{s.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------- dải nổi bật: công cụ */}
-        <section id="cong-cu" className="relative isolate overflow-hidden bg-forest-900">
-          <Image
-            src="/anh/ruong-ngap-nuoc.jpg"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/70 to-forest-950/40" />
-          <div className="relative mx-auto max-w-7xl px-6 py-32 sm:py-44">
-            <span className="inline-block rounded-md bg-white/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-white backdrop-blur">
-              Công cụ cho project developer
-            </span>
-            <h2 className="mt-8 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl">
-              Dữ liệu chưa đạt thì chỉ rõ còn thiếu gì
-            </h2>
-            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-mint-100">
-              Engine kiểm tra dữ liệu theo schema của methodology trước khi tính. Trường
-              thiếu, sai đơn vị hay ngoài khoảng hợp lệ được chỉ ra ngay, thay vì âm thầm
-              đi vào báo cáo cuối kỳ.
-            </p>
-
-            <ul className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
-              {[
-                "Form giám sát sinh từ metric schema",
-                "Import CSV có bước map và kiểm tra cột",
-                "Khoá snapshot trước khi sinh báo cáo",
-                "Lưu đủ tham số để tái lập phép tính",
-              ].map((t) => (
-                <li key={t} className="flex gap-3 text-mint-100">
-                  <CheckIcon />
-                  {t}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-12 flex flex-wrap gap-4">
-              <Link
-                href="/dang-ky"
-                className="rounded-full bg-mint-500 px-8 py-4 font-semibold text-forest-950 transition hover:bg-mint-400"
-              >
-                Tạo tài khoản
-              </Link>
-              <Link
-                href="/du-an"
-                className="rounded-full border border-white/70 px-8 py-4 font-semibold text-white transition hover:bg-white hover:text-forest-900"
-              >
-                Mở danh sách dự án
-              </Link>
-            </div>
-          </div>
-        </section>
 
         {/* --------------------------------------------------------- câu chuyện */}
         <section id="cau-chuyen" className="bg-forest-800">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Ba lớp giữ hồ sơ luôn sẵn sàng để rà soát
+              Ba lớp giữ hồ sơ sẵn sàng rà soát
             </h2>
 
             <div className="mt-14 grid gap-10 md:grid-cols-3">
@@ -418,7 +366,7 @@ export default async function Home() {
 
             <div>
               <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-forest-900 sm:text-5xl">
-                Một không gian làm việc <span className="text-mint-600">cho cả đội dự án</span>
+                Một không gian <span className="text-mint-600">cho cả đội dự án</span>
               </h2>
               <p className="mt-8 text-lg leading-relaxed text-forest-700">
                 Project Owner kiểm soát cấu hình và phê duyệt; Project Developer xử lý đầu
@@ -459,7 +407,7 @@ export default async function Home() {
           <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 sm:py-32 lg:grid-cols-[1fr_1.15fr]">
             <div>
               <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
-                Methodology đúng <span className="text-mint-400">phiên bản dự án</span>
+                Methodology đúng <span className="text-mint-400">phiên bản</span>
               </h2>
               <p className="mt-8 leading-relaxed text-mint-100">
                 Verra và Gold Standard tổ chức phương pháp luận, chỉ số giám sát và biểu
@@ -505,10 +453,10 @@ export default async function Home() {
         <section className="bg-forest-900">
           <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
             <h2 className="max-w-4xl text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Vận hành dự án carbon chuyên nghiệp trên một nền tảng thống nhất
+              Vận hành dự án carbon trên một nền tảng
             </h2>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-mint-100">
-              C-route giúp đơn vị tư vấn xây dựng hồ sơ Verra và Gold Standard
+              C-ROUTE giúp đơn vị tư vấn xây dựng hồ sơ Verra và Gold Standard
               quản lý công việc, methodology, Monitoring và báo cáo MRV có vết tính.
             </p>
 
@@ -537,12 +485,12 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-6 py-16">
           <div className="flex flex-wrap items-start justify-between gap-10">
             <div>
-              <div className="text-lg font-bold text-white">C-route</div>
+              <div className="text-lg font-bold text-white">C-ROUTE</div>
               <p className="mt-3 max-w-sm leading-relaxed text-mint-100/70">
                 Nền tảng quản lý vòng đời dự án carbon cho đội ngũ phát triển chuyên nghiệp.
               </p>
             </div>
-            <div className="flex gap-16 text-sm">
+            <div className="flex flex-wrap gap-x-16 gap-y-10 text-sm">
               <div>
                 <div className="font-semibold text-white">Nền tảng</div>
                 <ul className="mt-4 space-y-2.5 text-mint-100/70">
@@ -557,32 +505,34 @@ export default async function Home() {
                   <li><Link href="/dang-ky" className="hover:text-mint-400">Bắt đầu</Link></li>
                 </ul>
               </div>
+
+              {/*
+                Điện thoại và email để dạng tel:/mailto: chứ không phải chữ trơn — trên
+                điện thoại đó là khác biệt giữa bấm một lần và phải chép tay.
+                `not-italic` vì <address> mặc định in nghiêng.
+              */}
+              <address className="not-italic">
+                <div className="font-semibold text-white">Liên hệ</div>
+                <ul className="mt-4 space-y-2.5 text-mint-100/70">
+                  <li>
+                    <a href="tel:0986147699" className="hover:text-mint-400">
+                      0986 147 699
+                    </a>
+                  </li>
+                  <li>
+                    <a href="mailto:croute@gmail.com" className="hover:text-mint-400">
+                      croute@gmail.com
+                    </a>
+                  </li>
+                  <li className="max-w-xs leading-relaxed">
+                    Số 207 đường Giải Phóng, phường Đồng Tâm, quận Hai Bà Trưng, thành phố
+                    Hà Nội
+                  </li>
+                </ul>
+              </address>
             </div>
           </div>
 
-          <div className="mt-14 border-t border-white/10 pt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-mint-400">
-              Nguyên tắc sản phẩm
-            </p>
-            <ul className="mt-4 space-y-2 text-xs leading-relaxed text-mint-100/50">
-              <li>
-                Quản lý xuyên suốt bảy bước thiết kế dự án, từ Project Idea đến Project
-                Design Document.
-              </li>
-              <li>
-                Hỗ trợ nhiều Standard; methodology, metric schema, bộ hệ số và template
-                báo cáo đều có phiên bản.
-              </li>
-              <li>
-                Dữ liệu Monitoring được kiểm tra trước khi lưu và được khóa thành snapshot
-                khi sinh báo cáo MRV.
-              </li>
-              <li>Mỗi báo cáo giữ đủ dữ liệu nguồn và vết tính để tái lập kết quả.</li>
-              <li>
-                Ảnh và video trên trang là tư liệu minh hoạ cho bối cảnh dự án carbon.
-              </li>
-            </ul>
-          </div>
         </div>
       </footer>
     </div>
@@ -726,24 +676,6 @@ function GlobeIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      aria-hidden
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="mt-0.5 shrink-0 text-mint-400"
-    >
-      <path d="m5 13 4 4L19 7" />
-    </svg>
-  );
-}
 
 function CheckBadge() {
   return (

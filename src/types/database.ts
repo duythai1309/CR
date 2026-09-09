@@ -1,3 +1,11 @@
+/**
+ * Kiểu sinh tự động từ schema Supabase — KHÔNG sửa tay.
+ *
+ * Sinh lại bằng MCP `generate_typescript_types` sau mỗi lần áp migration. Bản này được
+ * sinh sau khi áp 0018 (phiên hỗ trợ vận hành, RPC tên người duyệt) và 0019 (VM0051),
+ * nên đã có `project_support_sessions`, `begin_project_support` và
+ * `project_stage_approval_directory`.
+ */
 export type Json =
   | string
   | number
@@ -159,6 +167,7 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          api_key_last4?: string | null
           id?: boolean
           model?: string | null
           provider?: string
@@ -167,6 +176,7 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          api_key_last4?: string | null
           id?: boolean
           model?: string | null
           provider?: string
@@ -679,6 +689,458 @@ export type Database = {
           },
         ]
       }
+      methodologies: {
+        Row: {
+          code: string
+          created_at: string
+          disclaimer: string
+          id: string
+          is_sample: boolean
+          metric_schema: Json
+          name: string
+          professionally_validated: boolean
+          project_type: string
+          published_at: string | null
+          schema_hash: string | null
+          standard_id: string
+          status: string
+          version: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          disclaimer: string
+          id?: string
+          is_sample?: boolean
+          metric_schema: Json
+          name: string
+          professionally_validated?: boolean
+          project_type: string
+          published_at?: string | null
+          schema_hash?: string | null
+          standard_id: string
+          status?: string
+          version: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          disclaimer?: string
+          id?: string
+          is_sample?: boolean
+          metric_schema?: Json
+          name?: string
+          professionally_validated?: boolean
+          project_type?: string
+          published_at?: string | null
+          schema_hash?: string | null
+          standard_id?: string
+          status?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "methodologies_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      methodology_factors: {
+        Row: {
+          id: string
+          key: string
+          methodology_id: string
+          scope: Json
+          source: string
+          unit: string
+          value: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          methodology_id: string
+          scope?: Json
+          source: string
+          unit: string
+          value: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          methodology_id?: string
+          scope?: Json
+          source?: string
+          unit?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "methodology_factors_methodology_id_fkey"
+            columns: ["methodology_id"]
+            isOneToOne: false
+            referencedRelation: "methodologies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_data: {
+        Row: {
+          entered_by: string
+          id: string
+          import_id: string | null
+          metric_values: Json
+          observed_on: string
+          period_id: string
+          project_id: string
+          raw_input: Json
+          record_key: string
+          revision: number
+          source_row: number | null
+          updated_at: string
+        }
+        Insert: {
+          entered_by: string
+          id?: string
+          import_id?: string | null
+          metric_values: Json
+          observed_on: string
+          period_id: string
+          project_id: string
+          raw_input?: Json
+          record_key: string
+          revision: number
+          source_row?: number | null
+          updated_at?: string
+        }
+        Update: {
+          entered_by?: string
+          id?: string
+          import_id?: string | null
+          metric_values?: Json
+          observed_on?: string
+          period_id?: string
+          project_id?: string
+          raw_input?: Json
+          record_key?: string
+          revision?: number
+          source_row?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_data_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_data_import_id_period_id_project_id_fkey"
+            columns: ["import_id", "period_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_imports"
+            referencedColumns: ["id", "period_id", "project_id"]
+          },
+          {
+            foreignKeyName: "monitoring_data_period_id_project_id_fkey"
+            columns: ["period_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_periods"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "monitoring_data_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_imports: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          imported_by: string
+          mapping: Json
+          mapping_hash: string | null
+          period_id: string
+          project_id: string
+          schema_hash: string
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          imported_by: string
+          mapping: Json
+          mapping_hash?: string | null
+          period_id: string
+          project_id: string
+          schema_hash: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          imported_by?: string
+          mapping?: Json
+          mapping_hash?: string | null
+          period_id?: string
+          project_id?: string
+          schema_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_imports_file_id_project_id_fkey"
+            columns: ["file_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "monitoring_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_imports_period_id_project_id_fkey"
+            columns: ["period_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_periods"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "monitoring_imports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_periods: {
+        Row: {
+          baseline_revision: number
+          baseline_snapshot: Json
+          created_at: string
+          created_by: string
+          data_revision: number
+          data_snapshot: Json | null
+          end_date: string
+          factors_snapshot: Json
+          id: string
+          locked_at: string | null
+          methodology_id: string
+          name: string
+          project_id: string
+          schema_hash: string
+          schema_snapshot: Json
+          standard_id: string
+          start_date: string
+          status: string
+          version: number
+        }
+        Insert: {
+          baseline_revision: number
+          baseline_snapshot: Json
+          created_at?: string
+          created_by: string
+          data_revision?: number
+          data_snapshot?: Json | null
+          end_date: string
+          factors_snapshot: Json
+          id?: string
+          locked_at?: string | null
+          methodology_id: string
+          name: string
+          project_id: string
+          schema_hash: string
+          schema_snapshot: Json
+          standard_id: string
+          start_date: string
+          status?: string
+          version?: number
+        }
+        Update: {
+          baseline_revision?: number
+          baseline_snapshot?: Json
+          created_at?: string
+          created_by?: string
+          data_revision?: number
+          data_snapshot?: Json | null
+          end_date?: string
+          factors_snapshot?: Json
+          id?: string
+          locked_at?: string | null
+          methodology_id?: string
+          name?: string
+          project_id?: string
+          schema_hash?: string
+          schema_snapshot?: Json
+          standard_id?: string
+          start_date?: string
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_periods_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_periods_methodology_id_standard_id_fkey"
+            columns: ["methodology_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "methodologies"
+            referencedColumns: ["id", "standard_id"]
+          },
+          {
+            foreignKeyName: "monitoring_periods_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_periods_project_id_methodology_id_standard_id_fkey"
+            columns: ["project_id", "methodology_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "methodology_id", "standard_id"]
+          },
+        ]
+      }
+      mrv_reports: {
+        Row: {
+          baseline_revision: number
+          baseline_snapshot: Json
+          calculation_trace: Json
+          data_revision: number
+          engine_version: string
+          factors_snapshot: Json
+          generated_at: string
+          id: string
+          input_snapshot: Json
+          methodology_id: string
+          output_file_id: string | null
+          period_id: string
+          project_id: string
+          requested_by: string
+          results: Json
+          schema_hash: string
+          schema_snapshot: Json
+          standard_id: string
+          status: string
+          template_id: string
+          template_snapshot: Json
+          version: number
+        }
+        Insert: {
+          baseline_revision: number
+          baseline_snapshot: Json
+          calculation_trace: Json
+          data_revision: number
+          engine_version: string
+          factors_snapshot: Json
+          generated_at?: string
+          id?: string
+          input_snapshot: Json
+          methodology_id: string
+          output_file_id?: string | null
+          period_id: string
+          project_id: string
+          requested_by: string
+          results: Json
+          schema_hash: string
+          schema_snapshot: Json
+          standard_id: string
+          status: string
+          template_id: string
+          template_snapshot: Json
+          version: number
+        }
+        Update: {
+          baseline_revision?: number
+          baseline_snapshot?: Json
+          calculation_trace?: Json
+          data_revision?: number
+          engine_version?: string
+          factors_snapshot?: Json
+          generated_at?: string
+          id?: string
+          input_snapshot?: Json
+          methodology_id?: string
+          output_file_id?: string | null
+          period_id?: string
+          project_id?: string
+          requested_by?: string
+          results?: Json
+          schema_hash?: string
+          schema_snapshot?: Json
+          standard_id?: string
+          status?: string
+          template_id?: string
+          template_snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mrv_reports_output_file_id_project_id_fkey"
+            columns: ["output_file_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "mrv_reports_period_id_project_id_methodology_id_standard_i_fkey"
+            columns: [
+              "period_id",
+              "project_id",
+              "methodology_id",
+              "standard_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "monitoring_periods"
+            referencedColumns: [
+              "id",
+              "project_id",
+              "methodology_id",
+              "standard_id",
+            ]
+          },
+          {
+            foreignKeyName: "mrv_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mrv_reports_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mrv_reports_template_id_methodology_id_standard_id_fkey"
+            columns: ["template_id", "methodology_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id", "methodology_id", "standard_id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           batch_id: string
@@ -815,6 +1277,445 @@ export type Database = {
           },
         ]
       }
+      project_documents: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          kind: string
+          project_id: string
+          stage_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          kind: string
+          project_id: string
+          stage_id: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          kind?: string
+          project_id?: string
+          stage_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_file_id_project_id_fkey"
+            columns: ["file_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_documents_stage_id_project_id_fkey"
+            columns: ["stage_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
+            referencedColumns: ["id", "project_id"]
+          },
+        ]
+      }
+      project_files: {
+        Row: {
+          bucket_id: string
+          checksum: string
+          created_at: string
+          id: string
+          mime_type: string
+          object_path: string
+          original_name: string
+          project_id: string
+          size_bytes: number
+          uploaded_by: string
+        }
+        Insert: {
+          bucket_id?: string
+          checksum: string
+          created_at?: string
+          id?: string
+          mime_type: string
+          object_path: string
+          original_name: string
+          project_id: string
+          size_bytes: number
+          uploaded_by?: string
+        }
+        Update: {
+          bucket_id?: string
+          checksum?: string
+          created_at?: string
+          id?: string
+          mime_type?: string
+          object_path?: string
+          original_name?: string
+          project_id?: string
+          size_bytes?: number
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          joined_at: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_stages: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          id: string
+          ordinal: number
+          project_id: string
+          title: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          ordinal: number
+          project_id: string
+          title: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          ordinal?: number
+          project_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stages_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_stages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_support_sessions: {
+        Row: {
+          admin_id: string
+          expires_at: string
+          id: string
+          opened_at: string
+          project_id: string
+          reason: string
+        }
+        Insert: {
+          admin_id: string
+          expires_at: string
+          id?: string
+          opened_at?: string
+          project_id: string
+          reason: string
+        }
+        Update: {
+          admin_id?: string
+          expires_at?: string
+          id?: string
+          opened_at?: string
+          project_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_support_sessions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_support_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          assignee_id: string | null
+          assignee_role: string
+          created_at: string
+          created_by: string
+          description: string
+          due_at: string | null
+          id: string
+          position: number
+          project_id: string
+          stage_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          assignee_role?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_at?: string | null
+          id?: string
+          position?: number
+          project_id: string
+          stage_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          assignee_role?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_at?: string | null
+          id?: string
+          position?: number
+          project_id?: string
+          stage_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_assignee_id_assignee_role_fkey"
+            columns: ["project_id", "assignee_id", "assignee_role"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["project_id", "user_id", "role"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_stage_id_project_id_fkey"
+            columns: ["stage_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
+            referencedColumns: ["id", "project_id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          baseline: Json
+          baseline_revision: number
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string
+          id: string
+          membership_revision: number
+          methodology_id: string | null
+          methodology_locked_at: string | null
+          name: string
+          setup: Json
+          standard_id: string | null
+          standard_locked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          baseline?: Json
+          baseline_revision?: number
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          membership_revision?: number
+          methodology_id?: string | null
+          methodology_locked_at?: string | null
+          name: string
+          setup?: Json
+          standard_id?: string | null
+          standard_locked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          baseline?: Json
+          baseline_revision?: number
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          membership_revision?: number
+          methodology_id?: string | null
+          methodology_locked_at?: string | null
+          name?: string
+          setup?: Json
+          standard_id?: string | null
+          standard_locked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_methodology_id_standard_id_fkey"
+            columns: ["methodology_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "methodologies"
+            referencedColumns: ["id", "standard_id"]
+          },
+          {
+            foreignKeyName: "projects_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_templates: {
+        Row: {
+          bucket_id: string
+          checksum: string | null
+          created_at: string
+          disclaimer: string
+          format: string
+          id: string
+          mapping: Json
+          methodology_id: string
+          object_path: string | null
+          standard_id: string
+          status: string
+          version: string
+        }
+        Insert: {
+          bucket_id?: string
+          checksum?: string | null
+          created_at?: string
+          disclaimer: string
+          format: string
+          id?: string
+          mapping?: Json
+          methodology_id: string
+          object_path?: string | null
+          standard_id: string
+          status?: string
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          checksum?: string | null
+          created_at?: string
+          disclaimer?: string
+          format?: string
+          id?: string
+          mapping?: Json
+          methodology_id?: string
+          object_path?: string | null
+          standard_id?: string
+          status?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_templates_methodology_id_standard_id_fkey"
+            columns: ["methodology_id", "standard_id"]
+            isOneToOne: false
+            referencedRelation: "methodologies"
+            referencedColumns: ["id", "standard_id"]
+          },
+          {
+            foreignKeyName: "report_templates_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_shares: {
         Row: {
           breakdown: Json
@@ -921,6 +1822,27 @@ export type Database = {
         }
         Relationships: []
       }
+      standards: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       straw_management: {
         Row: {
           amount_t_per_ha: number | null
@@ -969,6 +1891,101 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "field_seasons"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_attachments: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          project_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          project_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          project_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_file_id_project_id_fkey"
+            columns: ["file_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id", "project_id"]
+          },
+          {
+            foreignKeyName: "task_attachments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_attachments_task_id_project_id_fkey"
+            columns: ["task_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id", "project_id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          project_id: string
+          task_id: string
+        }
+        Insert: {
+          author_id?: string
+          body: string
+          created_at?: string
+          id?: string
+          project_id: string
+          task_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_task_id_project_id_fkey"
+            columns: ["task_id", "project_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id", "project_id"]
           },
         ]
       }
@@ -1225,9 +2242,34 @@ export type Database = {
           }
       app_coop_id: { Args: never; Returns: string }
       app_is_admin: { Args: never; Returns: boolean }
+      app_project_can_write: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
+      app_project_ids: { Args: never; Returns: string[] }
+      app_project_role: { Args: { p_project_id: string }; Returns: string }
+      app_project_support_active: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       app_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      approve_project_stage: {
+        Args: { p_ordinal: number; p_project_id: string }
+        Returns: undefined
+      }
+      begin_project_support: {
+        Args: {
+          p_duration_minutes?: number
+          p_project_id: string
+          p_reason: string
+        }
+        Returns: {
+          expires_at: string
+          support_session_id: string
+        }[]
       }
       build_credit_batch: { Args: { p_batch_id: string }; Returns: Json }
       check_field_overlap: {
@@ -1250,6 +2292,41 @@ export type Database = {
           p_region: Database["public"]["Enums"]["vn_region"]
         }
         Returns: string
+      }
+      create_monitoring_period: {
+        Args: {
+          p_end_date: string
+          p_name: string
+          p_project_id: string
+          p_start_date: string
+          p_version?: number
+        }
+        Returns: string
+      }
+      create_mrv_report: {
+        Args: {
+          p_engine_version: string
+          p_output_file_id?: string
+          p_period_id: string
+          p_requested_by: string
+          p_results: Json
+          p_status?: string
+          p_template_id: string
+          p_trace: Json
+        }
+        Returns: string
+      }
+      create_project: {
+        Args: { p_description?: string; p_name: string }
+        Returns: string
+      }
+      delete_monitoring_record: {
+        Args: {
+          p_expected_revision: number
+          p_period_id: string
+          p_record_key: string
+        }
+        Returns: number
       }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -1384,6 +2461,10 @@ export type Database = {
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
       join_cooperative_by_code: { Args: { p_code: string }; Returns: string }
+      lock_monitoring_period: {
+        Args: { p_expected_revision: number; p_period_id: string }
+        Returns: undefined
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       place_order: {
         Args: { p_batch_id: string; p_note?: string; p_quantity: number }
@@ -1429,6 +2510,54 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      project_json_hash: { Args: { p_value: Json }; Returns: string }
+      project_lookup_invitee: {
+        Args: { p_email: string; p_project_id: string }
+        Returns: {
+          already_member: boolean
+          full_name: string
+          user_id: string
+        }[]
+      }
+      project_member_directory: {
+        Args: { p_project_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          role: string
+          user_id: string
+        }[]
+      }
+      project_stage_approval_directory: {
+        Args: { p_project_id: string }
+        Returns: {
+          approved_at: string
+          approved_by: string
+          approver_name: string
+          ordinal: number
+          stage_id: string
+        }[]
+      }
+      project_validate_expression: {
+        Args: {
+          p_baseline: string[]
+          p_calcs: string[]
+          p_depth?: number
+          p_factors: string[]
+          p_fields: string[]
+          p_node: Json
+        }
+        Returns: undefined
+      }
+      project_validate_metric_schema: {
+        Args: { p_schema: Json }
+        Returns: undefined
+      }
+      project_validate_setup: { Args: { p_setup: Json }; Returns: undefined }
+      project_validate_values: {
+        Args: { p_schema: Json; p_scope: string; p_values: Json }
+        Returns: undefined
+      }
       save_field: {
         Args: {
           p_declared_area_ha?: number
@@ -1439,6 +2568,20 @@ export type Database = {
           p_soil_type?: string
         }
         Returns: Json
+      }
+      save_monitoring_records: {
+        Args: {
+          p_expected_revision: number
+          p_file_id?: string
+          p_mapping?: Json
+          p_period_id: string
+          p_records: Json
+        }
+        Returns: Json
+      }
+      set_project_member: {
+        Args: { p_project_id: string; p_role: string; p_user_id: string }
+        Returns: undefined
       }
       settle_sandbox_payment: {
         Args: { p_order_id: string; p_succeed?: boolean }
@@ -2102,12 +3245,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2131,11 +3274,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2156,11 +3299,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2181,11 +3324,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2198,11 +3341,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2222,6 +3365,7 @@ export const Constants = {
         "sold",
         "retired",
       ],
+      chat_role: ["user", "assistant"],
       crop_type: ["rice"],
       order_status: [
         "pending",

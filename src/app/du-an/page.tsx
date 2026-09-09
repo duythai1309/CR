@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-nav";
 import { Alert, Empty, LinkButton, Stat } from "@/components/ui";
+import { requireProfile } from "@/lib/auth";
 import { ProjectPortfolio } from "@/components/project/portfolio";
 import { projectAttention } from "@/components/project/rules";
 import { listPortfolio } from "./data";
@@ -15,7 +16,7 @@ export const metadata: Metadata = { title: "Danh mục dự án" };
  * trả lời "cái gì đang chặn dự án nào".
  */
 export default async function ProjectListPage() {
-  const rows = await listPortfolio();
+  const [profile, rows] = await Promise.all([requireProfile(), listPortfolio()]);
 
   const live = rows.filter((r) => !r.deletedAt);
   const attention = live.filter((r) => projectAttention(r).length > 0);
@@ -30,18 +31,34 @@ export default async function ProjectListPage() {
       <PageHeader
         title="Danh mục dự án"
         description="Hồ sơ thiết kế dự án carbon mà bạn là thành viên. Bảy bước từ Project concept tới PDD, rồi monitoring period và MRV estimate."
-        action={<LinkButton href="/du-an/moi">Tạo dự án</LinkButton>}
+        action={
+          <div className="flex gap-2">
+            {profile.role === "platform_admin" && (
+              <LinkButton href="/du-an/ho-tro" variant="secondary">
+                Xem hộ dự án
+              </LinkButton>
+            )}
+            <LinkButton href="/du-an/moi">Tạo dự án</LinkButton>
+          </div>
+        }
       />
 
       {rows.length === 0 ? (
         <Empty
-          title="Chưa có dự án nào"
+          title="Danh mục dự án của bạn đang trống"
           hint={
             <>
-              Tạo dự án đầu tiên để bắt đầu. Người tạo là chủ dự án, và bảy stage thiết kế
-              được dựng sẵn trong cùng một transaction.
+              <span className="block">
+                Đây là nơi tập hợp các hồ sơ dự án carbon mà bạn tham gia.
+              </span>
+              <span className="mt-2 block">
+                Hãy tạo dự án đầu tiên với tên và mô tả ngắn. Tạo xong, bạn là chủ dự án
+                và có ngay bảy stage thiết kế từ Project concept tới PDD để bắt đầu làm hồ
+                sơ.
+              </span>
             </>
           }
+          action={<LinkButton href="/du-an/moi">Tạo dự án đầu tiên</LinkButton>}
         />
       ) : (
         <div className="space-y-5">

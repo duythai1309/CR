@@ -39,7 +39,7 @@ export async function createPeriod(_prev: Result, formData: FormData): Promise<R
 
   const projectId = String(formData.get("project_id") ?? "");
   if (!projectId) return fail("Thiếu mã dự án.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const name = String(formData.get("name") ?? "").trim();
   const start = String(formData.get("start_date") ?? "").trim();
@@ -73,7 +73,7 @@ export async function lockPeriod(_prev: Result, formData: FormData): Promise<Res
   const periodId = String(formData.get("period_id") ?? "");
   const revision = Number(formData.get("expected_revision"));
   if (!projectId || !periodId) return fail("Thiếu thông tin kỳ giám sát.");
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db.rpc("lock_monitoring_period", {
@@ -103,7 +103,7 @@ export async function saveObservation(_prev: Result, formData: FormData): Promis
   const projectId = String(formData.get("project_id") ?? "");
   const periodId = String(formData.get("period_id") ?? "");
   if (!projectId || !periodId) return fail("Thiếu thông tin kỳ giám sát.");
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const period = await getPeriod(projectId, periodId);
   if (!period) return fail("Không tìm thấy kỳ giám sát.");
@@ -176,7 +176,7 @@ export async function deleteObservation(_prev: Result, formData: FormData): Prom
   const recordKey = String(formData.get("record_key") ?? "");
   const revision = Number(formData.get("expected_revision"));
   if (!projectId || !periodId || !recordKey) return fail("Thiếu thông tin quan sát.");
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   const { error } = await db.rpc("delete_monitoring_record", {
@@ -207,7 +207,7 @@ export async function importCsv(_prev: Result, formData: FormData): Promise<Resu
   const projectId = String(formData.get("project_id") ?? "");
   const periodId = String(formData.get("period_id") ?? "");
   if (!projectId || !periodId) return fail("Thiếu thông tin kỳ giám sát.");
-  await requireProjectMember(projectId, "developer");
+  await requireProjectMember(projectId);
 
   const period = await getPeriod(projectId, periodId);
   if (!period) return fail("Không tìm thấy kỳ giám sát.");

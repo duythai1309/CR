@@ -60,6 +60,9 @@ describe("nhãn vai trò", () => {
       "coop_staff",
       "platform_admin",
     ]);
+    expect(ROLE_LABEL.coop_manager).toBe("Tài khoản nền tảng");
+    expect(ROLE_LABEL.coop_staff).toBe("Tài khoản nền tảng");
+    expect(ROLE_LABEL.buyer).toBe("Tài khoản nền tảng");
   });
 });
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Empty, Kbd, ProgressBar, Toolbar } from "@/components/ui";
+import { Badge, Button, Empty, Kbd, ProgressBar, Toolbar } from "@/components/ui";
 import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import {
   EMPTY_PORTFOLIO_FILTER,
@@ -185,6 +185,15 @@ export function ProjectPortfolio({
         <Empty
           title="Không có dự án nào khớp bộ lọc"
           hint="Nới bộ lọc, hoặc bấm Esc để xoá hết điều kiện đang đặt."
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setFilter(EMPTY_PORTFOLIO_FILTER)}
+            >
+              Xoá bộ lọc
+            </Button>
+          }
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-soil-200 bg-white shadow-sm">

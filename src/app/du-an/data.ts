@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { projectClient, requireProfile } from "@/lib/auth";
 import { taskFlags, toTaskCard, type PortfolioRow } from "@/components/project/rules";
 import type {
@@ -41,7 +42,7 @@ import type {
  * cũng lọc theo `user_id` chứ không lấy dòng `project_members` đầu tiên — policy cho
  * thấy cả đồng đội, nên "dòng đầu tiên" hoàn toàn có thể là vai trò của người khác.
  */
-export async function listPortfolio(): Promise<PortfolioRow[]> {
+export const listPortfolio = cache(async function listPortfolio(): Promise<PortfolioRow[]> {
   const profile = await requireProfile();
   const db = await projectClient();
   const now = new Date();
@@ -158,22 +159,26 @@ export async function listPortfolio(): Promise<PortfolioRow[]> {
       updatedAt: p.updated_at,
     } satisfies PortfolioRow;
   });
-}
+});
 
-export async function getStandard(id: string | null): Promise<Standard | null> {
+export const getStandard = cache(async function getStandard(
+  id: string | null,
+): Promise<Standard | null> {
   if (!id) return null;
   const db = await projectClient();
   const { data } = await db.from("standards").select("*").eq("id", id).maybeSingle();
   return (data as Standard | null) ?? null;
-}
+});
 
-export async function getProject(projectId: string): Promise<Project | null> {
+export const getProject = cache(async function getProject(
+  projectId: string,
+): Promise<Project | null> {
   const db = await projectClient();
   const { data } = await db.from("projects").select("*").eq("id", projectId).maybeSingle();
   return (data as Project | null) ?? null;
-}
+});
 
-export async function getStages(projectId: string): Promise<ProjectStage[]> {
+export const getStages = cache(async function getStages(projectId: string): Promise<ProjectStage[]> {
   const db = await projectClient();
   const { data } = await db
     .from("project_stages")
@@ -181,9 +186,9 @@ export async function getStages(projectId: string): Promise<ProjectStage[]> {
     .eq("project_id", projectId)
     .order("ordinal");
   return (data ?? []) as ProjectStage[];
-}
+});
 
-export async function getTasks(projectId: string): Promise<ProjectTask[]> {
+export const getTasks = cache(async function getTasks(projectId: string): Promise<ProjectTask[]> {
   const db = await projectClient();
   const { data } = await db
     .from("project_tasks")
@@ -191,9 +196,12 @@ export async function getTasks(projectId: string): Promise<ProjectTask[]> {
     .eq("project_id", projectId)
     .order("position");
   return (data ?? []) as ProjectTask[];
-}
+});
 
-export async function getTask(projectId: string, taskId: string): Promise<ProjectTask | null> {
+export const getTask = cache(async function getTask(
+  projectId: string,
+  taskId: string,
+): Promise<ProjectTask | null> {
   const db = await projectClient();
   const { data } = await db
     .from("project_tasks")
@@ -202,9 +210,11 @@ export async function getTask(projectId: string, taskId: string): Promise<Projec
     .eq("id", taskId)
     .maybeSingle();
   return (data as ProjectTask | null) ?? null;
-}
+});
 
-export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
+export const getTaskComments = cache(async function getTaskComments(
+  taskId: string,
+): Promise<TaskComment[]> {
   const db = await projectClient();
   const { data } = await db
     .from("task_comments")
@@ -212,7 +222,7 @@ export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
     .eq("task_id", taskId)
     .order("created_at");
   return (data ?? []) as TaskComment[];
-}
+});
 
 export interface AttachmentView {
   id: string;
@@ -226,7 +236,9 @@ export interface AttachmentView {
   createdAt: string;
 }
 
-export async function getTaskAttachments(taskId: string): Promise<AttachmentView[]> {
+export const getTaskAttachments = cache(async function getTaskAttachments(
+  taskId: string,
+): Promise<AttachmentView[]> {
   const db = await projectClient();
   const { data } = await db
     .from("task_attachments")
@@ -255,14 +267,16 @@ export async function getTaskAttachments(taskId: string): Promise<AttachmentView
       },
     ];
   });
-}
+});
 
 export interface DocumentView extends ProjectDocument {
   originalName: string;
   sizeBytes: number;
 }
 
-export async function getDocuments(projectId: string): Promise<DocumentView[]> {
+export const getDocuments = cache(async function getDocuments(
+  projectId: string,
+): Promise<DocumentView[]> {
   const db = await projectClient();
   const { data } = await db
     .from("project_documents")
@@ -278,9 +292,11 @@ export async function getDocuments(projectId: string): Promise<DocumentView[]> {
       sizeBytes: file?.size_bytes ?? 0,
     };
   });
-}
+});
 
-export async function getProjectFiles(projectId: string): Promise<ProjectFile[]> {
+export const getProjectFiles = cache(async function getProjectFiles(
+  projectId: string,
+): Promise<ProjectFile[]> {
   const db = await projectClient();
   const { data } = await db
     .from("project_files")
@@ -288,16 +304,18 @@ export async function getProjectFiles(projectId: string): Promise<ProjectFile[]>
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   return (data ?? []) as ProjectFile[];
-}
+});
 
 /** Catalog: chỉ methodology đã `published` đi qua được policy đọc (`0013:869`). */
-export async function listStandards(): Promise<Standard[]> {
+export const listStandards = cache(async function listStandards(): Promise<Standard[]> {
   const db = await projectClient();
   const { data } = await db.from("standards").select("*").order("code");
   return (data ?? []) as Standard[];
-}
+});
 
-export async function listMethodologies(standardId: string | null): Promise<Methodology[]> {
+export const listMethodologies = cache(async function listMethodologies(
+  standardId: string | null,
+): Promise<Methodology[]> {
   if (!standardId) return [];
   const db = await projectClient();
   const { data } = await db
@@ -307,11 +325,13 @@ export async function listMethodologies(standardId: string | null): Promise<Meth
     .eq("status", "published")
     .order("code");
   return (data ?? []) as Methodology[];
-}
+});
 
-export async function getMethodology(id: string | null): Promise<Methodology | null> {
+export const getMethodology = cache(async function getMethodology(
+  id: string | null,
+): Promise<Methodology | null> {
   if (!id) return null;
   const db = await projectClient();
   const { data } = await db.from("methodologies").select("*").eq("id", id).maybeSingle();
   return (data as Methodology | null) ?? null;
-}
+});

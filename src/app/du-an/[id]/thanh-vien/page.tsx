@@ -3,7 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectMembers, requireProjectMember } from "@/lib/auth";
 import { PROJECT_ROLE_LABEL } from "@/lib/labels";
-import { Alert, Badge, Card, Table } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  Empty,
+  LinkButton,
+  Locked,
+  SectionHeader,
+  Table,
+} from "@/components/ui";
 import {
   abilitiesFor,
   orphanedAssignments,
@@ -51,13 +60,17 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
+      <SectionHeader
+        title="Đội ngũ dự án"
+        description="Quản lý vai trò và theo dõi khối lượng công việc của từng thành viên."
+        aside={<Badge tone="soil">{members.length} thành viên</Badge>}
+      />
+
       {developers.length === 0 && (
-        <Alert tone="warn" title="Dự án chưa có Đơn vị phát triển nào">
-          Không giao được việc cho ai cả: khoá ngoại ba cột{" "}
-          <code className="font-mono text-xs">(project_id, assignee_id, assignee_role)</code> chỉ
-          chấp nhận thành viên giữ vai trò <strong>Đơn vị phát triển</strong>. Mời thêm người,
-          hoặc đổi vai trò một thành viên hiện có.
-        </Alert>
+        <Locked
+          title="Chưa thể giao công việc"
+          reason="Dự án chưa có thành viên giữ vai trò Đơn vị phát triển. Khối giao việc mở khi chủ dự án mời thêm người hoặc đổi vai trò một thành viên hiện có sang Đơn vị phát triển."
+        />
       )}
 
       {orphans.length > 0 && (
@@ -80,71 +93,93 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
         </Alert>
       )}
 
-      {abilities.canManageMembers && (
-        <Card
+      <section id="moi-thanh-vien" className="scroll-mt-6">
+        <SectionHeader
           title="Mời thành viên"
-          description="Người được mời phải đã có tài khoản trên hệ thống — chưa có bảng lời mời qua email. Nhập đúng địa chỉ họ đã đăng ký."
-        >
-          <InviteForm projectId={id} />
-        </Card>
-      )}
+          description="Người được mời phải đã có tài khoản trên hệ thống. Nhập đúng địa chỉ họ đã đăng ký."
+        />
+        {abilities.canManageMembers ? (
+          <Card>
+            <InviteForm projectId={id} />
+          </Card>
+        ) : (
+          <Locked
+            title="Bạn chưa thể quản lý thành viên"
+            reason="Chỉ Chủ dự án được mời, gỡ hoặc đổi vai trò thành viên. Khối này mở khi một Chủ dự án cấp vai trò Chủ dự án cho bạn."
+          />
+        )}
+      </section>
 
-      <Card
-        title={`Thành viên dự án (${members.length})`}
-        description={
-          abilities.canManageMembers
-            ? "Đổi vai trò có hiệu lực ngay và chỉ trong dự án này; một người có thể là chủ dự án ở đây và người xem ở dự án khác."
-            : "Chỉ chủ dự án mới thêm, gỡ hoặc đổi vai trò thành viên."
-        }
-      >
-        <Table
-          head={
+      <section>
+        <SectionHeader
+          title="Thành viên dự án"
+          description={
             abilities.canManageMembers
-              ? ["Thành viên", "Vai trò", "Việc đang giữ", ""]
-              : ["Thành viên", "Vai trò", "Việc đang giữ"]
+              ? "Đổi vai trò có hiệu lực ngay và chỉ trong dự án này; một người có thể là chủ dự án ở đây và người xem ở dự án khác."
+              : "Bạn có thể xem vai trò và khối lượng việc; chỉ Chủ dự án mới thay đổi thành viên."
           }
-        >
-          {members.map((m) => (
-            <MemberRow
-              key={m.userId}
-              projectId={id}
-              member={m}
-              canManage={abilities.canManageMembers}
-              isSelf={m.userId === profile.id}
-              isLastOwner={m.role === "owner" && owners === 1}
-              workload={workload.get(m.userId) ?? null}
+        />
+        <Card>
+          {members.length === 0 ? (
+            <Empty
+              title="Không đọc được danh sách thành viên"
+              hint="Nếu tình trạng này kéo dài, hãy báo quản trị nền tảng. Bạn vẫn có thể quay lại bảng công việc của dự án."
+              action={
+                <LinkButton href={`/du-an/${id}`} variant="secondary">
+                  Về bảng công việc
+                </LinkButton>
+              }
             />
-          ))}
-        </Table>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="min-w-[44rem]">
+                <Table
+                  head={
+                    abilities.canManageMembers
+                      ? ["Thành viên", "Vai trò", "Việc đang giữ", ""]
+                      : ["Thành viên", "Vai trò", "Việc đang giữ"]
+                  }
+                >
+                  {members.map((m) => (
+                    <MemberRow
+                      key={m.userId}
+                      projectId={id}
+                      member={m}
+                      canManage={abilities.canManageMembers}
+                      isSelf={m.userId === profile.id}
+                      isLastOwner={m.role === "owner" && owners === 1}
+                      workload={workload.get(m.userId) ?? null}
+                    />
+                  ))}
+                </Table>
+              </div>
+            </div>
+          )}
 
-        {members.length === 0 && (
-          <p className="mt-3 text-sm text-soil-600">
-            Không đọc được danh sách thành viên. Nếu tình trạng này kéo dài, báo quản trị
-            nền tảng.
-          </p>
-        )}
+          {unassigned > 0 && (
+            <p className="mt-4 border-t border-soil-100 pt-3 text-sm text-soil-600">
+              Ngoài ra còn{" "}
+              <Link href={`/du-an/${id}`} className="font-medium text-leaf-800 hover:underline">
+                {unassigned} việc đang mở chưa giao cho ai
+              </Link>
+              .
+            </p>
+          )}
+        </Card>
+      </section>
 
-        {unassigned > 0 && (
-          <p className="mt-4 border-t border-soil-100 pt-3 text-sm text-soil-600">
-            Ngoài ra còn{" "}
-            <Link href={`/du-an/${id}`} className="font-medium text-leaf-800 hover:underline">
-              {unassigned} việc đang mở chưa giao cho ai
-            </Link>
-            .
-          </p>
-        )}
-      </Card>
-
-      <Card
-        title="Ba vai trò làm được gì"
-        description="Trục quyền này nằm trong project_members và có hiệu lực theo từng dự án — tách hẳn khỏi vai trò tài khoản trên nền tảng."
-      >
+      <section>
+        <SectionHeader
+          title="Ba vai trò làm được gì"
+          description="Quyền có hiệu lực theo từng dự án, tách khỏi vai trò tài khoản trên nền tảng."
+        />
+        <Card>
         <ul className="space-y-3 text-sm text-soil-700">
           {(
             [
               [
                 "owner",
-                "Quản lý thành viên, chọn và khoá Standard/Methodology, duyệt bước, tạo và khoá monitoring period, xoá dự án.",
+                "Quản lý thành viên, chọn và khoá Standard/Methodology, duyệt hồ sơ, tạo và khoá monitoring period, xoá dự án.",
               ],
               [
                 "developer",
@@ -166,7 +201,8 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
           PostgreSQL: bỏ qua giao diện thì policy vẫn giới hạn người dùng vào đúng dự án họ
           là thành viên.
         </p>
-      </Card>
+        </Card>
+      </section>
     </div>
   );
 }

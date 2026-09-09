@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Alert, Button, Field, Select, Table } from "@/components/ui";
 import { parseCSV, previewTable, type ImportOptions, type ImportPreview } from "@/lib/monitoring/import";
 
@@ -35,6 +35,8 @@ export function CsvImport({
   const [delimiter, setDelimiter] = useState(",");
   const [decimalSeparator, setDecimalSeparator] = useState(".");
   const [thousandsSeparator, setThousandsSeparator] = useState("");
+  const fileInputId = useId();
+  const fileHintId = `${fileInputId}-hint`;
 
   function options(): ImportOptions {
     const o: ImportOptions = {
@@ -84,8 +86,8 @@ export function CsvImport({
 
       <ol className="grid gap-2 text-xs sm:grid-cols-3" aria-label="Quy trình nhập CSV">
         {[
-          ["1", "Map cột", "Theo mã field hoặc alias trong schema"],
-          ["2", "Preview & validate", "Kiểm từng dòng, cột, unit và bounds"],
+          ["1", "Ánh xạ cột", "Theo mã field hoặc alias trong schema"],
+          ["2", "Xem trước và kiểm tra", "Kiểm từng dòng, cột, đơn vị và giới hạn"],
           ["3", "Ghi nguyên tử", "Hoặc toàn bộ tệp, hoặc không dòng nào"],
         ].map(([step, title, detail]) => (
           <li key={step} className="rounded-lg border border-soil-200 bg-soil-50 p-3">
@@ -139,14 +141,19 @@ export function CsvImport({
       </div>
 
       <div>
+        <label htmlFor={fileInputId} className="mb-1 block text-sm font-medium text-soil-800">
+          Tệp CSV chứa dữ liệu quan sát
+        </label>
         <input
+          id={fileInputId}
           type="file"
           accept=".csv,text/csv"
+          aria-describedby={fileHintId}
           disabled={disabled}
           onChange={(e) => onFile(e.target.files?.[0])}
           className="text-sm text-soil-700 file:mr-3 file:rounded-lg file:border file:border-soil-200 file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-soil-800"
         />
-        <p className="mt-1 text-xs text-soil-600">
+        <p id={fileHintId} className="mt-1 text-xs text-soil-600">
           Chỉ nhận tệp CSV. Tệp Excel (.xlsx) chưa hỗ trợ — hãy lưu sang CSV trước.
           Bảng cần hai cột <code>record_key</code> và <code>observed_on</code> cùng các cột chỉ số.
         </p>
@@ -158,7 +165,9 @@ export function CsvImport({
         <>
           {preview.mapping.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-soil-900">1. Mapping cột CSV → metric schema</h4>
+              <h3 className="text-sm font-semibold text-soil-900">
+                1. Ánh xạ cột CSV → metric schema
+              </h3>
               <p className="mt-1 text-xs text-soil-600">
                 Hệ thống khớp chính xác theo mã field hoặc alias đã khai trong Methodology;
                 không suy đoán theo tên gần giống.
@@ -179,9 +188,9 @@ export function CsvImport({
 
           {preview.records.length > 0 && (
             <div>
-              <h4 className="mb-2 text-sm font-semibold text-soil-900">
-                2. Preview dữ liệu · {preview.records.length} dòng
-              </h4>
+              <h3 className="mb-2 text-sm font-semibold text-soil-900">
+                2. Xem trước dữ liệu · {preview.records.length} dòng
+              </h3>
               <div className="max-h-64 overflow-auto">
                 <Table head={["Dòng", "record_key", "observed_on", "Giá trị đã chuẩn hoá"]}>
                   {preview.records.slice(0, 5).map((record) => (
@@ -197,7 +206,9 @@ export function CsvImport({
                 </Table>
               </div>
               {preview.records.length > 5 && (
-                <p className="mt-1 text-xs text-soil-500">Hiện 5 dòng đầu; toàn bộ tệp vẫn được validate.</p>
+                <p className="mt-1 text-xs text-soil-500">
+                  Hiện 5 dòng đầu; toàn bộ tệp vẫn được kiểm tra.
+                </p>
               )}
             </div>
           )}
@@ -227,7 +238,7 @@ export function CsvImport({
             </div>
           ) : (
             <Alert tone="ok" title={`3. Sẵn sàng ghi ${preview.records.length} dòng`}>
-              {fileName} — mapping và validation đều đạt. Bấm xác nhận để ghi nguyên tử vào kỳ.
+              {fileName} — ánh xạ và kiểm tra đều đạt. Bấm xác nhận để ghi nguyên tử vào kỳ.
             </Alert>
           )}
         </>

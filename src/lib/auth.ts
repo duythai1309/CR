@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { readSupabaseConfig } from "@/lib/supabase/config";
@@ -9,7 +10,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type UserRole = Database["public"]["Enums"]["user_role"];
 export type { ProjectRole };
 
-export async function getProfile(): Promise<Profile | null> {
+export const getProfile = cache(async function getProfile(): Promise<Profile | null> {
   // Thiếu cấu hình thì coi như khách chưa đăng nhập, để trang giới thiệu vẫn dựng
   // được. Các trang cần đăng nhập đã bị middleware chặn từ trước đó.
   if (!readSupabaseConfig()) return null;
@@ -22,7 +23,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   return data ?? null;
-}
+});
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
@@ -85,13 +86,15 @@ function asProjectRole(value: unknown): ProjectRole | null {
  * `project_members`: đó chính là hàm mà mọi policy RLS dùng để quyết định, nên tầng ứng
  * dụng và cơ sở dữ liệu không thể lệch nhau.
  */
-export async function getProjectRole(projectId: string): Promise<ProjectRole | null> {
+export const getProjectRole = cache(async function getProjectRole(
+  projectId: string,
+): Promise<ProjectRole | null> {
   if (!readSupabaseConfig()) return null;
   const db = await projectClient();
   const { data, error } = await db.rpc("app_project_role", { p_project_id: projectId });
   if (error) return null;
   return asProjectRole(data);
-}
+});
 
 /**
  * Chặn trang/hành động của một dự án theo vai trò dự án.
@@ -127,7 +130,9 @@ export interface ProjectMemberEntry {
  * (`0015_project_identity.sql`) vì policy `profiles_select` (`0003_rls.sql:59-60`) chỉ
  * cho đọc hồ sơ người cùng hợp tác xã — mà nền tảng dự án cố ý không gắn hợp tác xã.
  */
-export async function getProjectMembers(projectId: string): Promise<ProjectMemberEntry[]> {
+export const getProjectMembers = cache(async function getProjectMembers(
+  projectId: string,
+): Promise<ProjectMemberEntry[]> {
   if (!readSupabaseConfig()) return [];
   const db = await projectClient();
   const { data, error } = await db.rpc("project_member_directory", { p_project_id: projectId });
@@ -145,6 +150,124 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
       },
     ];
   });
+});
+
+export interface ProjectStageApproval {
+  stageId: string;
+  ordinal: number;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approverName: string | null;
+}
+
+/**
+ * Tên người duyệt được lấy theo `approved_by`, không theo danh sách thành viên hiện
+ * tại. Vì vậy một người đã rời dự án vẫn được ghi nhận đúng trong lịch sử stage.
+ * RPC 0018 chỉ trả đúng năm cột cần hiển thị và không nới policy của `profiles`.
+ */
+export const getProjectStageApprovals = cache(async function getProjectStageApprovals(
+  projectId: string,
+): Promise<ProjectStageApproval[]> {
+  if (!readSupabaseConfig()) return [];
+  const db = await projectClient();
+  const { data, error } = await db.rpc("project_stage_approval_directory", {
+    p_project_id: projectId,
+  });
+  if (error || !Array.isArray(data)) return [];
+
+  return data.flatMap((row: Record<string, unknown>): ProjectStageApproval[] => {
+    if (typeof row.stage_id !== "string" || typeof row.ordinal !== "number") return [];
+    return [
+      {
+        stageId: row.stage_id,
+        ordinal: row.ordinal,
+        approvedAt: typeof row.approved_at === "string" ? row.approved_at : null,
+        approvedBy: typeof row.approved_by === "string" ? row.approved_by : null,
+        approverName: typeof row.approver_name === "string" ? row.approver_name : null,
+      },
+    ];
+  });
+});
+
+export interface ProjectSupportSession {
+  id: string;
+  projectId: string;
+  adminId: string;
+  reason: string;
+  openedAt: string;
+  expiresAt: string;
+}
+
+/** Phiên hỗ trợ đang có hiệu lực của admin hiện tại, dùng để hiện cảnh báo chỉ đọc. */
+export const getActiveProjectSupport = cache(async function getActiveProjectSupport(
+  projectId: string,
+  adminId: string,
+): Promise<ProjectSupportSession | null> {
+  if (!readSupabaseConfig()) return null;
+  const db = await projectClient();
+  const { data, error } = await db
+    .from("project_support_sessions")
+    .select("id, project_id, admin_id, reason, opened_at, expires_at")
+    .eq("project_id", projectId)
+    .eq("admin_id", adminId)
+    .gt("expires_at", new Date().toISOString())
+    .order("opened_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+
+  const row = data as Record<string, unknown>;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.project_id !== "string" ||
+    typeof row.admin_id !== "string" ||
+    typeof row.reason !== "string" ||
+    typeof row.opened_at !== "string" ||
+    typeof row.expires_at !== "string"
+  )
+    return null;
+
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    adminId: row.admin_id,
+    reason: row.reason,
+    openedAt: row.opened_at,
+    expiresAt: row.expires_at,
+  };
+});
+
+export type BeginProjectSupportResult =
+  | { ok: true; sessionId: string; expiresAt: string }
+  | { ok: false; message: string };
+
+/**
+ * Mở phiên xem hộ. Kiểm tra ở đây chỉ để trả lỗi dễ hiểu; quyền thật, thời hạn và audit
+ * đều do `begin_project_support` trong migration 0018 cưỡng chế.
+ */
+export async function beginProjectSupport(
+  projectId: string,
+  reason: string,
+  durationMinutes: number,
+): Promise<BeginProjectSupportResult> {
+  const profile = await requireProfile();
+  if (profile.role !== "platform_admin")
+    return { ok: false, message: "Chỉ quản trị nền tảng được mở phiên hỗ trợ." };
+
+  const db = await projectClient();
+  const { data, error } = await db.rpc("begin_project_support", {
+    p_project_id: projectId,
+    p_reason: reason,
+    p_duration_minutes: durationMinutes,
+  });
+  if (error || !Array.isArray(data) || data.length === 0)
+    return { ok: false, message: "Không mở được phiên. Kiểm tra UUID dự án và lý do hỗ trợ." };
+
+  const row = data[0] as Record<string, unknown>;
+  if (typeof row.support_session_id !== "string" || typeof row.expires_at !== "string")
+    return { ok: false, message: "Cơ sở dữ liệu trả về phiên hỗ trợ không hợp lệ." };
+
+  return { ok: true, sessionId: row.support_session_id, expiresAt: row.expires_at };
 }
 
 export type InviteeLookup =
@@ -159,7 +282,10 @@ export type InviteeLookup =
  * tính, không nói "email này chưa có tài khoản": đó là câu trả lời biến màn hình mời
  * thành công cụ dò xem ai có tài khoản trên hệ thống.
  */
-export async function lookupInvitee(projectId: string, email: string): Promise<InviteeLookup> {
+export const lookupInvitee = cache(async function lookupInvitee(
+  projectId: string,
+  email: string,
+): Promise<InviteeLookup> {
   const notFoundResult: InviteeLookup = {
     found: false,
     message: "Không mời được địa chỉ này. Người được mời cần có tài khoản trước.",
@@ -181,4 +307,4 @@ export async function lookupInvitee(projectId: string, email: string): Promise<I
     fullName: typeof row.full_name === "string" ? row.full_name : "",
     alreadyMember: row.already_member === true,
   };
-}
+});

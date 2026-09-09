@@ -92,7 +92,9 @@ export function CommentForm({ projectId, taskId }: { projectId: string; taskId: 
     <form action={action} className="space-y-3">
       <input type="hidden" name="project_id" value={projectId} />
       <input type="hidden" name="task_id" value={taskId} />
-      <Textarea name="body" rows={3} required placeholder="Viết bình luận…" />
+      <Field label="Bình luận">
+        <Textarea name="body" rows={3} required placeholder="Viết bình luận…" />
+      </Field>
       {error && <Alert tone="error">{error}</Alert>}
       <Button type="submit" variant="secondary" disabled={pending}>
         {pending ? "Đang gửi…" : "Gửi bình luận"}
@@ -108,13 +110,19 @@ export function AttachForm({ projectId, taskId }: { projectId: string; taskId: s
     <form action={action} className="space-y-2">
       <input type="hidden" name="project_id" value={projectId} />
       <input type="hidden" name="task_id" value={taskId} />
-      <div className="flex flex-wrap items-center gap-2">
+      <Field
+        label="Tệp đính kèm cho công việc"
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB."
+      >
         <input
           type="file"
           name="file"
+          accept=".pdf,.docx,.xlsx,.csv,image/jpeg,image/png,image/webp"
           required
           className="text-sm text-soil-700 file:mr-3 file:rounded-lg file:border file:border-soil-200 file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-soil-800"
         />
+      </Field>
+      <div>
         <Button type="submit" variant="secondary" disabled={pending}>
           {pending ? "Đang tải lên…" : "Đính kèm"}
         </Button>

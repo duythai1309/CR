@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { Alert, Button, Field, Input, LinkButton, Locked } from "@/components/ui";
 import { MetricFieldInput, type MetricFieldView } from "@/components/monitoring/metric-fields";
 import { CsvImport } from "@/components/monitoring/csv-import";
 import { deleteObservation, importCsv, lockPeriod, saveObservation } from "../actions";
@@ -198,14 +198,16 @@ export function LockPeriodForm({
       <input type="hidden" name="period_id" value={periodId} />
       <input type="hidden" name="expected_revision" value={expectedRevision} />
 
-      {recordCount === 0 && (
-        <Alert tone="warn">Kỳ chưa có quan sát nào — nhập dữ liệu trước khi khoá.</Alert>
-      )}
-      {incompleteCount > 0 && (
-        <Alert tone="error">
-          Còn {incompleteCount} quan sát thiếu chỉ số bắt buộc. Hoàn tất dữ liệu trước khi
-          khoá để snapshot báo cáo không chứa quan sát thiếu.
-        </Alert>
+      {(recordCount === 0 || incompleteCount > 0) && (
+        <Locked
+          title="Chưa thể khoá kỳ"
+          reason={
+            recordCount === 0
+              ? "Kỳ cần có ít nhất một quan sát trước khi khoá."
+              : `Còn ${incompleteCount} quan sát thiếu chỉ số bắt buộc. Hoàn tất dữ liệu để snapshot báo cáo không chứa quan sát thiếu.`
+          }
+          unlock={<LinkButton href="#nhap-quan-sat">Hoàn tất dữ liệu quan sát</LinkButton>}
+        />
       )}
 
       <Feedback result={result} />

@@ -22,7 +22,7 @@ export async function inviteMember(_prev: Result, formData: FormData): Promise<R
 
   const projectId = String(formData.get("project_id") ?? "");
   if (!projectId) return { ok: false, message: "Thiếu mã dự án." };
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { ok: false, message: "Nhập email của người bạn muốn mời." };
@@ -60,7 +60,7 @@ export async function changeMemberRole(_prev: Result, formData: FormData): Promi
   const projectId = String(formData.get("project_id") ?? "");
   const userId = String(formData.get("user_id") ?? "");
   if (!projectId || !userId) return { ok: false, message: "Thiếu thông tin thành viên." };
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const role = String(formData.get("role") ?? "");
   if (!isProjectRole(role)) return { ok: false, message: "Vai trò không hợp lệ." };
@@ -85,7 +85,7 @@ export async function removeMember(_prev: Result, formData: FormData): Promise<R
   const projectId = String(formData.get("project_id") ?? "");
   const userId = String(formData.get("user_id") ?? "");
   if (!projectId || !userId) return { ok: false, message: "Thiếu thông tin thành viên." };
-  await requireProjectMember(projectId, "owner");
+  await requireProjectMember(projectId);
 
   const db = await projectClient();
   // `p_role = null` nghĩa là gỡ khỏi dự án (`0013:684-686`).

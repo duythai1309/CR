@@ -108,6 +108,109 @@ export interface SelectionAdvice {
   disclaimer?: string;
 }
 
+/** Một giá trị baseline do trợ lý đề xuất; chưa phải dữ liệu baseline của dự án. */
+export interface BaselineDraftValue {
+  /** Decimal giữ dạng chuỗi ASCII canonical; integer giữ dạng number như baseline thật. */
+  value: string | number;
+  /** Vì sao payload từ các handler cho phép suy ra đề xuất này. */
+  reason: string;
+  /** Dữ liệu nguồn trong payload handler, không phải kiến thức ngoài hệ thống. */
+  source: string;
+}
+
+/** Bản nháp tách biệt hoàn toàn với `projects.baseline`. */
+export interface BaselineDraft {
+  generated_at: string;
+  generated_by: string;
+  generated_by_name?: string;
+  disclaimer: string;
+  values?: Record<string, BaselineDraftValue>;
+}
+
+type BaselineDraftSchemaField = {
+  id?: unknown;
+  scope?: unknown;
+  type?: unknown;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const hasHumanValue = (values: Record<string, unknown>, fieldId: string): boolean => {
+  if (!Object.hasOwn(values, fieldId)) return false;
+  const value = values[fieldId];
+  return value !== null && value !== undefined && value !== "";
+};
+
+/**
+ * Cửa allowlist cho output baseline của model.
+ *
+ * Hàm cố ý trả object rỗng khi model trả rác. Chỉ field baseline dạng số có trong schema,
+ * có giá trị canonical và chưa được con người điền mới đi qua; mọi khoá khác bị bỏ.
+ */
+export function parseBaselineDraftValues(
+  raw: string,
+  metricSchema: unknown,
+  currentValues: Record<string, unknown>,
+): Record<string, BaselineDraftValue> {
+  if (typeof raw !== "string" || raw.length > 100_000 || !isRecord(metricSchema)) return {};
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end <= start) return {};
+
+  let answer: unknown;
+  try {
+    answer = JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return {};
+  }
+  if (!isRecord(answer) || !isRecord(answer.values) || !Array.isArray(metricSchema.fields))
+    return {};
+
+  const allowed = new Map<string, "decimal" | "integer">();
+  for (const candidate of metricSchema.fields as BaselineDraftSchemaField[]) {
+    if (
+      candidate &&
+      typeof candidate.id === "string" &&
+      candidate.scope === "baseline" &&
+      (candidate.type === "decimal" || candidate.type === "integer")
+    ) {
+      allowed.set(candidate.id, candidate.type);
+    }
+  }
+
+  const result: Record<string, BaselineDraftValue> = {};
+  for (const [fieldId, proposal] of Object.entries(answer.values).slice(0, 200)) {
+    const type = allowed.get(fieldId);
+    if (!type || hasHumanValue(currentValues, fieldId) || !isRecord(proposal)) continue;
+
+    const reason = typeof proposal.reason === "string" ? proposal.reason.trim() : "";
+    const source = typeof proposal.source === "string" ? proposal.source.trim() : "";
+    if (!reason || !source || reason.length > 4000 || source.length > 4000) continue;
+
+    if (type === "integer") {
+      const text =
+        typeof proposal.value === "number" || typeof proposal.value === "string"
+          ? String(proposal.value).trim()
+          : "";
+      if (!/^-?\d+$/.test(text)) continue;
+      const value = Number(text);
+      if (!Number.isSafeInteger(value)) continue;
+      result[fieldId] = { value, reason, source };
+      continue;
+    }
+
+    const text =
+      typeof proposal.value === "number" || typeof proposal.value === "string"
+        ? String(proposal.value).trim()
+        : "";
+    // metric_schema v1 dùng decimal_encoding là chuỗi ASCII, không nhận comma/exponent.
+    if (text.length > 100 || !/^-?\d+(\.\d+)?$/.test(text)) continue;
+    result[fieldId] = { value: text, reason, source };
+  }
+  return result;
+}
+
 /** Toàn bộ `projects.setup`. Mọi khoá đều tuỳ chọn: người dùng điền dần qua bốn bước. */
 export interface ProjectSetup {
   idea?: ProjectIdea;
@@ -115,6 +218,8 @@ export interface ProjectSetup {
   description?: string;
   feasibility?: FeasibilityAssessment;
   selection_advice?: SelectionAdvice;
+  /** Nội dung máy sinh chưa thẩm định; người dùng phải tự chép rồi lưu baseline thật. */
+  baseline_draft?: BaselineDraft;
 }
 
 /** Bốn bước của luồng khởi tạo, ánh xạ sang ordinal của `project_stages`. */

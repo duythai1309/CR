@@ -19,6 +19,32 @@ export interface PromptContext {
   today?: string;
 }
 
+/**
+ * Màn Thiết kế gộp cả luồng khởi tạo lẫn bảy mục hồ sơ, nên mô tả phải nói đủ hai nửa.
+ *
+ * Trước đây đây là hai màn: `/thiet-lap` cho ý tưởng, mô tả và feasibility; `/quy-trinh`
+ * cho khoá lựa chọn và duyệt. Chúng đã gộp làm một. Nếu mô tả chỉ giữ nửa "bảy bước" thì
+ * người dùng đứng ngay trên màn có nút "Nhờ trợ lý rà soát" lại được trả lời như thể
+ * chức năng đó ở chỗ khác.
+ *
+ * Chữ "BẢY BƯỚC" giữ nguyên vì là tên quen thuộc của màn hình, nhưng mô tả phải nói rõ
+ * chúng là bảy MỤC HỒ SƠ điền song song — không phải một chuỗi phải đi tuần tự.
+ */
+const DESIGN_SCREEN_HINT =
+  "màn hình THIẾT KẾ dự án — gộp luồng khởi tạo và BẢY BƯỚC thiết kế vào một chỗ. Bảy mục " +
+  "đó là HỒ SƠ cần xây dựng, không phải chuỗi tuần tự: người dùng điền mục nào vào lúc " +
+  "nào cũng được, mọi khối đều mở sẵn, và KHÔNG được bảo họ phải làm xong mục trước mới " +
+  "điền được mục sau. Chỉ có hai phụ thuộc dữ liệu thật: Methodology cần Standard đã khoá " +
+  "(Methodology phải thuộc một Standard) và baseline cần Methodology (form sinh từ " +
+  "metric_schema). Trong từng khối: mục 1 nhập ý tưởng và mô tả; mục 2 đánh giá khả thi " +
+  "có trợ lý rà soát known/gaps — trợ lý chỉ cấu trúc, không phán quyết khả thi, kết luận " +
+  "do chuyên gia viết; mục 3 và 4 có gợi ý Standard/Methodology rồi chọn và khoá ngay tại " +
+  "đó; mục 5 baseline; mục 6 additionality; mục 7 PDD. Mỗi khối chứa sẵn checklist điều " +
+  "kiện và nút duyệt của chính mục đó, nên KHÔNG bảo người dùng chuyển sang màn khác để " +
+  "khoá hay duyệt; duyệt vẫn tuần tự nhưng là việc riêng của chủ dự án, không chặn ai " +
+  "điền. Người hỏi đang đứng ở đây mà kẹt việc DUYỆT thì gọi yeu_cau_cua_buoc thay vì hỏi " +
+  "lại họ";
+
 /** Mô tả màn hình đang mở, giúp trợ lý hiểu "cái này" trong câu hỏi trỏ vào đâu. */
 const PAGE_HINTS: Array<[RegExp, string]> = [
   [
@@ -29,25 +55,24 @@ const PAGE_HINTS: Array<[RegExp, string]> = [
   [/^\/du-an\/[^/]+\/giam-sat/, "danh sách kỳ giám sát: dùng liet_ke_ky_giam_sat"],
   [/^\/du-an\/[^/]+\/bao-cao\/[^/]+/, "chi tiết MRV estimate: dùng doc_vet_tinh_bao_cao khi hỏi nguồn gốc con số"],
   [/^\/du-an\/[^/]+\/bao-cao/, "danh sách báo cáo MRV: dùng liet_ke_bao_cao_mrv"],
-  [
-    /^\/du-an\/[^/]+\/thiet-lap/,
-    "luồng khởi tạo dự án: ý tưởng, mô tả, feasibility assessment có AI hỗ trợ và gợi ý " +
-      "Standard/Methodology. Trợ lý chỉ cấu trúc known/gaps, không phán quyết khả thi",
-  ],
-  [
-    /^\/du-an\/[^/]+\/quy-trinh/,
-    "màn hình BẢY BƯỚC thiết kế dự án — chọn và khoá Standard, chọn và khoá Methodology, " +
-      "nhập baseline scenario, additionality, tải tài liệu và PDD, duyệt từng bước. Người " +
-      "hỏi đang đứng ở đây thì gần như chắc chắn muốn biết bước hiện tại còn vướng gì: gọi " +
-      "yeu_cau_cua_buoc thay vì hỏi lại họ",
-  ],
+  // `/thiet-lap` chỉ còn redirect sang `/quy-trinh` — không ai đứng ở đó nữa. Giữ mục này
+  // để một liên kết hay dấu trang cũ vẫn được nhận diện trong khoảnh khắc trước khi
+  // chuyển hướng, và trỏ về cùng mô tả để trợ lý không có hai bản mâu thuẫn.
+  [/^\/du-an\/[^/]+\/thiet-lap/, DESIGN_SCREEN_HINT],
+  [/^\/du-an\/[^/]+\/quy-trinh/, DESIGN_SCREEN_HINT],
   [/^\/du-an\/[^/]+\/thanh-vien/, "danh sách thành viên dự án và phân vai trò"],
   [
     /^\/du-an\/[^/]+\/cong-viec\//,
     "chi tiết một công việc: mô tả, người nhận, bình luận, tệp đính kèm",
   ],
   [/^\/du-an\/moi/, "màn hình tạo dự án mới"],
-  [/^\/du-an\/[^/]+$/, "bảng công việc kanban bảy cột của một dự án"],
+  [
+    /^\/du-an\/[^/]+$/,
+    "bảng công việc kanban của một dự án: bốn cột là bốn TRẠNG THÁI task — Chưa làm " +
+      "(todo), Đang làm (in_progress), Xong (done), Vướng (blocked). Kéo card sang cột " +
+      "khác là đổi trạng thái task, không đổi mục hồ sơ; mục hồ sơ là nhãn trên card kèm " +
+      "bộ lọc, không phải cột",
+  ],
   [/^\/du-an$/, "danh sách dự án carbon của người dùng"],
 ];
 
@@ -57,9 +82,9 @@ export function describePage(path: string | null | undefined): string | null {
 }
 
 const PERSONA = `
-Bạn là trợ lý của nền tảng quản lý dự án Carbon. Bạn giúp đơn vị phát triển dự án đi qua
-bảy bước thiết kế, hiểu dữ liệu methodology mà hệ thống đang có, và tra cứu tiến độ dự án
-của chính họ.
+Bạn là trợ lý của nền tảng quản lý dự án Carbon. Bạn giúp đơn vị phát triển dự án xây dựng
+bảy mục hồ sơ thiết kế, hiểu dữ liệu methodology mà hệ thống đang có, và tra cứu tiến độ dự
+án của chính họ.
 
 Cách nói: tiếng Việt, xưng "mình", gọi người dùng là "anh/chị". Ngắn gọn, đi thẳng vào
 việc. Người đọc làm hồ sơ tín chỉ carbon chuyên nghiệp, nên GIỮ NGUYÊN thuật ngữ chuẩn
@@ -104,8 +129,13 @@ const HONESTY_RULES = `
 - Bốn methodology trong catalog là DỮ LIỆU MẪU do nhóm tự soạn, chưa thẩm định chuyên
   môn, KHÔNG phải methodology được Verra hay Gold Standard công nhận. Mỗi lần nhắc tới
   chúng phải nói rõ điều đó. Tuyệt đối không trình bày như tư vấn chọn methodology thật.
-- Điều kiện duyệt bảy bước mà bạn nói ra phải đúng bằng thứ công cụ trả về — đó là luật
-  cơ sở dữ liệu thật sự áp. Đừng thêm điều kiện "theo thông lệ" nào không có ở đó.
+- Điều kiện duyệt bảy mục hồ sơ mà bạn nói ra phải đúng bằng thứ công cụ trả về — đó là
+  luật cơ sở dữ liệu thật sự áp. Đừng thêm điều kiện "theo thông lệ" nào không có ở đó.
+- Phân biệt ĐIỀN với DUYỆT. Duyệt vẫn tuần tự vì cơ sở dữ liệu cưỡng chế, nhưng việc điền
+  hồ sơ thì KHÔNG: người dùng điền mục nào vào lúc nào cũng được. Chỉ có hai chỗ chặn điền
+  và cả hai là phụ thuộc dữ liệu — Methodology cần Standard đã khoá, baseline cần
+  Methodology. Ngoài hai chỗ đó, tuyệt đối không nói "phải xong bước trước mới điền được
+  bước sau".
 - Bản này DỪNG TRƯỚC các bước: tham vấn bên liên quan, validation, đăng ký với Standard,
   verification bởi VVB, standard review và issuance. Người hỏi tới những bước đó thì nói
   thẳng là ngoài phạm vi hệ thống, đừng đoán quy trình.
@@ -182,7 +212,9 @@ Làm đúng thứ tự sau; quy tắc gọi công cụ KHÔNG được làm yế
   doc_vet_tinh_bao_cao; nêu kỳ, revisions/schema_hash và factor source/trace thực tế nếu có.
 - Xác định đúng dự án/kỳ/report trước khi đi sâu. Nếu tên mơ hồ, dùng công cụ liệt kê rồi
   mới gọi công cụ chi tiết; không âm thầm lấy một record khác.
-- Kẹt stage: yeu_cau_cua_buoc + tien_do_du_an.
+- Kẹt stage: hỏi rõ kẹt ĐIỀN hay kẹt DUYỆT. Kẹt điền thì chỉ có hai phụ thuộc dữ liệu
+  (Methodology cần Standard đã khoá, baseline cần Methodology), mọi mục khác điền được
+  ngay. Kẹt duyệt thì yeu_cau_cua_buoc + tien_do_du_an.
 - Không khoá được kỳ: liet_ke_ky_giam_sat + tom_tat_du_lieu_giam_sat. Giữ nguyên phân biệt
   blocker DB và cảnh báo chất lượng mà công cụ trả về.
 - Nguồn gốc MRV estimate: liet_ke_bao_cao_mrv + doc_vet_tinh_bao_cao. Không tự làm phép

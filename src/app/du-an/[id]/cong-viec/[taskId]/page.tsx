@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectMembers, requireProjectMember } from "@/lib/auth";
-import { Alert, Badge, Card, Meta } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  Empty,
+  LinkButton,
+  Locked,
+  Meta,
+  SectionHeader,
+} from "@/components/ui";
 import {
   TASK_STATUS_LABEL,
   TASK_STATUS_TONE,
@@ -109,63 +118,93 @@ export default async function TaskPage({
       </Link>
 
       {/* Thanh thuộc tính: mọi thứ cần biết về việc này trong một lần nhìn */}
-      <section className="rounded-xl border border-soil-200 bg-white px-5 py-4 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-xl font-semibold text-soil-900">{task.title}</h1>
-          <Badge tone={TASK_STATUS_TONE[status]}>{TASK_STATUS_LABEL[status]}</Badge>
-        </div>
-
-        <dl className="mt-4 grid gap-4 border-t border-soil-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Meta label="Thuộc bước">
-            {stage ? `${stage.ordinal}. ${stage.title}` : "Không xác định"}
-          </Meta>
-          <Meta label="Giao cho">
-            {task.assignee_id ? nameOf(task.assignee_id) : <span className="italic text-soil-500">Chưa giao</span>}
-          </Meta>
-          <Meta label="Hạn hoàn thành">
-            {task.due_at ? (
-              <span className={flags.overdue ? "font-medium text-red-700" : undefined}>
-                {new Date(task.due_at).toLocaleDateString("vi-VN")}
-                {flags.overdue && ` · quá ${flags.overdueDays} ngày`}
-              </span>
-            ) : (
-              <span className="italic text-soil-500">Không đặt</span>
-            )}
-          </Meta>
-          <Meta label="Sửa lần cuối">{new Date(task.updated_at).toLocaleString("vi-VN")}</Meta>
-        </dl>
+      <section>
+        <SectionHeader
+          title={task.title}
+          description="Chi tiết, người phụ trách, tiến độ và hồ sơ liên quan."
+          aside={<Badge tone={TASK_STATUS_TONE[status]}>{TASK_STATUS_LABEL[status]}</Badge>}
+        />
+        <Card>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Meta label="Mục hồ sơ">
+              {stage ? `${stage.ordinal}. ${stage.title}` : "Không xác định"}
+            </Meta>
+            <Meta label="Giao cho">
+              {task.assignee_id ? nameOf(task.assignee_id) : <span className="italic text-soil-500">Chưa giao</span>}
+            </Meta>
+            <Meta label="Hạn hoàn thành">
+              {task.due_at ? (
+                <span className={flags.overdue ? "font-medium text-red-700" : undefined}>
+                  {new Date(task.due_at).toLocaleDateString("vi-VN")}
+                  {flags.overdue && ` · quá ${flags.overdueDays} ngày`}
+                </span>
+              ) : (
+                <span className="italic text-soil-500">Không đặt</span>
+              )}
+            </Meta>
+            <Meta label="Sửa lần cuối">{new Date(task.updated_at).toLocaleString("vi-VN")}</Meta>
+          </dl>
+        </Card>
       </section>
 
-      {abilities.canWriteTasks ? (
-        <Card title="Sửa công việc">
-          <EditTaskForm
-            projectId={id}
-            task={{
-              id: task.id,
-              title: task.title,
-              description: task.description,
-              status,
-              assigneeId: task.assignee_id,
-              dueAt: task.due_at,
-            }}
-            members={assignableMembers(members).map((m) => ({
-              userId: m.userId,
-              fullName: m.fullName,
-            }))}
-          />
+      <section>
+        <SectionHeader
+          title={abilities.canWriteTasks ? "Sửa công việc" : "Mô tả công việc"}
+          description={
+            abilities.canWriteTasks
+              ? "Cập nhật nội dung, trạng thái, người nhận và hạn hoàn thành."
+              : "Nội dung do người có quyền quản lý công việc trong dự án cập nhật."
+          }
+        />
+        <Card>
+          {abilities.canWriteTasks ? (
+            <EditTaskForm
+              projectId={id}
+              task={{
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                status,
+                assigneeId: task.assignee_id,
+                dueAt: task.due_at,
+              }}
+              members={assignableMembers(members).map((m) => ({
+                userId: m.userId,
+                fullName: m.fullName,
+              }))}
+            />
+          ) : task.description ? (
+            <p className="whitespace-pre-wrap text-sm text-soil-800">{task.description}</p>
+          ) : (
+            <Empty
+              title="Công việc chưa có mô tả"
+              hint="Người quản lý công việc chưa bổ sung phạm vi hoặc kết quả cần hoàn thành."
+              action={
+                stage ? (
+                  <LinkButton
+                    href={`/du-an/${id}/quy-trinh#buoc-${stage.ordinal}`}
+                    variant="secondary"
+                  >
+                    Xem hồ sơ thiết kế liên quan
+                  </LinkButton>
+                ) : (
+                  <LinkButton href={`/du-an/${id}`} variant="secondary">
+                    Về bảng công việc
+                  </LinkButton>
+                )
+              }
+            />
+          )}
         </Card>
-      ) : (
-        <Card title="Mô tả">
-          <p className="whitespace-pre-wrap text-sm text-soil-800">
-            {task.description || <span className="italic text-soil-500">Chưa có mô tả.</span>}
-          </p>
-        </Card>
-      )}
+      </section>
 
-      <Card
-        title={`Dòng thời gian (${timeline.length})`}
-        description="Tạo việc, bình luận và tệp đính kèm, xếp theo thứ tự thời gian."
-      >
+      <section>
+        <SectionHeader
+          title="Dòng thời gian"
+          description="Tạo việc, bình luận và tệp đính kèm, xếp theo thứ tự thời gian."
+          aside={<Badge tone="soil">{timeline.length} sự kiện</Badge>}
+        />
+        <Card>
         <ol className="relative space-y-5 border-l border-soil-200 pl-5">
           {timeline.map((entry) => (
             <li key={entry.key} className="relative">
@@ -219,14 +258,20 @@ export default async function TaskPage({
         <p className="mt-5 border-t border-soil-100 pt-3 text-xs text-soil-600">
           Đây <strong>không</strong> phải lịch sử trạng thái. Schema chỉ giữ{" "}
           <code className="font-mono">updated_at</code> trên công việc; không có bảng nào ghi
-          lại ai đổi trạng thái, người nhận hay hạn — và ai lúc nào. Muốn có audit trail đầy
+          lại ai đã đổi trạng thái, người nhận hoặc hạn vào lúc nào. Muốn có audit trail đầy
           đủ cho VVB thì cần thêm bảng sự kiện, xem{" "}
           <code className="font-mono">docs/design/pages-module-a.md</code>.
         </p>
-      </Card>
+        </Card>
+      </section>
 
-      {abilities.canComment && (
-        <Card title="Thêm vào dòng thời gian">
+      <section>
+        <SectionHeader
+          title="Thêm vào dòng thời gian"
+          description="Ghi lại trao đổi và đính kèm bằng chứng liên quan trực tiếp đến công việc."
+        />
+        {abilities.canComment ? (
+          <Card>
           <div className="space-y-5">
             <CommentForm projectId={id} taskId={taskId} />
             <div className="border-t border-soil-100 pt-4">
@@ -238,20 +283,32 @@ export default async function TaskPage({
               <AttachForm projectId={id} taskId={taskId} />
             </div>
           </div>
-        </Card>
-      )}
+          </Card>
+        ) : (
+          <Locked
+            title="Bạn chưa thể thêm bình luận hoặc tệp"
+            reason="Vai trò hiện tại chỉ được xem công việc. Khối này mở khi chủ dự án đổi vai trò của bạn sang Đơn vị phát triển hoặc Chủ dự án."
+          />
+        )}
+      </section>
 
       {abilities.canWriteTasks && (
-        <Card title="Xoá công việc">
-          <Alert tone="warn">
-            Công việc còn bình luận hoặc tệp đính kèm sẽ không xoá được — khoá ngoại là{" "}
-            <code className="font-mono text-xs">on delete restrict</code>, cố ý, để bằng chứng
-            không biến mất cùng một cú bấm nhầm. Gỡ chúng trước.
-          </Alert>
-          <div className="mt-3">
-            <DeleteTaskButton kind="task" projectId={id} targetId={taskId} label="Xoá công việc" />
-          </div>
-        </Card>
+        <section>
+          <SectionHeader
+            title="Xoá công việc"
+            description="Thao tác này chỉ dùng khi công việc không còn cần thiết trong kế hoạch."
+          />
+          <Card>
+            <Alert tone="warn">
+              Công việc còn bình luận hoặc tệp đính kèm sẽ không xoá được — khoá ngoại là{" "}
+              <code className="font-mono text-xs">on delete restrict</code>, cố ý, để bằng chứng
+              không biến mất cùng một cú bấm nhầm. Gỡ chúng trước.
+            </Alert>
+            <div className="mt-3">
+              <DeleteTaskButton kind="task" projectId={id} targetId={taskId} label="Xoá công việc" />
+            </div>
+          </Card>
+        </section>
       )}
     </div>
   );
