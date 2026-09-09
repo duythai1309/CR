@@ -19,7 +19,6 @@ import { DOCUMENT_KIND_LABEL, type DocumentKind } from "@/components/project/rul
 import type { BaselineDraft } from "@/types/project-setup";
 import {
   abandonDocumentSignedUpload,
-  approveStage,
   chooseMethodology,
   chooseStandard,
   completeDocumentSignedUpload,
@@ -445,41 +444,6 @@ export function BaselineForm({
         )}
         <Feedback result={assistResult} />
       </aside>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ duyệt hồ sơ */
-
-export function ApproveStageForm({
-  projectId,
-  ordinal,
-  blockers,
-}: {
-  projectId: string;
-  ordinal: number;
-  blockers: string[];
-}) {
-  const [result, action, pending] = useActionState(approveStage, null);
-  const blocked = blockers.length > 0;
-
-  return (
-    <div className="text-right">
-      <form action={action}>
-        <input type="hidden" name="project_id" value={projectId} />
-        <input type="hidden" name="ordinal" value={ordinal} />
-        <Button type="submit" variant="secondary" disabled={pending || blocked}>
-          {pending ? "Đang duyệt…" : "Duyệt hồ sơ"}
-        </Button>
-      </form>
-      {blocked && (
-        <p className="mt-1.5 max-w-xs text-xs text-soil-600">
-          Còn {blockers.length} điều kiện chưa đạt — xem danh sách bên trái.
-        </p>
-      )}
-      {result && !result.ok && (
-        <p className="mt-1.5 max-w-xs text-xs text-red-700">{result.message}</p>
-      )}
     </div>
   );
 }

@@ -2,14 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   TASK_STATUSES,
   abilitiesFor,
-  approvalBlockers,
-  approvedCount,
   assignableMembers,
   groupTasksByStage,
   isDocumentKind,
   isTaskStatus,
   nextPosition,
-  nextStageToApprove,
   parseDueDate,
   toStageView,
   toTaskCard,
@@ -25,29 +22,16 @@ import {
  * RLS và RPC trong `0013_project_platform.sql`, đã kiểm riêng bằng `tests/db/`.
  */
 
-const stages = (approved: number[]): StageView[] =>
+/** Bảy mục hồ sơ. Không còn tham số "đã duyệt bước nào": nền tảng đã bỏ bước duyệt. */
+const stages = (): StageView[] =>
   Array.from({ length: 7 }, (_, i) => ({
     id: `s${i + 1}`,
     ordinal: i + 1,
     title: `Bước ${i + 1}`,
-    approvedAt: approved.includes(i + 1) ? "2026-09-06T00:00:00.000Z" : null,
   }));
 
-const OPEN = {
-  standardId: null,
-  methodologyId: null,
-  standardLockedAt: null,
-  methodologyLockedAt: null,
-};
-const LOCKED = {
-  standardId: "std",
-  methodologyId: "meth",
-  standardLockedAt: "2026-09-01T00:00:00.000Z",
-  methodologyLockedAt: "2026-09-02T00:00:00.000Z",
-};
-
 describe("quyền trong dự án — không còn vai trò (chính sách 09/09/2026)", () => {
-  it("thành viên có đủ mọi quyền, gồm duyệt bước, quản lý thành viên và xoá dự án", () => {
+  it("thành viên có đủ mọi quyền, gồm quản lý thành viên và xoá dự án", () => {
     const a = abilitiesFor();
     expect(Object.values(a).every(Boolean)).toBe(true);
   });
@@ -62,46 +46,6 @@ describe("quyền trong dự án — không còn vai trò (chính sách 09/09/20
   // âm thầm cho phép giao diện phân biệt vai trò trở lại.
   it("không nhận vai trò làm tham số nữa", () => {
     expect(abilitiesFor.length).toBe(0);
-  });
-});
-
-describe("duyệt bước — chép đúng điều kiện của approve_project_stage", () => {
-  it("bước 1 duyệt được ngay", () => {
-    expect(approvalBlockers(stages([]), 1, OPEN)).toEqual([]);
-  });
-
-  it("không nhảy cóc: bước 2 cần bước 1 xong", () => {
-    expect(approvalBlockers(stages([]), 2, OPEN)).toContain("Cần duyệt bước 1 trước.");
-  });
-
-  it("bước 3 trở đi cần khoá Standard", () => {
-    const blockers = approvalBlockers(stages([1, 2]), 3, OPEN);
-    expect(blockers).toContain("Chưa khoá Standard (bước 3).");
-  });
-
-  it("bước 4 trở đi cần khoá cả Methodology", () => {
-    const partial = { ...OPEN, standardId: "std", standardLockedAt: "2026-09-01T00:00:00.000Z" };
-    expect(approvalBlockers(stages([1, 2, 3]), 4, partial)).toEqual([
-      "Chưa khoá Methodology (bước 4).",
-    ]);
-  });
-
-  it("đủ điều kiện thì không còn rào nào", () => {
-    expect(approvalBlockers(stages([1, 2, 3, 4]), 5, LOCKED)).toEqual([]);
-  });
-
-  it("bước đã duyệt không duyệt lại", () => {
-    expect(approvalBlockers(stages([1]), 1, OPEN)).toEqual(["Bước này đã được duyệt."]);
-  });
-
-  it("gộp nhiều lý do cùng lúc", () => {
-    expect(approvalBlockers(stages([]), 5, OPEN)).toHaveLength(3);
-  });
-
-  it("bước kế tiếp và số bước đã duyệt", () => {
-    expect(nextStageToApprove(stages([1, 2]))?.ordinal).toBe(3);
-    expect(nextStageToApprove(stages([1, 2, 3, 4, 5, 6, 7]))).toBeNull();
-    expect(approvedCount(stages([1, 2, 5]))).toBe(3);
   });
 });
 
@@ -143,20 +87,20 @@ describe("bảng kanban", () => {
   ];
 
   it("đủ bảy cột đúng thứ tự kể cả cột rỗng", () => {
-    const columns = groupTasksByStage(stages([]), cards);
+    const columns = groupTasksByStage(stages(), cards);
     expect(columns).toHaveLength(7);
     expect(columns.map((c) => c.stage.ordinal)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(columns[6].tasks).toEqual([]);
   });
 
   it("card xếp theo position rồi tới tên", () => {
-    const columns = groupTasksByStage(stages([]), cards);
+    const columns = groupTasksByStage(stages(), cards);
     expect(columns[0].tasks.map((t) => t.id)).toEqual(["t3", "t2"]);
   });
 
   it("card trỏ vào stage lạ bị bỏ qua, không làm hỏng bảng", () => {
     const orphan: TaskCard = { ...cards[0], id: "t9", stageId: "khong-ton-tai" };
-    const columns = groupTasksByStage(stages([]), [...cards, orphan]);
+    const columns = groupTasksByStage(stages(), [...cards, orphan]);
     expect(columns.flatMap((c) => c.tasks).map((t) => t.id)).not.toContain("t9");
   });
 
@@ -182,11 +126,12 @@ describe("giao việc cho mọi thành viên", () => {
 
 describe("chuyển đổi hàng cơ sở dữ liệu", () => {
   it("stage sang hình dạng giao diện", () => {
-    expect(toStageView({ id: "s1", ordinal: 1, title: "T", approved_at: null })).toEqual({
+    // `approved_at` cố ý KHÔNG còn được đọc: nền tảng đã bỏ bước duyệt. Hàng DB vẫn có
+    // cột đó, nhưng nó không được phép rò trở lại vào hình dạng giao diện.
+    expect(toStageView({ id: "s1", ordinal: 1, title: "T" })).toEqual({
       id: "s1",
       ordinal: 1,
       title: "T",
-      approvedAt: null,
     });
   });
 

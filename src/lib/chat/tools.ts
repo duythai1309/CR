@@ -49,7 +49,7 @@ export const TOOLS: ToolSpec[] = [
     name: "liet_ke_du_an",
     description:
       "Danh sách dự án carbon mà người đang hỏi là thành viên: tên, " +
-      "số bước thiết kế đã duyệt trên tổng bảy bước, Standard và Methodology đã chọn, số " +
+      "số mục hồ sơ đã có nội dung trên tổng bảy mục, Standard và Methodology đã chọn, số " +
       "thành viên. PHẢI gọi khi hỏi có những dự án nào, dự án tên gì, quy trình có bao " +
       "nhiêu bước, hoặc cần xác định dự án trước khi gọi tool chi tiết.",
     parameters: NO_PARAMS,
@@ -58,31 +58,11 @@ export const TOOLS: ToolSpec[] = [
   {
     name: "tien_do_du_an",
     description:
-      "Tiến độ chi tiết của một dự án: bảy bước thiết kế đã duyệt tới đâu và ai duyệt, " +
-      "bước kế tiếp còn vướng điều kiện gì, số công việc theo từng trạng thái, các kỳ " +
+      "Tiến độ chi tiết của một dự án: mục hồ sơ nào đã có nội dung, số công việc theo " +
+      "từng trạng thái, các kỳ " +
       "giám sát, và ước tính giảm phát thải gần nhất nếu đã sinh báo cáo. PHẢI gọi trước " +
-      "mọi khẳng định về tiến độ, bước hiện tại/tiếp theo hoặc số lượng việc của dự án.",
+      "mọi khẳng định về tiến độ, nội dung hồ sơ hoặc số lượng việc của dự án.",
     parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
-    roles: ALL,
-  },
-  {
-    name: "yeu_cau_cua_buoc",
-    description:
-      "Một bước trong bảy bước thiết kế cần thoả điều kiện gì thì mới duyệt được, và " +
-      "hiện đã thoả tới đâu. Điều kiện lấy từ đúng luật mà cơ sở dữ liệu áp " +
-      "khi duyệt, không phải quy trình chung của ngành. PHẢI gọi cho mọi câu hỏi kiểu " +
-      "'làm sao qua được bước này', 'còn thiếu gì để duyệt'.",
-    parameters: {
-      type: "object",
-      properties: {
-        buoc: {
-          type: "number",
-          description:
-            "Số thứ tự bước, từ 1 đến 7. Bỏ trống thì lấy bước chưa duyệt gần nhất.",
-        },
-        ten_du_an: TEN_DU_AN,
-      },
-    },
     roles: ALL,
   },
   {
@@ -132,7 +112,7 @@ export const TOOLS: ToolSpec[] = [
     description:
       "Đối chiếu baseline (kịch bản cơ sở) đã nhập của một dự án với metric_schema của " +
       "methodology đã chọn: field nào còn thiếu, field nào sai kiểu hoặc ngoài khoảng " +
-      "cho phép. PHẢI gọi trước khi nói baseline đủ/thiếu/hợp lệ. Dùng đúng bộ luật mà cơ sở dữ liệu áp khi duyệt bước 5 và khi tạo kỳ " +
+      "cho phép. PHẢI gọi trước khi nói baseline đủ/thiếu/hợp lệ hoặc khả năng tạo kỳ " +
       "giám sát, nên trả lời được câu 'baseline của tôi đã đủ chưa'.",
     parameters: { type: "object", properties: { ten_du_an: TEN_DU_AN } },
     roles: ALL,
@@ -244,7 +224,7 @@ export const TOOLS: ToolSpec[] = [
         ten_du_an: TEN_DU_AN,
         buoc: {
           type: "number",
-          description: "Lọc ordinal từ 1 đến 7. Bỏ trống thì trả cả bảy bước.",
+          description: "Lọc ordinal từ 1 đến 7. Bỏ trống thì trả cả bảy mục hồ sơ.",
         },
       },
     },

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_PORTFOLIO_FILTER,
   EMPTY_TASK_FILTER,
-  approvalChecklist,
   baselineGateErrors,
   filterProjects,
   filterTasks,
@@ -14,104 +13,13 @@ import {
   taskFlags,
   workloadByAssignee,
   type PortfolioRow,
-  type StageView,
   type TaskCard,
 } from "@/components/project/rules";
 
 /**
- * Logic thuần đứng sau các màn hình Module A viết lại: danh sách kiểm điều kiện duyệt,
- * cờ công việc, bộ lọc/sắp xếp của bảng công việc và của danh mục dự án.
- *
- * Danh sách kiểm là phần đáng kiểm nhất: nó CHÉP điều kiện của `approve_project_stage`,
- * nên một thay đổi lặng lẽ ở đây là giao diện nói dối về cái mà cơ sở dữ liệu cưỡng chế.
+ * Logic thuần đứng sau các màn hình Module A: lọc lỗi baseline, cờ công việc, bộ lọc và
+ * sắp xếp của bảng công việc và của danh mục dự án.
  */
-
-const stages = (approved: number[]): StageView[] =>
-  Array.from({ length: 7 }, (_, i) => ({
-    id: `s${i + 1}`,
-    ordinal: i + 1,
-    title: `Bước ${i + 1}`,
-    approvedAt: approved.includes(i + 1) ? "2026-09-06T00:00:00.000Z" : null,
-  }));
-
-const OPEN = {
-  standardId: null,
-  methodologyId: null,
-  standardLockedAt: null,
-  methodologyLockedAt: null,
-};
-const LOCKED = {
-  standardId: "std",
-  methodologyId: "meth",
-  standardLockedAt: "2026-09-01T00:00:00.000Z",
-  methodologyLockedAt: "2026-09-02T00:00:00.000Z",
-};
-
-const state = (checks: ReturnType<typeof approvalChecklist>, id: string) =>
-  checks.find((c) => c.id === id)?.state;
-
-describe("danh sách kiểm duyệt bước — chép từ approve_project_stage (0013:696-714)", () => {
-  it("liệt kê đủ sáu điều kiện mà RPC còn kiểm, không hơn", () => {
-    const checks = approvalChecklist(stages([]), 1, OPEN);
-    expect(checks.map((c) => c.id)).toEqual([
-      "project_active",
-      "ordinal_range",
-      "sequence",
-      "standard_locked",
-      "methodology_locked",
-      "baseline_valid",
-    ]);
-  });
-
-  it("mỗi điều kiện trích dẫn dòng migration để đối chiếu được", () => {
-    for (const check of approvalChecklist(stages([]), 5, OPEN))
-      expect(check.source).toMatch(/^0013:\d/);
-  });
-
-  it("điều kiện khoá Standard/Methodology/baseline không áp dụng ở những bước trước nó", () => {
-    const at2 = approvalChecklist(stages([1]), 2, OPEN);
-    expect(state(at2, "standard_locked")).toBe("not_applicable");
-    expect(state(at2, "methodology_locked")).toBe("not_applicable");
-    expect(state(at2, "baseline_valid")).toBe("not_applicable");
-
-    const at3 = approvalChecklist(stages([1, 2]), 3, OPEN);
-    expect(state(at3, "standard_locked")).toBe("fail");
-    expect(state(at3, "methodology_locked")).toBe("not_applicable");
-  });
-
-  it("phân biệt 'đã chọn nhưng chưa khoá' với 'chưa chọn'", () => {
-    const chosen = approvalChecklist(stages([1, 2]), 3, { ...OPEN, standardId: "std" });
-    expect(chosen.find((c) => c.id === "standard_locked")?.detail).toContain("chưa bấm khoá");
-
-    const nothing = approvalChecklist(stages([1, 2]), 3, OPEN);
-    expect(nothing.find((c) => c.id === "standard_locked")?.detail).toContain("Chưa chọn");
-  });
-
-  it("bước ≥5 đạt khi baseline không còn lỗi, hỏng khi còn lỗi", () => {
-    const ok = approvalChecklist(stages([1, 2, 3, 4]), 5, { ...LOCKED, baselineErrors: [] });
-    expect(state(ok, "baseline_valid")).toBe("pass");
-
-    const bad = approvalChecklist(stages([1, 2, 3, 4]), 5, {
-      ...LOCKED,
-      baselineErrors: [{ field: "area_ha", message: "Below minimum" }],
-    });
-    expect(state(bad, "baseline_valid")).toBe("fail");
-    expect(bad.find((c) => c.id === "baseline_valid")?.detail).toContain("area_ha");
-  });
-
-  it("chưa đọc được schema thì là 'chưa kết luận được', KHÔNG phải 'không đạt'", () => {
-    const checks = approvalChecklist(stages([1, 2, 3, 4]), 5, LOCKED);
-    expect(state(checks, "baseline_valid")).toBe("unknown");
-  });
-
-  it("dự án đã xoá bị chặn; vai trò không còn là điều kiện duyệt", () => {
-    const checks = approvalChecklist(stages([]), 1, { ...OPEN, projectDeleted: true });
-    expect(state(checks, "project_active")).toBe("fail");
-    // 0022 gỡ vế `app_project_role = 'owner'` khỏi `approve_project_stage`, nên danh
-    // sách kiểm không được phép mọc lại phép kiểm đó.
-    expect(checks.some((c) => c.id === "owner")).toBe(false);
-  });
-});
 
 describe("lọc lệch giữa hai bộ kiểm baseline", () => {
   const fields = [
@@ -277,9 +185,7 @@ describe("danh mục nhiều dự án", () => {
     methodologyIsSample: false,
     standardLockedAt: null,
     methodologyLockedAt: null,
-    approvedStages: 2,
-    currentStage: { ordinal: 3, title: "Standard selection" },
-    lastApprovedAt: null,
+    dossierCount: 2,
     openTasks: 0,
     blockedTasks: 0,
     overdueTasks: 0,
@@ -289,20 +195,22 @@ describe("danh mục nhiều dự án", () => {
     ...over,
   });
 
-  it("lý do cần chú ý gộp việc vướng, việc quá hạn và khoá còn thiếu", () => {
+  it("lý do cần chú ý gộp việc vướng, việc quá hạn và lựa chọn chưa khoá", () => {
     const reasons = projectAttention(row({ blockedTasks: 2, overdueTasks: 1 }));
     expect(reasons).toEqual(["2 việc đang vướng", "1 việc quá hạn", "Chưa khoá Standard"]);
   });
 
-  it("chỉ nêu điều kiện khoá khi bước đang chờ thực sự cần nó", () => {
-    expect(projectAttention(row({ currentStage: { ordinal: 2, title: "Feasibility" } }))).toEqual([]);
+  // Ngưỡng cũ là "bước đang duyệt đã tới số 3 chưa". Bỏ bước duyệt thì điều kiện thay
+  // thế đọc thẳng từ hai cột và chính xác hơn: chưa CHỌN thì không có gì để khoá.
+  it("chưa chọn Standard thì không nhắc chuyện khoá", () => {
+    expect(projectAttention(row({ standardCode: null }))).toEqual([]);
   });
 
-  it("nêu Methodology khi Standard đã khoá mà bước đang chờ là 4", () => {
+  it("nêu Methodology khi Standard đã khoá và Methodology đã chọn nhưng chưa khoá", () => {
     const reasons = projectAttention(
       row({
-        currentStage: { ordinal: 4, title: "Methodology selection" },
         standardLockedAt: "2026-09-01T00:00:00.000Z",
+        methodologyCode: "DEMO-1",
       }),
     );
     expect(reasons).toEqual(["Chưa khoá Methodology"]);
@@ -320,7 +228,7 @@ describe("danh mục nhiều dự án", () => {
 
   it("lọc theo Standard và tiến độ", () => {
     const rows = [
-      row({ id: "p1", approvedStages: 7, currentStage: null }),
+      row({ id: "p1", dossierCount: 7 }),
       row({ id: "p2", standardCode: "GS" }),
     ];
     expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, standard: "GS" })).toHaveLength(1);
@@ -334,18 +242,18 @@ describe("danh mục nhiều dự án", () => {
   });
 
   it("'đang có việc chặn' dùng đúng projectAttention", () => {
-    const rows = [row({ id: "p1", currentStage: { ordinal: 2, title: "F" } }), row({ id: "p2", blockedTasks: 1 })];
+    const rows = [row({ id: "p1", standardCode: null }), row({ id: "p2", blockedTasks: 1 })];
     const found = filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, onlyAttention: true });
     expect(found.map((r) => r.id)).toEqual(["p2"]);
   });
 
   it("sắp xếp theo tiến độ, theo việc chặn và theo kỳ giám sát", () => {
     const rows = [
-      row({ id: "p1", approvedStages: 1, blockedTasks: 0 }),
-      row({ id: "p2", approvedStages: 5, blockedTasks: 3 }),
+      row({ id: "p1", dossierCount: 1, blockedTasks: 0 }),
+      row({ id: "p2", dossierCount: 5, blockedTasks: 3 }),
       row({
         id: "p3",
-        approvedStages: 3,
+        dossierCount: 3,
         latestPeriod: { name: "K1", startDate: "2026-01-01", endDate: "2026-06-30", version: 1, status: "open" },
       }),
     ];

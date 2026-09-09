@@ -129,6 +129,10 @@ const CA_MAU = {
   standard_locked_at: "2026-02-01T00:00:00Z",
   methodology_locked_at: "2026-02-02T00:00:00Z",
   baseline: {},
+  setup: {
+    idea: { activity: "Phục hồi rừng ngập mặn" },
+    feasibility: { known: ["Đã xác định khu vực dự án"] },
+  },
   baseline_revision: 0,
   updated_at: "2026-09-01T00:00:00Z",
 };
@@ -143,6 +147,7 @@ const DONG_THAP = {
   standard_locked_at: null,
   methodology_locked_at: null,
   baseline: {},
+  setup: {},
   baseline_revision: 0,
   updated_at: "2026-08-01T00:00:00Z",
 };
@@ -163,40 +168,42 @@ const DATA: Record<string, unknown[]> = {
       project_id: "p-1",
       ordinal: 1,
       title: "Project Idea",
-      approved_at: "2026-03-01T00:00:00Z",
-      approved_by: "u-2",
     },
     {
       id: "st-2",
       project_id: "p-1",
       ordinal: 2,
       title: "Feasibility Assessment",
-      approved_at: "2026-03-02T00:00:00Z",
-      approved_by: "u-1",
     },
     {
       id: "st-3",
       project_id: "p-1",
       ordinal: 3,
       title: "Chọn Standard",
-      approved_at: null,
-      approved_by: null,
     },
     {
       id: "st-4",
       project_id: "p-1",
       ordinal: 4,
       title: "Chọn Methodology",
-      approved_at: null,
-      approved_by: null,
     },
     {
       id: "st-5",
       project_id: "p-1",
       ordinal: 5,
       title: "Baseline",
-      approved_at: null,
-      approved_by: null,
+    },
+    {
+      id: "st-6",
+      project_id: "p-1",
+      ordinal: 6,
+      title: "Additionality",
+    },
+    {
+      id: "st-7",
+      project_id: "p-1",
+      ordinal: 7,
+      title: "PDD",
     },
   ],
   standards: [
@@ -408,12 +415,12 @@ describe("liet_ke_du_an", () => {
     expect(out.du_an[1].methodology).toBeNull();
   });
 
-  it("đếm đúng số bước đã duyệt trên bảy", async () => {
+  it("đếm đúng số mục hồ sơ đã có nội dung trên bảy", async () => {
     const out = (await HANDLERS.liet_ke_du_an(ctx(), {})) as {
-      du_an: Array<{ buoc_da_duyet: string }>;
+      du_an: Array<{ ho_so_da_co: number; tong_muc_ho_so: number }>;
     };
-    expect(out.du_an[0].buoc_da_duyet).toBe("2/7");
-    expect(out.du_an[1].buoc_da_duyet).toBe("0/7");
+    expect(out.du_an[0]).toMatchObject({ ho_so_da_co: 5, tong_muc_ho_so: 7 });
+    expect(out.du_an[1]).toMatchObject({ ho_so_da_co: 0, tong_muc_ho_so: 7 });
   });
 
   it("đánh dấu methodology là dữ liệu mẫu — trợ lý phải nói được điều đó", async () => {
@@ -439,44 +446,54 @@ describe("liet_ke_du_an", () => {
     const calls: string[] = [];
     await HANDLERS.liet_ke_du_an(ctx(DATA, calls), {});
     expect(new Set(calls)).toEqual(
-      new Set(["projects", "project_members", "project_stages", "standards", "methodologies"]),
+      new Set(["projects", "project_members", "project_documents", "standards", "methodologies"]),
     );
   });
 });
 
 describe("tien_do_du_an", () => {
-  it("tóm tắt bảy bước, công việc, kỳ giám sát và báo cáo gần nhất", async () => {
+  it("tóm tắt bảy mục hồ sơ, công việc, kỳ giám sát và báo cáo gần nhất", async () => {
     const out = (await HANDLERS.tien_do_du_an(ctx(), { ten_du_an: "Cà Mau" })) as {
       du_an: string;
-      bay_buoc: Array<{ buoc: number; da_duyet: boolean; nguoi_duyet: string | null }>;
+      ho_so_da_co: number;
+      tong_muc_ho_so: number;
+      bay_muc_ho_so: Array<{ muc: number; da_co_noi_dung: boolean }>;
       cong_viec: Record<string, number>;
       ky_giam_sat: Array<Record<string, unknown>>;
       bao_cao_gan_nhat: Record<string, unknown> | null;
     };
     expect(out.du_an).toBe("Rừng ngập mặn Cà Mau");
-    expect(out.bay_buoc.map((b) => b.da_duyet)).toEqual([true, true, false, false, false]);
+    expect(out).toMatchObject({ ho_so_da_co: 5, tong_muc_ho_so: 7 });
+    expect(out.bay_muc_ho_so.map((muc) => muc.da_co_noi_dung)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+    ]);
     expect(out.cong_viec).toMatchObject({ tong: 4, chua_lam: 1, dang_lam: 1, xong: 1, vuong: 1 });
     expect(out.ky_giam_sat[0]).toMatchObject({ ten: "Kỳ 2026-1", trang_thai: "đã khoá" });
     expect(out.bao_cao_gan_nhat).toMatchObject({ uoc_tinh: "128.4200", don_vi: "tCO2e" });
   });
 
-  it("nêu tên người đã duyệt từng bước, lấy qua danh bạ dự án", async () => {
+  it("không trả các trường của tính năng đã gỡ", async () => {
     const out = (await HANDLERS.tien_do_du_an(ctx(), {})) as {
-      bay_buoc: Array<{ buoc: number; nguoi_duyet: string | null }>;
+      bay_muc_ho_so: Array<Record<string, unknown>>;
     };
-    expect(out.bay_buoc[0].nguoi_duyet).toBe("Trần Thị Bích");
-    expect(out.bay_buoc[1].nguoi_duyet).toBe("Người thử");
-    expect(out.bay_buoc[2].nguoi_duyet).toBeNull();
-  });
-
-  it("chỉ ra bước kế tiếp và điều kiện còn vướng của đúng bước đó", async () => {
-    const out = (await HANDLERS.tien_do_du_an(ctx(), {})) as {
-      buoc_ke_tiep: { buoc: number; dieu_kien: Array<{ dieu_kien: string; dat: boolean }> };
-    };
-    expect(out.buoc_ke_tiep.buoc).toBe(3);
-    // Bước 3 chỉ đòi: các bước trước đã duyệt, và đã khoá Standard.
-    expect(out.buoc_ke_tiep.dieu_kien).toHaveLength(2);
-    expect(out.buoc_ke_tiep.dieu_kien.every((c) => c.dat)).toBe(true);
+    const serialized = JSON.stringify(out);
+    for (const field of [
+      "buoc_da_duyet",
+      "da_duyet",
+      "duyet_luc",
+      "nguoi_duyet",
+      "ai_duyet_duoc",
+      "dieu_kien",
+      "con_vuong",
+    ]) {
+      expect(serialized).not.toContain(`\"${field}\"`);
+    }
   });
 
   it("cắt từ phân loại thừa ở đầu tên dự án", async () => {
@@ -509,127 +526,6 @@ describe("tien_do_du_an", () => {
     expect(out.ghi_chu).toContain("ƯỚC TÍNH");
     expect(out.ghi_chu).toContain("không phải tín chỉ");
     expect(out.ghi_chu).toContain("MẪU");
-  });
-});
-
-describe("yeu_cau_cua_buoc", () => {
-  it("bỏ trống số bước thì lấy bước chưa duyệt gần nhất", async () => {
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(), {})) as {
-      buoc: number;
-      ten_buoc: string;
-      da_duyet: boolean;
-    };
-    expect(out.buoc).toBe(3);
-    expect(out.ten_buoc).toBe("Chọn Standard");
-    expect(out.da_duyet).toBe(false);
-  });
-
-  it("điều kiện đúng bằng luật của approve_project_stage, không thêm bớt", async () => {
-    const dieuKien = async (buoc: number) =>
-      (
-        (await HANDLERS.yeu_cau_cua_buoc(ctx(), { buoc })) as {
-          dieu_kien: Array<{ dieu_kien: string }>;
-        }
-      ).dieu_kien.map((c) => c.dieu_kien);
-
-    expect(await dieuKien(1)).toEqual(["Các bước trước đã duyệt hết"]);
-    expect(await dieuKien(3)).toEqual(["Các bước trước đã duyệt hết", "Đã KHOÁ Standard"]);
-    expect(await dieuKien(4)).toEqual([
-      "Các bước trước đã duyệt hết",
-      "Đã KHOÁ Standard",
-      "Đã KHOÁ Methodology",
-    ]);
-    expect(await dieuKien(5)).toEqual([
-      "Các bước trước đã duyệt hết",
-      "Đã KHOÁ Standard",
-      "Đã KHOÁ Methodology",
-      "Baseline hợp lệ theo metric_schema của Methodology đã chọn",
-    ]);
-  });
-
-  it("bước 5 vướng vì baseline chưa hợp lệ, và nói ra đúng điều đang vướng", async () => {
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(), { buoc: 5 })) as {
-      dieu_kien: Array<{ dieu_kien: string; dat: boolean }>;
-      con_vuong: string[];
-    };
-    expect(out.con_vuong).toContain("Các bước trước đã duyệt hết");
-    expect(out.con_vuong).toContain(
-      "Baseline hợp lệ theo metric_schema của Methodology đã chọn",
-    );
-    expect(out.dieu_kien.find((c) => c.dieu_kien === "Đã KHOÁ Standard")?.dat).toBe(true);
-  });
-
-  it("baseline đã đủ thì điều kiện baseline chuyển sang đạt", async () => {
-    const data = withOverrides({
-      projects: [{ ...CA_MAU, baseline: { baseline_stock_tc_ha: "120.5" } }],
-    });
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(data), { buoc: 5 })) as {
-      dieu_kien: Array<{ dieu_kien: string; dat: boolean }>;
-    };
-    expect(
-      out.dieu_kien.find((c) => c.dieu_kien.startsWith("Baseline hợp lệ"))?.dat,
-    ).toBe(true);
-  });
-
-  it("chưa khoá Standard thì nói thẳng là chưa đạt", async () => {
-    const data = withOverrides({
-      projects: [{ ...CA_MAU, standard_locked_at: null, methodology_locked_at: null }],
-    });
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(data), { buoc: 3 })) as {
-      dieu_kien: Array<{ dieu_kien: string; dat: boolean }>;
-    };
-    expect(out.dieu_kien.find((c) => c.dieu_kien === "Đã KHOÁ Standard")?.dat).toBe(false);
-  });
-
-  it("mọi thành viên duyệt được — trợ lý không được nói ngược lại", async () => {
-    const asOwner = (await HANDLERS.yeu_cau_cua_buoc(ctx(), { buoc: 3 })) as {
-      ai_duyet_duoc: string;
-      nguoi_hoi_duyet_duoc?: boolean;
-    };
-    expect(asOwner.ai_duyet_duoc).toContain("Mọi thành viên");
-    expect(asOwner.nguoi_hoi_duyet_duoc).toBeUndefined();
-
-    // Người hỏi mang role `developer` phải nhận đúng câu trả lời đó, không phải một
-    // câu nói họ không duyệt được: 0022 đã gỡ vế owner khỏi `approve_project_stage`.
-    const data = withOverrides({
-      project_members: [{ project_id: "p-1", user_id: "u-1", role: "developer" }],
-    });
-    const asDev = (await HANDLERS.yeu_cau_cua_buoc(ctx(data), { buoc: 3 })) as {
-      ai_duyet_duoc: string;
-    };
-    expect(asDev.ai_duyet_duoc).toContain("Mọi thành viên");
-  });
-
-  it("số bước ngoài 1..7 bị từ chối chứ không im lặng lấy bước khác", async () => {
-    for (const buoc of [0, 8, -1, 99]) {
-      const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(), { buoc })) as {
-        tham_so_sai?: string;
-        buoc?: number;
-      };
-      expect(out.tham_so_sai, `buoc=${buoc}`).toBeTruthy();
-      expect(out.buoc).toBeUndefined();
-    }
-  });
-
-  it("duyệt xong cả bảy bước thì nói đã xong, không bịa ra bước thứ tám", async () => {
-    const stages = (DATA.project_stages as Array<Record<string, unknown>>).map((s) => ({
-      ...s,
-      approved_at: "2026-06-01T00:00:00Z",
-      approved_by: "u-1",
-    }));
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(withOverrides({ project_stages: stages })), {})) as {
-      da_xong?: boolean;
-      ghi_chu?: string;
-    };
-    expect(out.da_xong).toBe(true);
-    expect(out.ghi_chu).toContain("giám sát");
-  });
-
-  it("nói rõ đây là luật của hệ thống, không phải yêu cầu của tổ chức chứng nhận", async () => {
-    const out = (await HANDLERS.yeu_cau_cua_buoc(ctx(), {})) as { ghi_chu: string };
-    expect(out.ghi_chu).toContain("approve_project_stage");
-    expect(out.ghi_chu).toContain("Verra");
-    expect(out.ghi_chu).toContain("đừng suy diễn");
   });
 });
 
@@ -1089,7 +985,7 @@ describe("system prompt của nền tảng dự án", () => {
   it("liệt kê công cụ dự án, không còn công cụ nghiệp vụ cũ", () => {
     const prompt = buildSystemPrompt({ ...base, path: "/du-an" });
     expect(prompt).toContain("liet_ke_du_an");
-    expect(prompt).toContain("yeu_cau_cua_buoc");
+    expect(prompt).not.toContain("yeu_cau_cua_buoc");
     expect(prompt).not.toContain("liet_ke_nong_ho");
     expect(prompt).not.toContain("không có công cụ nào khả dụng");
   });
@@ -1111,15 +1007,17 @@ describe("system prompt của nền tảng dự án", () => {
   it("nhận diện các màn hình của nền tảng dự án", () => {
     expect(describePage("/du-an")).toContain("danh sách dự án");
     expect(describePage("/du-an/abc")).toContain("kanban");
-    expect(describePage("/du-an/abc/quy-trinh")).toContain("BẢY BƯỚC");
+    expect(describePage("/du-an/abc/quy-trinh")).toContain("BẢY MỤC HỒ SƠ");
     expect(describePage("/du-an/abc/giam-sat")).toContain("kỳ giám sát");
     expect(describePage("/du-an/abc/giam-sat/k1")).toContain("nhập số liệu");
     expect(describePage("/du-an/abc/bao-cao")).toContain("báo cáo");
     expect(describePage("/du-an/abc/thanh-vien")).toContain("thành viên");
   });
 
-  it("màn hình bảy bước gợi thẳng công cụ điều kiện duyệt", () => {
-    expect(describePage("/du-an/abc/quy-trinh")).toContain("yeu_cau_cua_buoc");
+  it("màn hình hồ sơ gợi công cụ đọc trạng thái nội dung", () => {
+    const hint = describePage("/du-an/abc/quy-trinh");
+    expect(hint).toContain("tien_do_du_an");
+    expect(hint).toContain("đã có nội dung hoặc chưa");
   });
 
   it("không còn nhận diện màn hình của module cũ", () => {

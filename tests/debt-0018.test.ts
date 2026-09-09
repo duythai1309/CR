@@ -7,6 +7,10 @@ const migrationPath = join(
   "supabase/migrations/0018_project_support_and_identity_debt.sql",
 );
 const sql = readFileSync(migrationPath, "utf8");
+const dropApproval = readFileSync(
+  join(process.cwd(), "supabase/migrations/0028_drop_stage_approval.sql"),
+  "utf8",
+);
 
 function definition(name: string, nextMarker: string): string {
   const plain = sql.indexOf(`create function public.${name}`);
@@ -25,15 +29,19 @@ describe("migration 0018 — hợp đồng bảo mật", () => {
     expect(sql).not.toMatch(/alter\s+table\s+public\.profiles/i);
   });
 
-  it("RPC lịch sử duyệt chỉ trả năm cột và dùng khuôn SECURITY DEFINER", () => {
-    const fn = definition("project_stage_approval_directory", "-- ---------------------------------------------------------------- user_role");
-    expect(fn).toContain("stage_id uuid");
-    expect(fn).toContain("ordinal smallint");
-    expect(fn).toContain("approved_at timestamptz");
-    expect(fn).toContain("approved_by uuid");
-    expect(fn).toContain("approver_name text");
-    expect(fn).toMatch(/security definer set search_path = public/i);
-    expect(fn).toContain("left join public.profiles p on p.id = s.approved_by");
+  /**
+   * 0018 từng dựng `project_stage_approval_directory`. 0028 gỡ nó cùng cả tính năng
+   * duyệt, nên ca kiểm khuôn RPC đó không còn nghĩa và đã bỏ. Thay bằng ca canh chính
+   * việc gỡ: hàm phải mất, còn hai cột lịch sử thì phải Ở LẠI — nếu ai đó "dọn dẹp"
+   * thêm bằng cách drop cột, 50 lượt duyệt có thật của người dùng biến mất.
+   */
+  it("0028 gỡ hai hàm duyệt nhưng KHÔNG xoá cột lịch sử", () => {
+    expect(dropApproval).toContain("drop function if exists public.approve_project_stage");
+    expect(dropApproval).toContain(
+      "drop function if exists public.project_stage_approval_directory",
+    );
+    expect(dropApproval).not.toMatch(/drop\s+column/i);
+    expect(dropApproval).not.toMatch(/alter\s+table[^;]*drop\s+/i);
   });
 
   it("phiên support có lý do, hết hạn tối đa 60 phút và client không có quyền ghi audit", () => {

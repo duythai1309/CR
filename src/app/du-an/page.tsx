@@ -21,7 +21,7 @@ export default async function ProjectListPage() {
   const live = rows.filter((r) => !r.deletedAt);
   const attention = live.filter((r) => projectAttention(r).length > 0);
   const myOpen = live.reduce((sum, r) => sum + r.myOpenTasks, 0);
-  const designed = live.filter((r) => r.approvedStages === 7).length;
+  const designed = live.filter((r) => r.dossierCount === 7).length;
   const sampleMethodology = live.some((r) => r.methodologyIsSample);
 
   const standards = [...new Set(live.flatMap((r) => (r.standardCode ? [r.standardCode] : [])))].sort();
@@ -61,10 +61,10 @@ export default async function ProjectListPage() {
             />
             <Stat label="Việc mở giao cho tôi" value={myOpen} tone="leaf" />
             <Stat
-              label="Đã duyệt đủ 7/7"
+              label="Đủ 7/7 hồ sơ"
               value={designed}
               tone="soil"
-              hint="Xong phần thiết kế; chưa phải hồ sơ nộp được"
+              hint="Bảy mục đều đã có nội dung; chưa phải hồ sơ nộp được"
             />
           </div>
 

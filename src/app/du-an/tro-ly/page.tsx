@@ -49,7 +49,7 @@ export default async function AssistantPage() {
       <PageHeader
         title="Trợ lý dự án Carbon"
         description={
-          "Tra cứu tiến độ, điều kiện duyệt, catalog Methodology và yêu cầu dữ liệu MRV " +
+          "Tra cứu tiến độ hồ sơ, catalog Methodology và yêu cầu dữ liệu MRV " +
           "bằng tiếng Việt. Câu trả lời dựa trên dữ liệu dự án mà bạn có quyền xem."
         }
       />
@@ -67,12 +67,11 @@ export default async function AssistantPage() {
           <section className="rounded-xl border border-soil-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-soil-900">Phạm vi công cụ</h2>
-              <Badge tone="carbon">7 công cụ</Badge>
+              <Badge tone="carbon">13 công cụ</Badge>
             </div>
             <ul className="mt-4 space-y-3 text-sm text-soil-700">
               {[
-                ["Danh mục & tiến độ", "Liệt kê dự án; đọc tiến độ 7 bước, công việc, kỳ giám sát và MRV estimate gần nhất."],
-                ["Điều kiện duyệt", "Đối chiếu điều kiện thật của từng bước với trạng thái dự án."],
+                ["Danh mục & tiến độ", "Liệt kê dự án; đọc trạng thái nội dung của bảy mục hồ sơ, công việc, kỳ giám sát và MRV estimate gần nhất."],
                 ["Methodology catalog", "Gợi ý trong catalog SAMPLE hiện có; luôn trả lại Standard, code và version."],
                 ["Metric schema", "Liệt kê baseline/observation fields, unit, bounds và tên cột CSV."],
                 ["Baseline readiness", "Kiểm field thiếu, sai kiểu hoặc vượt giới hạn."],
@@ -89,7 +88,7 @@ export default async function AssistantPage() {
           <section className="rounded-xl border border-soil-200 bg-soil-50 p-5">
             <h2 className="text-sm font-semibold text-soil-900">Câu hỏi phù hợp</h2>
             <ul className="mt-3 space-y-2 text-xs leading-relaxed text-soil-700">
-              <li>“Dự án Rừng A còn thiếu gì để duyệt bước 5?”</li>
+              <li>“Dự án Rừng A còn mục hồ sơ nào chưa có nội dung?”</li>
               <li>“Catalog có Methodology nào cho dự án biogas?”</li>
               <li>“Methodology DEMO-VCS-FOREST cần các cột CSV nào?”</li>
               <li>“Baseline của Dự án A đã hợp lệ chưa?”</li>

@@ -110,20 +110,15 @@ const CATALOG = [
   },
 ];
 
-/** Bảy bước của dự án mẫu: đã duyệt tới bước 4, đang vướng ở bước 5. */
-const BAY_BUOC = [
-  { buoc: 1, ten: "Project Idea", da_duyet: true, duyet_luc: "2026-03-01T00:00:00.000Z" },
-  {
-    buoc: 2,
-    ten: "Feasibility Assessment",
-    da_duyet: true,
-    duyet_luc: "2026-03-12T00:00:00.000Z",
-  },
-  { buoc: 3, ten: "Chọn Standard", da_duyet: true, duyet_luc: "2026-04-02T00:00:00.000Z" },
-  { buoc: 4, ten: "Chọn Methodology", da_duyet: true, duyet_luc: "2026-04-20T00:00:00.000Z" },
-  { buoc: 5, ten: "Baseline", da_duyet: false, duyet_luc: null },
-  { buoc: 6, ten: "Additionality", da_duyet: false, duyet_luc: null },
-  { buoc: 7, ten: "Project Design/PDD", da_duyet: false, duyet_luc: null },
+/** Bảy mục hồ sơ của dự án mẫu, theo cùng trạng thái nội dung với giao diện. */
+const BAY_MUC_HO_SO = [
+  { muc: 1, ten: "Project Idea", da_co_noi_dung: true },
+  { muc: 2, ten: "Feasibility Assessment", da_co_noi_dung: true },
+  { muc: 3, ten: "Chọn Standard", da_co_noi_dung: true },
+  { muc: 4, ten: "Chọn Methodology", da_co_noi_dung: true },
+  { muc: 5, ten: "Baseline", da_co_noi_dung: true },
+  { muc: 6, ten: "Additionality", da_co_noi_dung: false },
+  { muc: 7, ten: "Project Design/PDD", da_co_noi_dung: false },
 ];
 
 /** Baseline của dự án mẫu còn thiếu đúng một field — ca eval "còn vướng gì" cần điều đó. */
@@ -132,29 +127,6 @@ const BASELINE_LOI = [
     field: "baseline_stock_tc_ha",
     ten: "Trữ lượng carbon nền",
     van_de: "Bắt buộc nhưng chưa nhập",
-  },
-];
-
-const DIEU_KIEN_BUOC_5 = [
-  { dieu_kien: "Các bước trước đã duyệt hết", dat: true, cach_lam: "Đã đạt." },
-  {
-    dieu_kien: "Đã KHOÁ Standard",
-    dat: true,
-    cach_lam:
-      "Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, " +
-      "không đổi lại được.",
-  },
-  {
-    dieu_kien: "Đã KHOÁ Methodology",
-    dat: true,
-    cach_lam:
-      "Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở " +
-      "/du-an/[id]/quy-trinh. Khoá là một chiều.",
-  },
-  {
-    dieu_kien: "Baseline hợp lệ theo metric_schema của Methodology đã chọn",
-    dat: false,
-    cach_lam: "Còn 1 field chưa đạt — gọi kiem_tra_baseline để xem từng cái.",
   },
 ];
 
@@ -229,7 +201,8 @@ export const FIXTURE_RESULTS: Record<
       {
         ten: FIXTURE_PROJECT,
         mo_ta: "Trồng lại rừng ngập mặn ven biển, giai đoạn 1.",
-        buoc_da_duyet: "4/7",
+        ho_so_da_co: 5,
+        tong_muc_ho_so: 7,
         so_thanh_vien: 3,
         standard: "VCS",
         standard_da_khoa: true,
@@ -243,7 +216,8 @@ export const FIXTURE_RESULTS: Record<
       {
         ten: "Biogas hộ gia đình Đồng Tháp",
         mo_ta: null,
-        buoc_da_duyet: "2/7",
+        ho_so_da_co: 2,
+        tong_muc_ho_so: 7,
         so_thanh_vien: 2,
         standard: "GS",
         standard_da_khoa: false,
@@ -255,7 +229,7 @@ export const FIXTURE_RESULTS: Record<
         da_xoa: false,
       },
     ],
-    ghi_chu: "'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. " + CANH_BAO_MAU,
+    ghi_chu: "'ho_so_da_co' dùng cùng phép đếm nội dung với giao diện. " + CANH_BAO_MAU,
   }),
 
   tien_do_du_an: (args) => {
@@ -272,26 +246,12 @@ export const FIXTURE_RESULTS: Record<
         methodology_da_khoa: false,
         methodology: null,
         methodology_la_du_lieu_mau: null,
-        bay_buoc: BAY_BUOC.map((b) => ({
-          ...b,
-          da_duyet: b.buoc <= 2,
-          duyet_luc: b.buoc <= 2 ? b.duyet_luc : null,
-          nguoi_duyet: b.buoc <= 2 ? "Trần Thị Bích" : null,
+        ho_so_da_co: 2,
+        tong_muc_ho_so: 7,
+        bay_muc_ho_so: BAY_MUC_HO_SO.map((item) => ({
+          ...item,
+          da_co_noi_dung: item.muc <= 2,
         })),
-        buoc_ke_tiep: {
-          buoc: 3,
-          ten: "Chọn Standard",
-          dieu_kien: [
-            { dieu_kien: "Các bước trước đã duyệt hết", dat: true, cach_lam: "Đã đạt." },
-            {
-              dieu_kien: "Đã KHOÁ Standard",
-              dat: false,
-              cach_lam:
-                "Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, " +
-                "không đổi lại được.",
-            },
-          ],
-        },
         cong_viec: { tong: 4, chua_lam: 3, dang_lam: 1, xong: 0, vuong: 0 },
         ky_giam_sat: [],
         bao_cao_gan_nhat: null,
@@ -308,11 +268,9 @@ export const FIXTURE_RESULTS: Record<
       methodology_da_khoa: true,
       methodology: "DEMO-VCS-FOREST · demo-1.0",
       methodology_la_du_lieu_mau: true,
-      bay_buoc: BAY_BUOC.map((b) => ({
-        ...b,
-        nguoi_duyet: b.da_duyet ? FIXTURE_USER : null,
-      })),
-      buoc_ke_tiep: { buoc: 5, ten: "Baseline", dieu_kien: DIEU_KIEN_BUOC_5 },
+      ho_so_da_co: 5,
+      tong_muc_ho_so: 7,
+      bay_muc_ho_so: BAY_MUC_HO_SO,
       cong_viec: { tong: 9, chua_lam: 3, dang_lam: 2, xong: 3, vuong: 1 },
       ky_giam_sat: [
         {
@@ -343,44 +301,6 @@ export const FIXTURE_RESULTS: Record<
         "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
         "thẩm định độc lập và không phải tín chỉ đã được phát hành. " +
         CANH_BAO_MAU,
-    };
-  },
-
-  yeu_cau_cua_buoc: (args) => {
-    const name = matchProject(args.ten_du_an);
-    if (!name)
-      return {
-        khong_tim_thay: `Không có dự án nào khớp "${args.ten_du_an}" trong số dự án của người hỏi.`,
-      };
-
-    const raw = args.buoc;
-    const wanted = raw === null || raw === undefined || raw === "" ? 5 : Math.trunc(Number(raw));
-    if (!Number.isFinite(wanted) || wanted < 1 || wanted > 7)
-      return {
-        tham_so_sai:
-          "Dự án chỉ có bảy bước thiết kế cố định, đánh số 1 đến 7. Không có bước nào khác.",
-      };
-
-    const stage = BAY_BUOC[wanted - 1];
-    const dieuKien = DIEU_KIEN_BUOC_5.slice(
-      0,
-      wanted >= 5 ? 4 : wanted >= 4 ? 3 : wanted >= 3 ? 2 : 1,
-    );
-
-    return {
-      du_an: FIXTURE_PROJECT,
-      buoc: stage.buoc,
-      ten_buoc: stage.ten,
-      da_duyet: stage.da_duyet,
-      duyet_luc: stage.duyet_luc,
-      dieu_kien: dieuKien,
-      con_vuong: dieuKien.filter((c) => !c.dat).map((c) => c.dieu_kien),
-      ai_duyet_duoc: "Mọi thành viên của dự án.",
-      ghi_chu:
-        "Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước " +
-        "(hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu " +
-        "của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì " +
-        "thêm — đừng suy diễn thêm điều kiện nào không có ở đây.",
     };
   },
 
@@ -471,7 +391,7 @@ export const FIXTURE_RESULTS: Record<
       ban_sua_baseline: 0,
       con_thieu_hoac_sai: BASELINE_LOI,
       ghi_chu:
-        "Còn field chưa đạt, nên duyệt bước 5 và tạo kỳ giám sát đều sẽ bị từ chối." +
+        "Còn field chưa đạt, nên tạo kỳ giám sát sẽ bị từ chối." +
         " Đây là kiểm tra KỸ THUẬT theo metric_schema, không phải đánh giá chuyên môn " +
         "xem kịch bản cơ sở có hợp lý hay không — việc đó thuộc về VVB, ngoài phạm vi " +
         "hệ thống. " +
@@ -746,11 +666,10 @@ export const FIXTURE_RESULTS: Record<
     const wanted = raw === undefined || raw === null || raw === "" ? null : Math.trunc(Number(raw));
     if (wanted !== null && (!Number.isFinite(wanted) || wanted < 1 || wanted > 7))
       return { tham_so_sai: "buoc phải là số nguyên từ 1 đến 7." };
-    const rows = BAY_BUOC.filter((stage) => wanted === null || stage.buoc === wanted).map((stage) => ({
-      buoc: stage.buoc,
+    const rows = BAY_MUC_HO_SO.filter((stage) => wanted === null || stage.muc === wanted).map((stage) => ({
+      buoc: stage.muc,
       ten_buoc: stage.ten,
-      da_duyet: stage.da_duyet,
-      tai_lieu: stage.buoc === 5
+      tai_lieu: stage.muc === 5
         ? [{ kind: "baseline", phien_ban: 1, ten_tep: "baseline-camau-v1.pdf", nop_luc: "2026-08-10T04:00:00.000Z", file_id: "file-baseline" }]
         : [],
     }));
@@ -759,9 +678,8 @@ export const FIXTURE_RESULTS: Record<
       theo_buoc: rows,
       checklist_bat_buoc_theo_db: [],
       ket_luan_ve_tai_lieu_thieu:
-        "DB hiện không có checklist loại tài liệu bắt buộc theo từng bước và " +
-        "approve_project_stage cũng không kiểm project_documents. Vì vậy công cụ chỉ " +
-        "liệt kê cái đã nộp, không được suy diễn cái còn thiếu theo Standard.",
+        "DB hiện không có checklist loại tài liệu bắt buộc theo từng mục. Vì vậy công " +
+        "cụ chỉ liệt kê cái đã nộp, không được suy diễn cái còn thiếu theo Standard.",
     };
   },
 

@@ -5,9 +5,14 @@ import { Alert, Badge, NextAction } from "@/components/ui";
 import { getDocuments, getMethodology, getProject, getStages, getStandard } from "../data";
 import { getProjectSetup } from "./thiet-lap/data";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
-import { JourneyRail, dossierCountFor } from "@/components/project/journey-rail";
+import {
+  DOSSIER_KEYS,
+  JourneyRail,
+  countPresentDossiers,
+  dossierPresence,
+} from "@/components/project/journey-rail";
 import { ProjectTabs } from "@/components/project/project-tabs";
-import { approvalBlockers, toStageView } from "@/components/project/rules";
+import { toStageView } from "@/components/project/rules";
 
 /**
  * Khung của MỘT dự án: kiểm tư cách thành viên một lần, rồi dựng tiêu đề và điều hướng.
@@ -89,25 +94,27 @@ export default async function ProjectLayout({
    * `getDocuments` là nguồn của hai hồ sơ Additionality (bước 6) và PDD (bước 7) — tải tài
    * liệu lên cho hai bước đó phải làm con số này nhích lên.
    */
-  const dossierCount = dossierCountFor({
+  const presence = dossierPresence({
     setup,
     standardId: project.standard_id,
     methodologyId: project.methodology_id,
     baseline: project.baseline,
     documentKinds: documents.map((document) => document.kind),
   });
+  const dossierCount = countPresentDossiers(presence);
 
-  const views = stages.map(toStageView);
-  const current = views.find((s) => !s.approvedAt) ?? null;
-  const firstBlocker = current
-    ? (approvalBlockers(views, current.ordinal, {
-        standardId: project.standard_id,
-        methodologyId: project.methodology_id,
-        standardLockedAt: project.standard_locked_at,
-        methodologyLockedAt: project.methodology_locked_at,
-        projectDeleted: project.deleted_at !== null,
-      })[0] ?? null)
-    : null;
+  /**
+   * Việc cần làm tiếp theo = hồ sơ đầu tiên CHƯA CÓ NỘI DUNG.
+   *
+   * Trước đây ô này trỏ tới "bước cần duyệt tiếp" và nói kèm lý do chưa duyệt được. Bỏ
+   * bước duyệt thì câu hỏi "quay lại sau hai tuần thì làm gì" chỉ còn một câu trả lời
+   * trung thực: mục nào còn trống. Bảy mục điền được theo thứ tự bất kỳ, nên đây là gợi
+   * ý chứ không phải hàng rào.
+   */
+  const stagesByOrdinal = new Map(stages.map((row) => [row.ordinal, row]));
+  const nextOrdinal = DOSSIER_KEYS.findIndex((key) => !presence[key]) + 1;
+  const nextDossier = nextOrdinal > 0 ? (stagesByOrdinal.get(nextOrdinal) ?? null) : null;
+
 
   return (
     <>
@@ -134,14 +141,15 @@ export default async function ProjectLayout({
       {/*
         "Việc cần làm tiếp theo" từng là một dòng chữ nhỏ căn phải, lẫn vào tiêu đề. Đây
         là câu người quay lại dự án sau hai tuần hỏi trước tiên, nên nó được kéo ra thành
-        một đích bấm được chạy hết chiều ngang, đặt ngay trên nội dung trang.
+        một đích bấm được chạy hết chiều ngang, đặt ngay trên nội dung trang. Nó trỏ tới
+        hồ sơ trống đầu tiên — gợi ý, không phải thứ tự bắt buộc.
       */}
-      {current && (
+      {nextDossier && (
         <div className="mb-4">
           <NextAction
-            href={`/du-an/${id}/quy-trinh#buoc-${current.ordinal}`}
-            label={`Bước ${current.ordinal}: ${current.title}`}
-            note={firstBlocker ?? undefined}
+            href={`/du-an/${id}/quy-trinh#buoc-${nextDossier.ordinal}`}
+            label={`Hồ sơ ${nextDossier.ordinal}: ${nextDossier.title}`}
+            note="Mục này chưa có nội dung. Các mục khác vẫn điền được bất cứ lúc nào."
           />
         </div>
       )}
@@ -160,7 +168,7 @@ export default async function ProjectLayout({
           <Alert tone="warn" title="Phiên hỗ trợ chỉ đọc đang hoạt động">
             Quyền xem hộ được ghi vào nhật ký với lý do “{supportSession.reason}” và tự hết
             hạn lúc {new Date(supportSession.expiresAt).toLocaleString("vi-VN")}. Bạn không
-            thể sửa dữ liệu, duyệt stage hoặc chạy thao tác MRV trong phiên này.
+            thể sửa dữ liệu hoặc chạy thao tác MRV trong phiên này.
           </Alert>
         </div>
       )}

@@ -12,12 +12,12 @@ import {
  * Thiết kế.
  *
  * Trước đây hai màn tách rời: người dùng điền ý tưởng, mô tả và đánh giá khả thi ở
- * `thiet-lap`, rồi phải tự chuyển sang `quy-trinh` mới khoá và duyệt được. Chính trang cũ
+ * `thiet-lap`, rồi phải tự chuyển sang `quy-trinh` mới khoá được. Chính trang cũ
  * viết ra câu đó — "Sang tab Quy trình để chọn và khoá Standard rồi Methodology" — nên nó
  * là một điểm gãy có chứng cứ, không phải suy đoán.
  *
  * Bốn khối dưới đây gắn với record stage cố định trong DB để giữ tương thích với tài liệu
- * và duyệt. Trên giao diện chúng là hồ sơ có thể xây dựng song song, không phải đầu việc.
+ * cũ. Trên giao diện chúng là hồ sơ có thể xây dựng song song, không phải đầu việc.
  */
 
 /** Hồ sơ Project Idea: ý tưởng và mô tả dự án. */

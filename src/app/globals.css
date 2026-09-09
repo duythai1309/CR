@@ -76,7 +76,7 @@ body {
 }
 
 /*
- * Bảy bước dùng `<details>` để bước đã duyệt thu gọn lại mà không cần một dòng
+ * Bảy mục dùng `<details>` để mục đã xong thu gọn lại mà không cần một dòng
  * JavaScript nào. Tailwind `list-none` xoá được dấu tam giác ở Firefox và Chrome mới,
  * nhưng WebKit vẽ nó bằng một pseudo-element riêng và bỏ qua `list-style`.
  */

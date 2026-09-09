@@ -84,7 +84,7 @@ export function isDocumentKind(value: unknown): value is DocumentKind {
  * Quyền trong một dự án.
  *
  * **Chính sách (09/09/2026): không còn vai trò dự án.** Ai là thành viên thì toàn quyền
- * xem, thêm, sửa, xoá bên trong dự án đó — kể cả duyệt bước và nhận việc.
+ * xem, thêm, sửa, xoá bên trong dự án đó, kể cả nhận việc.
  *
  * **Lớp kiểm THÀNH VIÊN vẫn còn nguyên và là thứ giữ an toàn.** Người không phải thành
  * viên vẫn không đọc và không ghi được gì: `requireProjectMember` trả 404, còn RLS đòi
@@ -101,7 +101,6 @@ export interface ProjectAbilities {
   canComment: boolean;
   canUploadFiles: boolean;
   canManageMembers: boolean;
-  canApproveStage: boolean;
   canChooseStandard: boolean;
   canEditBaseline: boolean;
   canDeleteProject: boolean;
@@ -117,202 +116,27 @@ export function abilitiesFor(projectDeleted = false): ProjectAbilities {
     canComment: allowed,
     canUploadFiles: allowed,
     canManageMembers: allowed,
-    canApproveStage: allowed,
     canChooseStandard: allowed,
     canEditBaseline: allowed,
     canDeleteProject: allowed,
   };
 }
 
-/* ------------------------------------------------------------------ duyệt bước */
+/* -------------------------------------------------------------------- bảy mục hồ sơ */
 
+/**
+ * Một mục hồ sơ như giao diện dùng.
+ *
+ * Không còn trường `approvedAt`: nền tảng đã bỏ hẳn bước duyệt (09/09/2026). Bảy mục chỉ
+ * có hai trạng thái — đã có nội dung hoặc chưa — và trạng thái đó suy ra từ chính nội
+ * dung (`dossierPresence`), không từ một lượt bấm nút.
+ */
 export interface StageView {
   id: string;
   ordinal: number;
   title: string;
-  approvedAt: string | null;
 }
 
-export interface ProjectGate {
-  standardId: string | null;
-  methodologyId: string | null;
-  standardLockedAt: string | null;
-  methodologyLockedAt: string | null;
-}
-
-/**
- * Danh sách kiểm điều kiện duyệt — CHÉP TỪ `approve_project_stage`, không thêm gì.
- *
- * RPC ở `0013_project_platform.sql:696-714` kiểm đúng bảy điều và không kiểm gì khác.
- * Đặc biệt: tài liệu đã tải lên và công việc đã xong KHÔNG phải điều kiện duyệt. Màn
- * hình bảy bước hiện nguyên danh sách này để người dùng biết chính xác cái gì chặn mình,
- * thay vì bấm rồi nhận một thông báo lỗi thô từ Postgres.
- */
-export type CheckState = "pass" | "fail" | "unknown" | "not_applicable";
-
-export interface ApprovalCheck {
-  id: string;
-  /** Điều kiện, diễn đạt đúng như RPC cưỡng chế. */
-  requirement: string;
-  /** Dòng trong `0013_project_platform.sql` để đối chiếu. */
-  source: string;
-  state: CheckState;
-  /** Cụ thể đang thiếu gì, hoặc vì sao không áp dụng. */
-  detail?: string;
-}
-
-export interface ApprovalContext extends ProjectGate {
-  /** `deleted_at is null` — vế `for update` ở dòng 700. */
-  projectDeleted?: boolean;
-  /**
-   * Lỗi baseline, đã lọc về đúng những phép kiểm mà `project_validate_values` thực hiện.
-   * Dùng `baselineGateErrors()` để lọc. Bỏ trống nghĩa là chưa kiểm được → `unknown`.
-   */
-  baselineErrors?: Array<{ field: string; message: string }>;
-}
-
-export function approvalChecklist(
-  stages: StageView[],
-  ordinal: number,
-  ctx: ApprovalContext,
-): ApprovalCheck[] {
-  const pendingBefore = stages
-    .filter((s) => s.ordinal < ordinal && !s.approvedAt)
-    .map((s) => s.ordinal);
-
-  const checks: ApprovalCheck[] = [
-    {
-      id: "project_active",
-      requirement: "Dự án còn hoạt động (`deleted_at is null`)",
-      source: "0013:700",
-      state: ctx.projectDeleted ? "fail" : "pass",
-      detail: ctx.projectDeleted ? "Dự án đã bị xoá mềm; mọi đường ghi đóng lại." : undefined,
-    },
-    {
-      id: "ordinal_range",
-      requirement: "Bước nằm trong 1..7",
-      source: "0013:702",
-      state: ordinal >= 1 && ordinal <= 7 ? "pass" : "fail",
-    },
-    {
-      id: "sequence",
-      requirement: "Mọi bước trước đã được duyệt",
-      source: "0013:703-705",
-      state: pendingBefore.length === 0 ? "pass" : "fail",
-      detail:
-        pendingBefore.length > 0 ? `Bước ${pendingBefore.join(", ")} chưa duyệt.` : undefined,
-    },
-    {
-      id: "standard_locked",
-      requirement: "Standard đã khoá",
-      source: "0013:706",
-      state: ordinal < 3 ? "not_applicable" : ctx.standardLockedAt ? "pass" : "fail",
-      detail:
-        ordinal < 3
-          ? "Chỉ áp dụng từ bước 3 trở đi."
-          : ctx.standardLockedAt
-            ? undefined
-            : ctx.standardId
-              ? "Đã chọn Standard nhưng chưa bấm khoá ở bước 3."
-              : "Chưa chọn Standard ở bước 3.",
-    },
-    {
-      id: "methodology_locked",
-      requirement: "Methodology đã khoá",
-      source: "0013:707",
-      state: ordinal < 4 ? "not_applicable" : ctx.methodologyLockedAt ? "pass" : "fail",
-      detail:
-        ordinal < 4
-          ? "Chỉ áp dụng từ bước 4 trở đi."
-          : ctx.methodologyLockedAt
-            ? undefined
-            : ctx.methodologyId
-              ? "Đã chọn Methodology nhưng chưa bấm khoá ở bước 4."
-              : "Chưa chọn Methodology ở bước 4.",
-    },
-    {
-      id: "baseline_valid",
-      requirement: "Baseline qua được `project_validate_values(metric_schema, baseline, 'baseline')`",
-      source: "0013:708-710",
-      state:
-        ordinal < 5
-          ? "not_applicable"
-          : ctx.baselineErrors === undefined
-            ? "unknown"
-            : ctx.baselineErrors.length === 0
-              ? "pass"
-              : "fail",
-      detail:
-        ordinal < 5
-          ? "Chỉ áp dụng từ bước 5 trở đi."
-          : ctx.baselineErrors === undefined
-            ? "Chưa đọc được metric schema để kiểm trước."
-            : ctx.baselineErrors.length > 0
-              ? ctx.baselineErrors.map((e) => `${e.field || "(giá trị)"}: ${e.message}`).join("; ")
-              : undefined,
-    },
-  ];
-
-  return checks;
-}
-
-/**
- * Lọc lỗi của `validateValues` (TypeScript) về đúng tập mà SQL thực sự cưỡng chế.
- *
- * `project_validate_values` chỉ đọc `required`; nó KHÔNG cưỡng chế `required_if`, còn bộ
- * kiểm TypeScript thì có. Giữ nguyên sẽ khoá nút Duyệt ở những trường hợp cơ sở dữ liệu
- * chấp nhận — sai theo hướng nguy hiểm hơn, vì người dùng không có cách nào đi tiếp.
- */
-export function baselineGateErrors(
-  errors: Array<{ field: string; message: string }>,
-  fields: Array<{ id: string; required: boolean }>,
-): Array<{ field: string; message: string }> {
-  const conditional = new Set(fields.filter((f) => !f.required).map((f) => f.id));
-  return errors.filter((e) => !(e.message === "Required field" && conditional.has(e.field)));
-}
-
-/**
- * Vì sao chưa duyệt được một bước — trả về danh sách rỗng nghĩa là duyệt được.
- *
- * Dạng rút gọn của `approvalChecklist` cho những chỗ chỉ cần một dòng lý do. Chỉ tính
- * những điều kiện đã kết luận được (`fail`); `unknown` không bị coi là rào.
- */
-export function approvalBlockers(
-  stages: StageView[],
-  ordinal: number,
-  project: ApprovalContext,
-): string[] {
-  const target = stages.find((s) => s.ordinal === ordinal);
-  if (!target) return ["Không tìm thấy bước này."];
-  if (target.approvedAt) return ["Bước này đã được duyệt."];
-
-  const failed = approvalChecklist(stages, ordinal, project).filter((c) => c.state === "fail");
-  const label: Record<string, string> = {
-    project_active: "Dự án đã bị xoá.",
-    ordinal_range: "Bước không hợp lệ.",
-    standard_locked: "Chưa khoá Standard (bước 3).",
-    methodology_locked: "Chưa khoá Methodology (bước 4).",
-    baseline_valid: "Baseline chưa hợp lệ theo metric schema (bước 5).",
-  };
-
-  return failed.map((c) =>
-    c.id === "sequence"
-      ? `Cần duyệt bước ${stages
-          .filter((s) => s.ordinal < ordinal && !s.approvedAt)
-          .map((s) => s.ordinal)
-          .join(", ")} trước.`
-      : (label[c.id] ?? c.requirement),
-  );
-}
-
-/** Bước kế tiếp cần duyệt, hoặc null nếu đã duyệt hết. */
-export function nextStageToApprove(stages: StageView[]): StageView | null {
-  return [...stages].sort((a, b) => a.ordinal - b.ordinal).find((s) => !s.approvedAt) ?? null;
-}
-
-export function approvedCount(stages: StageView[]): number {
-  return stages.filter((s) => s.approvedAt).length;
-}
 
 /* ------------------------------------------------------------------ hợp lệ hoá đầu vào */
 
@@ -423,6 +247,24 @@ export function assignableMembers<T>(members: T[]): T[] {
   return members;
 }
 
+/**
+ * Lọc lỗi của `validateValues` (TypeScript) về đúng tập mà SQL thực sự cưỡng chế.
+ *
+ * `project_validate_values` chỉ đọc `required`; nó KHÔNG cưỡng chế `required_if`, còn bộ
+ * kiểm TypeScript thì có. Không lọc thì giao diện báo lỗi ở những trường hợp cơ sở dữ
+ * liệu chấp nhận — sai theo hướng nguy hiểm hơn, vì người dùng không có cách nào đi tiếp.
+ *
+ * Hàm này ra đời để canh nút Duyệt. Bước duyệt đã bỏ, nhưng cùng hàm SQL đó vẫn chặn
+ * `create_monitoring_period`, nên phép lọc vẫn đúng và vẫn cần.
+ */
+export function baselineGateErrors(
+  errors: Array<{ field: string; message: string }>,
+  fields: Array<{ id: string; required: boolean }>,
+): Array<{ field: string; message: string }> {
+  const conditional = new Set(fields.filter((f) => !f.required).map((f) => f.id));
+  return errors.filter((e) => !(e.message === "Required field" && conditional.has(e.field)));
+}
+
 /* ------------------------------------------------------------------ chuyển đổi hàng DB */
 
 /**
@@ -436,9 +278,8 @@ export function toStageView(row: {
   id: string;
   ordinal: number;
   title: string;
-  approved_at: string | null;
 }): StageView {
-  return { id: row.id, ordinal: row.ordinal, title: row.title, approvedAt: row.approved_at };
+  return { id: row.id, ordinal: row.ordinal, title: row.title };
 }
 
 export function toTaskCard(row: {
@@ -633,10 +474,14 @@ export interface PortfolioRow {
   methodologyIsSample: boolean;
   standardLockedAt: string | null;
   methodologyLockedAt: string | null;
-  approvedStages: number;
-  /** Bước đang chờ duyệt — `ordinal` nhỏ nhất chưa có `approved_at`. */
-  currentStage: { ordinal: number; title: string } | null;
-  lastApprovedAt: string | null;
+  /**
+   * Số mục hồ sơ đã có nội dung, 0..7 — cùng con số mà màn Thiết kế hiện.
+   *
+   * Thay cho `approvedStages` cũ. Danh mục từng đo tiến độ bằng số bước ĐÃ DUYỆT trong
+   * khi màn dự án đo bằng NỘI DUNG, nên hai màn nói hai con số khác nhau về cùng một dự
+   * án. Bỏ bước duyệt thì chỉ còn một thước đo, và nó là thước đo đúng.
+   */
+  dossierCount: number;
   openTasks: number;
   blockedTasks: number;
   overdueTasks: number;
@@ -652,8 +497,12 @@ export interface PortfolioRow {
 }
 
 /**
- * Vì sao dự án này cần chú ý — gộp ba nguồn CÓ THẬT trong cơ sở dữ liệu: việc `blocked`,
- * việc quá hạn, và điều kiện khoá còn thiếu của bước đang chờ. Không suy đoán thêm.
+ * Vì sao dự án này cần chú ý — gộp bốn nguồn CÓ THẬT trong cơ sở dữ liệu: việc `blocked`,
+ * việc quá hạn, và hai lựa chọn đã chọn nhưng chưa khoá. Không suy đoán thêm.
+ *
+ * Hai vế sau trước đây phải chờ "bước đang duyệt" đi tới số 3 hoặc 4 mới bật. Không còn
+ * bước duyệt thì ngưỡng đó biến mất, và thứ thay thế lại chính xác hơn: đã CHỌN một
+ * Standard mà chưa KHOÁ nó là một trạng thái dở dang có thật, đọc thẳng từ hai cột.
  */
 export function projectAttention(row: PortfolioRow): string[] {
   if (row.deletedAt) return [];
@@ -661,11 +510,9 @@ export function projectAttention(row: PortfolioRow): string[] {
   if (row.blockedTasks > 0) reasons.push(`${row.blockedTasks} việc đang vướng`);
   if (row.overdueTasks > 0) reasons.push(`${row.overdueTasks} việc quá hạn`);
 
-  const ordinal = row.currentStage?.ordinal ?? null;
-  if (ordinal !== null) {
-    if (ordinal >= 3 && !row.standardLockedAt) reasons.push("Chưa khoá Standard");
-    else if (ordinal >= 4 && !row.methodologyLockedAt) reasons.push("Chưa khoá Methodology");
-  }
+  if (row.standardCode && !row.standardLockedAt) reasons.push("Chưa khoá Standard");
+  else if (row.methodologyCode && !row.methodologyLockedAt)
+    reasons.push("Chưa khoá Methodology");
   return reasons;
 }
 
@@ -675,7 +522,7 @@ export type PortfolioSort = (typeof PORTFOLIO_SORTS)[number];
 export const PORTFOLIO_SORT_LABEL: Record<PortfolioSort, string> = {
   updated: "Cập nhật gần nhất",
   name: "Tên dự án",
-  progress: "Tiến độ bảy bước",
+  progress: "Số hồ sơ đã có",
   attention: "Việc đang chặn",
   period: "Kỳ giám sát gần nhất",
 };
@@ -683,7 +530,7 @@ export const PORTFOLIO_SORT_LABEL: Record<PortfolioSort, string> = {
 export interface PortfolioFilter {
   text: string;
   standard: string;
-  /** `""` | `"planning"` (chưa duyệt hết) | `"designed"` (đủ 7/7). */
+  /** `""` | `"planning"` (chưa đủ bảy hồ sơ) | `"designed"` (đủ 7/7). */
   progress: string;
   onlyAttention: boolean;
   includeDeleted: boolean;
@@ -703,8 +550,8 @@ export function filterProjects(rows: PortfolioRow[], filter: PortfolioFilter): P
     if (!filter.includeDeleted && row.deletedAt) return false;
     if (needle && !normalize(`${row.name} ${row.description}`).includes(needle)) return false;
     if (filter.standard && (row.standardCode ?? "") !== filter.standard) return false;
-    if (filter.progress === "planning" && row.approvedStages >= 7) return false;
-    if (filter.progress === "designed" && row.approvedStages < 7) return false;
+    if (filter.progress === "planning" && row.dossierCount >= 7) return false;
+    if (filter.progress === "designed" && row.dossierCount < 7) return false;
     if (filter.onlyAttention && projectAttention(row).length === 0) return false;
     return true;
   });
@@ -717,7 +564,7 @@ export function sortProjects(rows: PortfolioRow[], sort: PortfolioSort): Portfol
     case "name":
       return copy.sort(byName);
     case "progress":
-      return copy.sort((a, b) => b.approvedStages - a.approvedStages || byName(a, b));
+      return copy.sort((a, b) => b.dossierCount - a.dossierCount || byName(a, b));
     case "attention":
       return copy.sort(
         (a, b) =>

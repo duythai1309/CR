@@ -43,10 +43,10 @@ describe("giới hạn quanh một lượt hỏi", () => {
   });
 
   it("dựng tiêu đề hội thoại cắt ở ranh giới từ", () => {
-    expect(titleFromQuestion("Dự án Cà Mau đã duyệt tới bước mấy?")).toBe(
-      "Dự án Cà Mau đã duyệt tới bước mấy?",
+    expect(titleFromQuestion("Dự án Cà Mau đã có nội dung ở mấy mục?")).toBe(
+      "Dự án Cà Mau đã có nội dung ở mấy mục?",
     );
-    const long = titleFromQuestion("Baseline của dự án còn thiếu field nào thì mới duyệt được", 30);
+    const long = titleFromQuestion("Baseline của dự án còn thiếu field bắt buộc nào", 30);
     expect(long.endsWith("…")).toBe(true);
     expect(long.length).toBeLessThanOrEqual(31);
     expect(long).not.toContain("  ");
@@ -63,7 +63,7 @@ describe("system prompt", () => {
       today: "2026-09-01",
     });
     expect(prompt).toContain("Nguyễn Văn A");
-    expect(prompt).toContain("BẢY BƯỚC");
+    expect(prompt).toContain("BẢY MỤC HỒ SƠ");
     expect(prompt).toContain("2026-09-01");
   });
 
@@ -163,11 +163,11 @@ describe("vòng lặp một lượt hỏi", () => {
         runOptions(
           scriptedProvider([
             [{ type: "calls", calls: [{ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } }] }],
-            [{ type: "text", text: "Dự án đã duyệt 4/7 bước." }],
+            [{ type: "text", text: "Dự án đã có nội dung ở 5/7 mục hồ sơ." }],
           ]),
           async (call) => {
             called.push(call);
-            return { buoc_da_duyet: "4/7" };
+            return { ho_so_da_co: 5, tong_muc_ho_so: 7 };
           },
         ),
       ),
@@ -177,7 +177,7 @@ describe("vòng lặp một lượt hỏi", () => {
     expect(events.find((e) => e.type === "status")).toMatchObject({ tool: "tien_do_du_an" });
     expect(events.at(-1)).toMatchObject({
       type: "done",
-      text: "Dự án đã duyệt 4/7 bước.",
+      text: "Dự án đã có nội dung ở 5/7 mục hồ sơ.",
       toolCalls: [{ name: "tien_do_du_an", args: { ten_du_an: "Cà Mau" } }],
     });
   });
@@ -320,9 +320,9 @@ describe("dữ liệu mẫu cho eval", () => {
   it("ba ca judge có tool result cụ thể để trả lời mà không hỏi ngược", async () => {
     const run = createFixtureExecute("coop_manager");
     const projects = (await run({ name: "liet_ke_du_an", args: {} })) as {
-      du_an: Array<{ buoc_da_duyet: string }>;
+      du_an: Array<{ ho_so_da_co: number; tong_muc_ho_so: number }>;
     };
-    expect(projects.du_an[0].buoc_da_duyet).toMatch(/^\d+\/7$/);
+    expect(projects.du_an[0]).toMatchObject({ ho_so_da_co: 5, tong_muc_ho_so: 7 });
 
     const fields = (await run({
       name: "field_giam_sat_cua_methodology",
@@ -346,25 +346,17 @@ describe("dữ liệu mẫu cho eval", () => {
     const run = createFixtureExecute("coop_manager");
 
     const list = (await run({ name: "liet_ke_du_an", args: {} })) as {
-      du_an: Array<{ ten: string; buoc_da_duyet: string }>;
+      du_an: Array<{ ten: string; ho_so_da_co: number; tong_muc_ho_so: number }>;
     };
     const progress = (await run({ name: "tien_do_du_an", args: {} })) as {
-      bay_buoc: Array<{ da_duyet: boolean }>;
+      ho_so_da_co: number;
+      tong_muc_ho_so: number;
+      bay_muc_ho_so: Array<{ da_co_noi_dung: boolean }>;
     };
-    // "4/7" trong danh sách phải đúng bằng số bước đã duyệt trong tiến độ.
-    const approved = progress.bay_buoc.filter((b) => b.da_duyet).length;
-    expect(list.du_an[0].buoc_da_duyet).toBe(`${approved}/7`);
-
-    const step = (await run({ name: "yeu_cau_cua_buoc", args: { buoc: 5 } })) as {
-      dieu_kien: Array<{ dieu_kien: string; dat: boolean; cach_lam: string }>;
-    };
-    const baseline = (await run({ name: "kiem_tra_baseline", args: {} })) as {
-      dat: boolean;
-      con_thieu_hoac_sai: unknown[];
-    };
-    const cond = step.dieu_kien.find((c) => c.dieu_kien.startsWith("Baseline hợp lệ"))!;
-    expect(cond.dat).toBe(baseline.dat);
-    expect(cond.cach_lam).toContain(`Còn ${baseline.con_thieu_hoac_sai.length} field`);
+    const present = progress.bay_muc_ho_so.filter((muc) => muc.da_co_noi_dung).length;
+    expect(list.du_an[0].ho_so_da_co).toBe(present);
+    expect(list.du_an[0].tong_muc_ho_so).toBe(progress.tong_muc_ho_so);
+    expect(progress.ho_so_da_co).toBe(present);
   });
 
   it("fixture MRV giữ cùng estimate và provenance giữa danh sách với trace", async () => {
@@ -464,13 +456,6 @@ describe("dữ liệu mẫu bám đúng hành vi của handler thật", () => {
     expect(r.du_an).toBe(FIXTURE_PROJECT);
   });
 
-  it("số bước ngoài 1..7 bị từ chối như handler thật", async () => {
-    const r = (await run({ name: "yeu_cau_cua_buoc", args: { buoc: 9 } })) as
-      Record<string, unknown>;
-    expect(r.tham_so_sai).toBeDefined();
-    expect(r.buoc).toBeUndefined();
-  });
-
   it("mã methodology không có trong catalog thì báo không tìm thấy", async () => {
     const r = (await run({
       name: "field_giam_sat_cua_methodology",
@@ -484,19 +469,19 @@ describe("dữ liệu mẫu bám đúng hành vi của handler thật", () => {
 describe("vết thực thi gửi cho eval platform", () => {
   it("dựng đúng hình dạng message OpenAI mà evaluator agentic đọc", () => {
     const messages = buildTrajectory(
-      "Dự án Cà Mau đã duyệt tới bước mấy?",
+      "Dự án Cà Mau đã có nội dung ở mấy mục hồ sơ?",
       [
         {
           call: { name: "tien_do_du_an", args: { ten_du_an: "Rừng ngập mặn Cà Mau" } },
-          result: { buoc_da_duyet: "4/7" },
+          result: { ho_so_da_co: 5, tong_muc_ho_so: 7 },
         },
       ],
-      "Dự án đã duyệt 4 trên 7 bước.",
+      "Dự án đã có nội dung ở 5 trên 7 mục hồ sơ.",
     );
 
     expect(messages[0]).toEqual({
       role: "user",
-      content: "Dự án Cà Mau đã duyệt tới bước mấy?",
+      content: "Dự án Cà Mau đã có nội dung ở mấy mục hồ sơ?",
     });
 
     const assistant = messages[1] as {
@@ -513,7 +498,7 @@ describe("vết thực thi gửi cho eval platform", () => {
     expect(messages[2]).toMatchObject({ role: "tool", name: "tien_do_du_an" });
     expect(messages.at(-1)).toEqual({
       role: "assistant",
-      content: "Dự án đã duyệt 4 trên 7 bước.",
+      content: "Dự án đã có nội dung ở 5 trên 7 mục hồ sơ.",
     });
   });
 

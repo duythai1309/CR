@@ -127,8 +127,8 @@ export function ProjectPortfolio({
           className={CONTROL}
         >
           <option value="">Mọi tiến độ</option>
-          <option value="planning">Còn bước chưa duyệt</option>
-          <option value="designed">Đã duyệt đủ 7/7</option>
+          <option value="planning">Còn hồ sơ trống</option>
+          <option value="designed">Đủ 7/7 hồ sơ</option>
         </select>
 
         <label className="flex items-center gap-1.5 text-sm text-soil-700">
@@ -230,26 +230,26 @@ function PortfolioRowItem({ row }: { row: PortfolioRow }) {
           </p>
         </div>
 
-        {/* Bước hiện tại */}
+        {/* Số hồ sơ đã có nội dung — cùng thước đo với màn Thiết kế của dự án. */}
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold tabular-nums text-soil-900">
-              {row.approvedStages}/7
+              {row.dossierCount}/7
             </span>
-            <span className="text-xs text-soil-500">bước đã duyệt</span>
+            <span className="text-xs text-soil-500">hồ sơ đã có</span>
           </div>
           <div className="mt-1.5">
             <ProgressBar
-              value={row.approvedStages}
+              value={row.dossierCount}
               max={7}
-              label={`Đã duyệt ${row.approvedStages} trên 7 bước`}
-              tone={row.approvedStages === 7 ? "leaf" : "carbon"}
+              label={`Đã có nội dung ${row.dossierCount} trên 7 hồ sơ`}
+              tone={row.dossierCount === 7 ? "leaf" : "carbon"}
             />
           </div>
           <p className="mt-1.5 truncate text-xs text-soil-600">
-            {row.currentStage
-              ? `Đang chờ: ${row.currentStage.ordinal}. ${row.currentStage.title}`
-              : "Bảy bước thiết kế đã duyệt xong"}
+            {row.dossierCount === 7
+              ? "Bảy hồ sơ đều đã có nội dung"
+              : `Còn ${7 - row.dossierCount} hồ sơ chưa có nội dung`}
           </p>
         </div>
 

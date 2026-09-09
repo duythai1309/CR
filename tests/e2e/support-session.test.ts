@@ -18,13 +18,6 @@ function hasE2eConfig(): boolean {
 }
 
 type Db = SupabaseClient;
-type ApprovalRow = {
-  stage_id: string;
-  ordinal: number;
-  approved_at: string | null;
-  approved_by: string | null;
-  approver_name: string | null;
-};
 
 const describeDb = describe.skipIf(!hasE2eConfig());
 
@@ -33,7 +26,6 @@ describeDb("phiên hỗ trợ dự án chỉ đọc (0018)", () => {
   let outsider: Db;
   let admin: Db;
   let ownerId: string;
-  let ownerName: string;
   let projectId: string;
   let hiddenProjectId: string;
   let taskId: string;
@@ -45,8 +37,6 @@ describeDb("phiên hỗ trợ dự án chỉ đọc (0018)", () => {
     outsider = await signedIn("duan-outsider@test.local", PASSWORD) as Db;
 
     ownerId = (await owner.auth.getUser()).data.user!.id;
-    const profile = await owner.from("profiles").select("full_name").eq("id", ownerId).single();
-    ownerName = (profile.data as { full_name: string }).full_name;
 
     const created = await owner.rpc("create_project", {
       p_name: SUPPORT_PROJECT_NAME,
@@ -244,46 +234,15 @@ describeDb("phiên hỗ trợ dự án chỉ đọc (0018)", () => {
     });
   });
 
-  describe("tên người duyệt", () => {
-    function expectFiveColumns(row: ApprovalRow) {
-      expect(Object.keys(row).sort()).toEqual([
-        "approved_at", "approved_by", "approver_name", "ordinal", "stage_id",
-      ]);
-    }
-
-    it("thành viên dự án nhận đúng năm cột và đúng full_name của người duyệt", async () => {
-      const { data, error } = await owner.rpc("project_stage_approval_directory", {
-        p_project_id: projectId,
-      });
-      expect(error).toBeNull();
-      const rows = data as ApprovalRow[];
-      expect(rows).toHaveLength(7);
-      rows.forEach(expectFiveColumns);
-      expect(rows[0]).toMatchObject({
-        ordinal: 1,
-        approved_by: ownerId,
-        approver_name: ownerName,
-      });
-      expect(rows[0].approved_at).not.toBeNull();
+  /**
+   * Ba ca về `project_stage_approval_directory` đã bỏ: 0028 gỡ hàm đó cùng cả tính năng
+   * duyệt. Ca dưới đây canh việc gỡ, để danh bạ người duyệt không lặng lẽ sống lại.
+   */
+  it("RPC danh bạ người duyệt không còn tồn tại", async () => {
+    const { error } = await owner.rpc("project_stage_approval_directory", {
+      p_project_id: projectId,
     });
-
-    it("người ngoài dự án gọi danh bạ duyệt nhận tập rỗng", async () => {
-      const { data, error } = await outsider.rpc("project_stage_approval_directory", {
-        p_project_id: projectId,
-      });
-      expect(error).toBeNull();
-      expect(data).toEqual([]);
-    });
-
-    it("admin có phiên hỗ trợ đọc được danh bạ người duyệt", async () => {
-      const { data, error } = await admin.rpc("project_stage_approval_directory", {
-        p_project_id: projectId,
-      });
-      expect(error).toBeNull();
-      const rows = data as ApprovalRow[];
-      expect(rows).toHaveLength(7);
-      rows.forEach(expectFiveColumns);
-      expect(rows[0].approver_name).toBe(ownerName);
-    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/function|not find|schema cache/i);
   });
 });

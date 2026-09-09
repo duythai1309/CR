@@ -42,10 +42,7 @@ export function requiredToolNamesForQuestion(question: string): string[] | null 
   if (/thành viên|phân công|giao việc cho ai|ai đang giữ việc|vai trò trong.*dự án/.test(q))
     return ["thanh_vien_va_phan_cong"];
   if (/công việc|nhiệm vụ|quá hạn|blocked/.test(q)) return ["cong_viec_theo_buoc"];
-  if (/bước|quy trình/.test(q))
-    return /điều kiện|duyệt|kẹt|chặn|cần gì|thiếu gì/.test(q)
-      ? ["yeu_cau_cua_buoc", "tien_do_du_an"]
-      : ["liet_ke_du_an", "tien_do_du_an"];
+  if (/bước|quy trình|mục hồ sơ/.test(q)) return ["liet_ke_du_an", "tien_do_du_an"];
   if (/tiến độ|trạng thái dự án|làm gì tiếp theo|tới đâu rồi/.test(q))
     return ["tien_do_du_an"];
   if (/dự án (?:nào|gì)|danh sách dự án|các dự án|dự án tôi đang/.test(q))

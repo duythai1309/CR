@@ -150,43 +150,6 @@ export const getProjectMembers = cache(async function getProjectMembers(
   });
 });
 
-export interface ProjectStageApproval {
-  stageId: string;
-  ordinal: number;
-  approvedAt: string | null;
-  approvedBy: string | null;
-  approverName: string | null;
-}
-
-/**
- * Tên người duyệt được lấy theo `approved_by`, không theo danh sách thành viên hiện
- * tại. Vì vậy một người đã rời dự án vẫn được ghi nhận đúng trong lịch sử stage.
- * RPC 0018 chỉ trả đúng năm cột cần hiển thị và không nới policy của `profiles`.
- */
-export const getProjectStageApprovals = cache(async function getProjectStageApprovals(
-  projectId: string,
-): Promise<ProjectStageApproval[]> {
-  if (!readSupabaseConfig()) return [];
-  const db = await projectClient();
-  const { data, error } = await db.rpc("project_stage_approval_directory", {
-    p_project_id: projectId,
-  });
-  if (error || !Array.isArray(data)) return [];
-
-  return data.flatMap((row: Record<string, unknown>): ProjectStageApproval[] => {
-    if (typeof row.stage_id !== "string" || typeof row.ordinal !== "number") return [];
-    return [
-      {
-        stageId: row.stage_id,
-        ordinal: row.ordinal,
-        approvedAt: typeof row.approved_at === "string" ? row.approved_at : null,
-        approvedBy: typeof row.approved_by === "string" ? row.approved_by : null,
-        approverName: typeof row.approver_name === "string" ? row.approver_name : null,
-      },
-    ];
-  });
-});
-
 export interface ProjectSupportSession {
   id: string;
   projectId: string;

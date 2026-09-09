@@ -4,8 +4,8 @@ import Link from "next/link";
  * Trục hành trình của một dự án carbon: Thiết kế → Giám sát → Báo cáo.
  *
  * Thiết kế là danh mục bảy hồ sơ thông tin cần xây dựng, không phải chuỗi bảy đầu việc.
- * Vì vậy tiến độ ở đây đếm hồ sơ đã có nội dung; trạng thái duyệt tuần tự là một trục
- * riêng và không được dùng để khoá việc điền hồ sơ.
+ * Vì vậy tiến độ ở đây đếm hồ sơ đã có nội dung. Nền tảng đã bỏ hẳn bước duyệt (0028),
+ * nên không còn trục nào khác để nhầm lẫn với trục này.
  */
 
 type PhaseState = "done" | "active" | "available" | "locked";
@@ -27,7 +27,8 @@ export interface DossierPresence {
   pdd: boolean;
 }
 
-const DOSSIER_KEYS: Array<keyof DossierPresence> = [
+/** Bảy khoá theo đúng thứ tự ordinal 1..7 của `project_stages`. */
+export const DOSSIER_KEYS: Array<keyof DossierPresence> = [
   "idea",
   "feasibility",
   "standard",
@@ -158,7 +159,7 @@ const TONE: Record<PhaseState, { bar: string; label: string; detail: string }> =
 /**
  * Thanh tiến độ. Chỉ VẼ — số hồ sơ do layout tính rồi truyền xuống.
  *
- * Không còn prop `approved`. Nó là số lượt duyệt stage, đã hết được dùng từ khi Thiết kế
+ * Không còn prop `approved`. Nó là số lượt duyệt stage, hết được dùng từ khi Thiết kế
  * chuyển sang đếm hồ sơ, nhưng vẫn nằm trong chữ ký nên layout cứ truyền và không ai thấy
  * là nó rơi vào hư không. Một prop chết mà vẫn nhận chính là cái bẫy đó, nên gỡ hẳn thay
  * vì đổi tên thành `_legacy`.

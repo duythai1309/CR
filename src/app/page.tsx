@@ -370,8 +370,9 @@ export default async function Home() {
                 Một không gian <span className="text-mint-600">cho cả đội dự án</span>
               </h2>
               <p className="mt-8 text-lg leading-relaxed text-forest-700">
-                Project Owner kiểm soát cấu hình và phê duyệt; Project Developer xử lý đầu
-                việc và dữ liệu MRV; Viewer theo dõi hồ sơ mà không làm thay đổi nguồn dữ liệu.
+                Mời cả đội vào cùng một dự án. Ai ở trong dự án đều xem và sửa được mọi
+                hồ sơ, nhận việc trên bảng công việc và nhập dữ liệu MRV — không phân vai
+                trò, không phải chờ ai mở quyền.
               </p>
 
               <div className="mt-10 flex h-16 overflow-hidden rounded-2xl">
@@ -388,7 +389,7 @@ export default async function Home() {
 
               <dl className="mt-8 grid gap-5 sm:grid-cols-3">
                 {[
-                  ["bg-forest-800", "Thiết kế dự án", "Bảy bước có task, tài liệu và phê duyệt"],
+                  ["bg-forest-800", "Thiết kế dự án", "Bảy hồ sơ có task và tài liệu đi kèm"],
                   ["bg-mint-500", "Giám sát MRV", "Kỳ theo dõi, dữ liệu và validation"],
                   ["bg-mint-300", "Báo cáo", "Snapshot bất biến với vết tính đầy đủ"],
                 ].map(([color, name, desc]) => (

@@ -13,7 +13,6 @@ export interface ChatMessage {
 const TOOL_LABEL: Record<string, string> = {
   liet_ke_du_an: "Đang xem danh sách dự án…",
   tien_do_du_an: "Đang xem tiến độ dự án…",
-  yeu_cau_cua_buoc: "Đang tra điều kiện duyệt bước…",
   goi_y_methodology: "Đang tra catalog methodology…",
   field_giam_sat_cua_methodology: "Đang mở lược đồ chỉ số của methodology…",
   kiem_tra_baseline: "Đang đối chiếu baseline với lược đồ…",
@@ -26,9 +25,9 @@ const TOOL_LABEL: Record<string, string> = {
  */
 const SUGGESTIONS = [
   "Tôi đang có những dự án nào?",
-  "Bước hiện tại còn vướng gì thì mới duyệt được?",
+  "Mục hồ sơ nào còn chưa có nội dung?",
   "Methodology đang chọn đòi những field nào?",
-  "Baseline của dự án đã đủ để duyệt bước 5 chưa?",
+  "Baseline của dự án còn thiếu field nào?",
 ];
 
 export function ChatPanel({

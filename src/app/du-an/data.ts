@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { projectClient, requireProfile } from "@/lib/auth";
 import { taskFlags, toTaskCard, type PortfolioRow } from "@/components/project/rules";
+import { dossierCountFor } from "@/components/project/journey-rail";
 import type {
   Methodology,
   MonitoringPeriod,
@@ -46,10 +47,12 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
   const db = await projectClient();
   const now = new Date();
 
-  const [{ data: projects }, { data: stages }, { data: tasks }, { data: periods }] =
+  const [{ data: projects }, { data: documents }, { data: tasks }, { data: periods }] =
     await Promise.all([
       db.from("projects").select("*").order("updated_at", { ascending: false }),
-      db.from("project_stages").select("project_id, id, ordinal, title, approved_at").order("ordinal"),
+      // Loại tài liệu, để đếm mục hồ sơ đã có nội dung. Thay cho truy vấn
+      // `project_stages` cũ: nó chỉ tồn tại để đọc `approved_at`, mà bước duyệt đã bỏ.
+      db.from("project_documents").select("project_id, kind"),
       db
         .from("project_tasks")
         .select("id, project_id, stage_id, title, status, assignee_id, due_at, position"),
@@ -79,13 +82,11 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
     ).map((m) => [m.id, m]),
   );
 
-  const stagesByProject = new Map<string, Array<Pick<ProjectStage, "ordinal" | "title" | "approved_at">>>();
-  for (const s of (stages ?? []) as Array<
-    Pick<ProjectStage, "project_id" | "ordinal" | "title" | "approved_at">
-  >) {
-    const list = stagesByProject.get(s.project_id) ?? [];
-    list.push(s);
-    stagesByProject.set(s.project_id, list);
+  const documentKinds = new Map<string, string[]>();
+  for (const d of (documents ?? []) as Array<{ project_id: string; kind: string }>) {
+    const list = documentKinds.get(d.project_id) ?? [];
+    list.push(d.kind);
+    documentKinds.set(d.project_id, list);
   }
 
   const counts = new Map<string, { open: number; blocked: number; overdue: number; mine: number }>();
@@ -119,9 +120,6 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
       });
 
   return rows.map((p) => {
-    const projectStages = (stagesByProject.get(p.id) ?? []).slice().sort((a, b) => a.ordinal - b.ordinal);
-    const approved = projectStages.filter((s) => s.approved_at);
-    const pending = projectStages.find((s) => !s.approved_at) ?? null;
     const methodology = p.methodology_id ? methodologyById.get(p.methodology_id) : undefined;
     const count = counts.get(p.id) ?? { open: 0, blocked: 0, overdue: 0, mine: 0 };
 
@@ -137,13 +135,17 @@ export const listPortfolio = cache(async function listPortfolio(): Promise<Portf
       methodologyIsSample: methodology?.is_sample ?? false,
       standardLockedAt: p.standard_locked_at,
       methodologyLockedAt: p.methodology_locked_at,
-      approvedStages: approved.length,
-      currentStage: pending ? { ordinal: pending.ordinal, title: pending.title } : null,
-      lastApprovedAt:
-        approved.reduce<string | null>(
-          (max, s) => (s.approved_at && (!max || s.approved_at > max) ? s.approved_at : max),
-          null,
-        ) ?? null,
+      // Cùng hàm mà màn Thiết kế dùng, nên hai màn không thể nói hai con số khác nhau.
+      dossierCount: dossierCountFor({
+        // `Project` sinh từ DB chưa khai báo cột `setup` (mục C9 trong
+        // schema-review-findings.md), nhưng `select("*")` vẫn trả về nó.
+        setup: (p as Project & { setup?: { idea?: unknown; description?: unknown; feasibility?: unknown } })
+          .setup ?? { description: p.description },
+        standardId: p.standard_id,
+        methodologyId: p.methodology_id,
+        baseline: p.baseline,
+        documentKinds: documentKinds.get(p.id) ?? [],
+      }),
       openTasks: count.open,
       blockedTasks: count.blocked,
       overdueTasks: count.overdue,

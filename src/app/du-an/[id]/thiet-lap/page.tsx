@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
  * Màn "Khởi tạo" cũ đã được gộp vào màn Thiết kế (`quy-trinh`).
  *
  * Trước đây người dùng điền ý tưởng, mô tả và đánh giá khả thi ở đây, rồi phải tự chuyển
- * sang tab khác mới khoá và duyệt được — chính trang này từng viết ra câu "Sang tab Quy
+ * sang tab khác mới khoá được — chính trang này từng viết ra câu "Sang tab Quy
  * trình để chọn và khoá Standard rồi Methodology". Hai màn nói về cùng bốn bước đầu là
  * một điểm gãy, không phải một lựa chọn thiết kế.
  *

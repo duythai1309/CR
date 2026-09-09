@@ -2,6 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { Profile } from "@/lib/auth";
 import {
+  DOSSIER_KEYS,
+  countPresentDossiers,
+  dossierCountFor,
+  dossierPresence,
+} from "@/components/project/journey-rail";
+import {
   parseMetricSchema,
   validateValues,
   type MetricField,
@@ -86,6 +92,7 @@ interface ProjectRow {
   standard_locked_at?: string | null;
   methodology_locked_at?: string | null;
   baseline?: unknown;
+  setup?: unknown;
   baseline_revision?: number;
   updated_at?: string;
 }
@@ -98,8 +105,6 @@ interface StageRow {
   project_id?: string;
   ordinal: number;
   title: string;
-  approved_at: string | null;
-  approved_by?: string | null;
 }
 interface TaskRow {
   id?: string;
@@ -164,6 +169,7 @@ interface MonitoringDataRow {
 }
 interface DocumentRow {
   id: string;
+  project_id?: string;
   stage_id: string;
   file_id: string;
   kind: string;
@@ -179,7 +185,7 @@ interface FileRow {
 
 const PROJECT_COLUMNS =
   "id, name, description, deleted_at, standard_id, methodology_id, " +
-  "standard_locked_at, methodology_locked_at, baseline, baseline_revision, updated_at";
+  "standard_locked_at, methodology_locked_at, baseline, baseline_revision, setup, updated_at";
 
 const METHODOLOGY_COLUMNS =
   "id, standard_id, code, version, name, project_type, is_sample, " +
@@ -300,8 +306,7 @@ const LOI_VI: Record<string, string> = {
 /**
  * Đối chiếu baseline của dự án với lược đồ của methodology đã chọn.
  *
- * Dùng chung cho `kiem_tra_baseline` và cho điều kiện bước ≥ 5 của `yeu_cau_cua_buoc`,
- * để hai công cụ không bao giờ nói ngược nhau.
+ * Dùng cho `kiem_tra_baseline`, cùng bộ kiểm kỹ thuật mà form baseline sử dụng.
  */
 function checkBaseline(
   schema: MetricSchema | null,
@@ -363,71 +368,10 @@ function estimatedCredit(results: ReportRow["results"]): { value: string | null;
   };
 }
 
-/**
- * Điều kiện duyệt một bước, chép đúng theo `approve_project_stage`
- * (`0013_project_platform.sql:696-714`) — nguồn sự thật duy nhất.
- *
- * Cố ý KHÔNG mô tả quy trình chuẩn của Verra hay Gold Standard: hệ thống này không
- * cưỡng chế những thứ đó, và nói ra là bịa yêu cầu cho người làm hồ sơ thật.
- */
-function stageConditions(
-  ordinal: number,
-  project: ProjectRow,
-  stages: StageRow[],
-  baseline: ReturnType<typeof checkBaseline>,
-): Array<{ dieu_kien: string; dat: boolean; cach_lam: string }> {
-  const chuaDuyetTruoc = stages
-    .filter((s) => s.ordinal < ordinal && s.approved_at === null)
-    .map((s) => `${s.ordinal}. ${s.title}`);
-
-  const conditions = [
-    {
-      dieu_kien: "Các bước trước đã duyệt hết",
-      dat: chuaDuyetTruoc.length === 0,
-      cach_lam:
-        chuaDuyetTruoc.length === 0
-          ? "Đã đạt."
-          : `Còn phải duyệt trước: ${chuaDuyetTruoc.join(", ")}.`,
-    },
-  ];
-
-  if (ordinal >= 3)
-    conditions.push({
-      dieu_kien: "Đã KHOÁ Standard",
-      dat: Boolean(project.standard_locked_at),
-      cach_lam:
-        "Chọn rồi bấm khoá Standard ở /du-an/[id]/quy-trinh. Khoá là một chiều, " +
-        "không đổi lại được.",
-    });
-
-  if (ordinal >= 4)
-    conditions.push({
-      dieu_kien: "Đã KHOÁ Methodology",
-      dat: Boolean(project.methodology_locked_at),
-      cach_lam:
-        "Chọn Methodology thuộc Standard đã khoá rồi bấm khoá, cũng ở " +
-        "/du-an/[id]/quy-trinh. Khoá là một chiều.",
-    });
-
-  if (ordinal >= 5)
-    conditions.push({
-      dieu_kien: "Baseline hợp lệ theo metric_schema của Methodology đã chọn",
-      dat: baseline?.ok === true,
-      cach_lam:
-        baseline === null
-          ? "Chưa đọc được lược đồ của methodology nên chưa kiểm được baseline."
-          : baseline.ok
-            ? "Đã đạt."
-            : `Còn ${baseline.loi.length} field chưa đạt — gọi kiem_tra_baseline để xem từng cái.`,
-    });
-
-  return conditions;
-}
-
 /* ------------------------------------------------------------------------- công cụ */
 
 export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<unknown>> = {
-  async liet_ke_du_an({ supabase, profile }) {
+  async liet_ke_du_an({ supabase }) {
     const db = projectTables(supabase);
 
     const { data: projects, error } = await db
@@ -441,10 +385,10 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     if (rows.length === 0)
       return { du_an: [], ghi_chu: "Người hỏi chưa là thành viên của dự án carbon nào." };
 
-    const [{ data: members }, { data: stages }, { data: standards }, { data: methodologies }] =
+    const [{ data: members }, { data: documents }, { data: standards }, { data: methodologies }] =
       await Promise.all([
         db.from("project_members").select("project_id, user_id, role"),
-        db.from("project_stages").select("project_id, approved_at"),
+        db.from("project_documents").select("project_id, kind"),
         db.from("standards").select("id, code"),
         db.from("methodologies").select(METHODOLOGY_COLUMNS),
       ]);
@@ -455,10 +399,14 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       memberCount.set(m.project_id, (memberCount.get(m.project_id) ?? 0) + 1);
     }
 
-    const approved = new Map<string, number>();
-    for (const st of (stages ?? []) as StageRow[])
-      if (st.approved_at && st.project_id)
-        approved.set(st.project_id, (approved.get(st.project_id) ?? 0) + 1);
+    const documentKinds = new Map<string, string[]>();
+    for (const document of (documents ?? []) as Array<{ project_id?: string; kind?: string }>) {
+      if (!document.project_id || !document.kind) continue;
+      documentKinds.set(document.project_id, [
+        ...(documentKinds.get(document.project_id) ?? []),
+        document.kind,
+      ]);
+    }
 
     const standardCode = new Map<string, string>(
       ((standards ?? []) as StandardRow[]).map((x) => [x.id, x.code]),
@@ -473,7 +421,14 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         return {
           ten: p.name,
           mo_ta: p.description || null,
-          buoc_da_duyet: `${approved.get(p.id) ?? 0}/7`,
+          ho_so_da_co: dossierCountFor({
+            setup: isRecord(p.setup) ? p.setup : {},
+            standardId: p.standard_id,
+            methodologyId: p.methodology_id,
+            baseline: p.baseline,
+            documentKinds: documentKinds.get(p.id) ?? [],
+          }),
+          tong_muc_ho_so: DOSSIER_KEYS.length,
           so_thanh_vien: memberCount.get(p.id) ?? null,
           standard: p.standard_id ? (standardCode.get(p.standard_id) ?? null) : null,
           standard_da_khoa: Boolean(p.standard_locked_at),
@@ -486,11 +441,11 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         };
       }),
       ghi_chu:
-        "'buoc_da_duyet' đếm trên bảy bước thiết kế cố định. " + CANH_BAO_MAU,
+        "'ho_so_da_co' dùng cùng phép đếm nội dung với giao diện. " + CANH_BAO_MAU,
     };
   },
 
-  async tien_do_du_an({ supabase, profile }, args) {
+  async tien_do_du_an({ supabase }, args) {
     const db = projectTables(supabase);
     const name = str(args.ten_du_an);
 
@@ -502,10 +457,11 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       { data: tasks },
       { data: periods },
       { data: reports },
+      { data: documents },
     ] = await Promise.all([
       db
         .from("project_stages")
-        .select("ordinal, title, approved_at, approved_by")
+        .select("ordinal, title")
         .eq("project_id", project.id),
       db
         .from("project_tasks")
@@ -524,6 +480,10 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         .eq("project_id", project.id)
         .order("generated_at", { ascending: false })
         .limit(1),
+      db
+        .from("project_documents")
+        .select("kind")
+        .eq("project_id", project.id),
     ]);
 
     const byStatus: Record<string, number> = {};
@@ -533,12 +493,17 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       .slice()
       .sort((a, b) => a.ordinal - b.ordinal);
 
-    const names = await memberNames(db, project.id);
-
     const methodology = await loadMethodology(db, project.methodology_id ?? null);
-    const baseline = checkBaseline(parseSchema(methodology?.metric_schema), project.baseline);
-
-    const next = stages.find((s) => s.approved_at === null) ?? null;
+    const presence = dossierPresence({
+      setup: isRecord(project.setup) ? project.setup : {},
+      standardId: project.standard_id,
+      methodologyId: project.methodology_id,
+      baseline: project.baseline,
+      documentKinds: ((documents ?? []) as Array<{ kind?: string }>).flatMap((document) =>
+        document.kind ? [document.kind] : [],
+      ),
+    });
+    const dossierCount = countPresentDossiers(presence);
 
     const latest = ((reports ?? []) as ReportRow[])[0];
     const credit = latest?.results?.estimated_credit;
@@ -550,20 +515,16 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       methodology_da_khoa: Boolean(project.methodology_locked_at),
       methodology: methodology ? `${methodology.code} · ${methodology.version}` : null,
       methodology_la_du_lieu_mau: methodology ? methodology.is_sample : null,
-      bay_buoc: stages.map((st) => ({
-        buoc: st.ordinal,
-        ten: st.title,
-        da_duyet: st.approved_at !== null,
-        duyet_luc: st.approved_at,
-        nguoi_duyet: st.approved_by ? (names.get(st.approved_by) ?? null) : null,
-      })),
-      buoc_ke_tiep: next
-        ? {
-            buoc: next.ordinal,
-            ten: next.title,
-            dieu_kien: stageConditions(next.ordinal, project, stages, baseline),
-          }
-        : null,
+      ho_so_da_co: dossierCount,
+      tong_muc_ho_so: DOSSIER_KEYS.length,
+      bay_muc_ho_so: stages.map((st) => {
+        const key = DOSSIER_KEYS[st.ordinal - 1];
+        return {
+          muc: st.ordinal,
+          ten: st.title,
+          da_co_noi_dung: key ? presence[key] : false,
+        };
+      }),
       cong_viec: {
         tong: (tasks ?? []).length,
         chua_lam: byStatus.todo ?? 0,
@@ -592,65 +553,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
         "thẩm định độc lập và không phải tín chỉ đã được phát hành. " +
         CANH_BAO_MAU,
-    };
-  },
-
-  async yeu_cau_cua_buoc({ supabase, profile }, args) {
-    const db = projectTables(supabase);
-    const name = str(args.ten_du_an);
-
-    const project = await resolveProject(db, name);
-    if (!project) return khongTimThayDuAn(name);
-
-    const { data: stageRows } = await db
-      .from("project_stages")
-      .select("ordinal, title, approved_at, approved_by")
-      .eq("project_id", project.id);
-
-    const stages = ((stageRows ?? []) as StageRow[]).slice().sort((a, b) => a.ordinal - b.ordinal);
-
-    const raw = args.buoc;
-    const wanted = raw === null || raw === undefined || raw === "" ? null : Math.trunc(num(raw));
-    if (wanted !== null && (!Number.isFinite(wanted) || wanted < 1 || wanted > 7))
-      return {
-        tham_so_sai:
-          "Dự án chỉ có bảy bước thiết kế cố định, đánh số 1 đến 7. Không có bước nào khác.",
-      };
-
-    const stage =
-      wanted !== null
-        ? (stages.find((s) => s.ordinal === wanted) ?? null)
-        : (stages.find((s) => s.approved_at === null) ?? null);
-
-    if (!stage)
-      return wanted !== null
-        ? { khong_tim_thay: `Dự án "${project.name}" không có bước ${wanted}.` }
-        : {
-            du_an: project.name,
-            da_xong: true,
-            ghi_chu:
-              "Cả bảy bước thiết kế đã duyệt xong. Bước tiếp theo là giám sát và báo cáo MRV.",
-          };
-
-    const methodology = await loadMethodology(db, project.methodology_id ?? null);
-    const baseline = checkBaseline(parseSchema(methodology?.metric_schema), project.baseline);
-
-    const conditions = stageConditions(stage.ordinal, project, stages, baseline);
-
-    return {
-      du_an: project.name,
-      buoc: stage.ordinal,
-      ten_buoc: stage.title,
-      da_duyet: stage.approved_at !== null,
-      duyet_luc: stage.approved_at,
-      dieu_kien: conditions,
-      con_vuong: conditions.filter((c) => !c.dat).map((c) => c.dieu_kien),
-      ai_duyet_duoc: "Mọi thành viên của dự án.",
-      ghi_chu:
-        "Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước " +
-        "(hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu " +
-        "của Verra/Gold Standard. Ngoài các điều kiện trên, hệ thống không cưỡng chế gì " +
-        "thêm — đừng suy diễn thêm điều kiện nào không có ở đây.",
     };
   },
 
@@ -843,9 +745,8 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       con_thieu_hoac_sai: result.loi,
       ghi_chu:
         (result.ok
-          ? "Baseline hiện đủ và hợp lệ theo lược đồ, nên bước 5 duyệt được và tạo được " +
-            "kỳ giám sát."
-          : "Còn field chưa đạt, nên duyệt bước 5 và tạo kỳ giám sát đều sẽ bị từ chối.") +
+          ? "Baseline hiện đủ và hợp lệ theo lược đồ, nên tạo được kỳ giám sát."
+          : "Còn field chưa đạt, nên tạo kỳ giám sát sẽ bị từ chối.") +
         " Đây là kiểm tra KỸ THUẬT theo metric_schema, không phải đánh giá chuyên môn " +
         "xem kịch bản cơ sở có hợp lý hay không — việc đó thuộc về VVB, ngoài phạm vi " +
         "hệ thống. " +
@@ -1262,7 +1163,7 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     if (ordinal !== null && (!Number.isFinite(ordinal) || ordinal < 1 || ordinal > 7))
       return { tham_so_sai: "buoc phải là số nguyên từ 1 đến 7." };
     const [stageResult, documentResult, fileResult] = await Promise.all([
-      db.from("project_stages").select("id, ordinal, title, approved_at").eq("project_id", project.id),
+      db.from("project_stages").select("id, ordinal, title").eq("project_id", project.id),
       db
         .from("project_documents")
         .select("id, stage_id, file_id, kind, version, created_at")
@@ -1290,7 +1191,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       theo_buoc: selectedStages.map((stage) => ({
         buoc: stage.ordinal,
         ten_buoc: stage.title,
-        da_duyet: stage.approved_at !== null,
         tai_lieu: docs.filter((doc) => doc.stage_id === stage.id).map((doc) => ({
           kind: doc.kind,
           phien_ban: doc.version,
@@ -1301,9 +1201,8 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       })),
       checklist_bat_buoc_theo_db: [],
       ket_luan_ve_tai_lieu_thieu:
-        "DB hiện không có checklist loại tài liệu bắt buộc theo từng bước và " +
-        "approve_project_stage cũng không kiểm project_documents. Vì vậy công cụ chỉ " +
-        "liệt kê cái đã nộp, không được suy diễn cái còn thiếu theo Standard.",
+        "DB hiện không có checklist loại tài liệu bắt buộc theo từng mục. Vì vậy công " +
+        "cụ chỉ liệt kê cái đã nộp, không được suy diễn cái còn thiếu theo Standard.",
     };
   },
 

@@ -75,7 +75,7 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
         description="Tạo kỳ, nhập số liệu quan sát và khoá ảnh chụp dữ liệu dùng cho báo cáo MRV."
       />
 
-      {abilities.canApproveStage && (
+      {abilities.canWriteTasks && (
         <div id="tao-ky-giam-sat" className="scroll-mt-6">
           <Card
             title="Tạo kỳ giám sát"
@@ -94,12 +94,12 @@ export default async function MonitoringPage({ params }: { params: Promise<{ id:
           <Empty
             title="Chưa có kỳ giám sát"
             hint={
-              abilities.canApproveStage
+              abilities.canWriteTasks
                 ? "Tạo kỳ đầu tiên để chụp cấu hình hiện tại và bắt đầu nhập dữ liệu quan sát."
                 : "Hãy tạo kỳ đầu tiên trước khi nhập dữ liệu quan sát."
             }
             action={
-              abilities.canApproveStage ? (
+              abilities.canWriteTasks ? (
                 <LinkButton href="#tao-ky-giam-sat">Tạo kỳ giám sát đầu tiên</LinkButton>
               ) : (
                 <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">

@@ -418,7 +418,7 @@ describe("chọn và khoá Standard rồi Methodology", () => {
   });
 });
 
-describe("baseline và duyệt bảy bước", () => {
+describe("baseline và lịch sử duyệt đã đóng băng", () => {
   it("baseline chỉ bị kiểm HÌNH DẠNG lúc ghi, không kiểm nội dung", async () => {
     // Phát hiện của bước 7: `projects.baseline` chỉ có `check (jsonb_typeof = 'object')`.
     // Giá trị sai kiểu (số thay vì chuỗi canonical cho field `decimal`) VẪN lưu được —
@@ -450,65 +450,27 @@ describe("baseline và duyệt bảy bước", () => {
     );
   });
 
-  it("không duyệt nhảy cóc: bước 3 khi bước 1 chưa duyệt thì bị từ chối", async () => {
+  /**
+   * Bảy ca duyệt bước cũ đã bỏ cùng tính năng: 0028 gỡ `approve_project_stage`. Ca dưới
+   * đây canh chính việc gỡ, để không ai dựng lại hàm mà không ai hay.
+   */
+  it("RPC duyệt bước không còn tồn tại", async () => {
     const { error } = await owner.rpc("approve_project_stage", {
-      p_project_id: projectId,
-      p_ordinal: 3,
-    });
-    expect(error).not.toBeNull();
-    expect(error!.message).toContain("Cần duyệt các stage trước");
-  });
-
-  it("developer KHÔNG duyệt được bước", async () => {
-    const { error } = await developer.rpc("approve_project_stage", {
       p_project_id: projectId,
       p_ordinal: 1,
     });
     expect(error).not.toBeNull();
-    expect(error!.message).toContain("Chỉ owner");
+    expect(error!.message).toMatch(/function|not find|schema cache/i);
   });
 
-  it("bốn bước đầu duyệt được dù baseline còn sai", async () => {
-    for (let ordinal = 1; ordinal <= 4; ordinal += 1) {
-      const { error } = await owner.rpc("approve_project_stage", {
-        p_project_id: projectId,
-        p_ordinal: ordinal,
-      });
-      expect(error, `bước ${ordinal}`).toBeNull();
-    }
-  });
-
-  it("CỔNG 1 — bước 5 từ chối baseline sai nội dung", async () => {
-    const { error } = await owner.rpc("approve_project_stage", {
-      p_project_id: projectId,
-      p_ordinal: 5,
-    });
-    expect(error).not.toBeNull();
-  });
-
-  it("sửa baseline hợp lệ rồi duyệt nốt ba bước còn lại", async () => {
-    const fixed = await owner
-      .from("projects")
-      .update({ baseline: { baseline_stock_tc_ha: "42.5" } })
-      .eq("id", projectId);
-    expect(fixed.error).toBeNull();
-
-    for (let ordinal = 5; ordinal <= 7; ordinal += 1) {
-      const { error } = await owner.rpc("approve_project_stage", {
-        p_project_id: projectId,
-        p_ordinal: ordinal,
-      });
-      expect(error, `bước ${ordinal}`).toBeNull();
-    }
-
-    const { data } = await owner
+  it("cột lịch sử duyệt vẫn đọc được, chỉ không ghi thêm được", async () => {
+    const { data, error } = await owner
       .from("project_stages")
       .select("ordinal, approved_at, approved_by")
       .eq("project_id", projectId)
       .order("ordinal");
-    const rows = data as Array<{ approved_at: string | null; approved_by: string | null }>;
-    expect(rows.every((r) => r.approved_at !== null)).toBe(true);
-    expect(rows.every((r) => r.approved_by === ownerId)).toBe(true);
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBe(7);
   });
 });
 

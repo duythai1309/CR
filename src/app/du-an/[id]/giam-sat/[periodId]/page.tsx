@@ -453,7 +453,7 @@ export default async function PeriodPage({
         )}
       </Card>
 
-      {abilities.canApproveStage && open && (
+      {abilities.canWriteTasks && open && (
         <Card
           title="Khoá kỳ"
           description="Đóng băng dữ liệu để sinh báo cáo. Không mở lại được — hiệu chỉnh bằng kỳ bản mới."

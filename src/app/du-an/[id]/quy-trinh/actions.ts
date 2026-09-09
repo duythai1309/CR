@@ -430,31 +430,6 @@ export async function saveBaseline(_prev: Result, formData: FormData): Promise<R
   return ok("Đã lưu baseline. Mỗi lần lưu tăng một số hiệu bản (baseline_revision).");
 }
 
-/* ------------------------------------------------------------------ duyệt bước */
-
-/**
- * Duyệt một bước. Chỉ owner, và phải tuần tự — RPC `approve_project_stage`
- * (`0013:696-715`) tự kiểm lại toàn bộ điều kiện, giao diện chỉ nói trước lý do.
- */
-export async function approveStage(_prev: Result, formData: FormData): Promise<Result> {
-  const configError = formConfigError();
-  if (configError) return fail(configError);
-
-  const projectId = String(formData.get("project_id") ?? "");
-  const ordinal = Number(formData.get("ordinal"));
-  if (!projectId || !Number.isInteger(ordinal)) return fail("Thiếu thông tin bước.");
-  await requireProjectMember(projectId);
-
-  const db = await projectClient();
-  const { error } = await db.rpc("approve_project_stage", {
-    p_project_id: projectId,
-    p_ordinal: ordinal,
-  });
-  if (error) return fail(projectError(error.message));
-
-  refresh(projectId);
-  return ok(`Đã duyệt bước ${ordinal}.`);
-}
 
 /* ------------------------------------------------------------------ tài liệu */
 
@@ -773,8 +748,6 @@ function projectError(message: string): string {
   if (message.includes("methodology published"))
     return "Chỉ chọn được Methodology đã publish và đúng Standard của dự án.";
   if (message.includes("Chỉ thành viên")) return "Bạn không còn là thành viên của dự án này.";
-  if (message.includes("Cần duyệt các stage trước"))
-    return "Phải duyệt các bước trước theo đúng thứ tự.";
   if (message.includes("Chưa khóa Standard")) return "Chưa khoá Standard ở bước 3.";
   if (message.includes("Chưa khóa Methodology")) return "Chưa khoá Methodology ở bước 4.";
   if (message.includes("row-level security") || message.includes("permission denied"))
