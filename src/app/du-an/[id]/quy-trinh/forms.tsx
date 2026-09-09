@@ -29,7 +29,11 @@ type Result = { ok: boolean; message: string } | null;
 
 function Feedback({ result }: { result: Result }) {
   if (!result) return null;
-  return <Alert tone={result.ok ? "ok" : "error"}>{result.message}</Alert>;
+  return (
+    <div role={result.ok ? "status" : "alert"} aria-live={result.ok ? "polite" : "assertive"}>
+      <Alert tone={result.ok ? "ok" : "error"}>{result.message}</Alert>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ hồ sơ Standard */
