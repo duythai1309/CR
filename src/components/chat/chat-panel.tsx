@@ -35,6 +35,7 @@ export function ChatPanel({
   initialConversationId = null,
   initialMessages = [],
   className = "",
+  resizeHandleInset = false,
 }: {
   /**
    * Không còn dùng tới. Giữ trong kiểu prop vì bốn điểm gắn của module cũ
@@ -47,6 +48,8 @@ export function ChatPanel({
   initialConversationId?: string | null;
   initialMessages?: ChatMessage[];
   className?: string;
+  /** Chừa chỗ cho tay cầm co giãn của widget; trang chat toàn màn hình không cần. */
+  resizeHandleInset?: boolean;
 }) {
   const pathname = usePathname();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -197,7 +200,7 @@ export function ChatPanel({
           e.preventDefault();
           send(input);
         }}
-        className="flex items-end gap-2 border-t border-soil-200 bg-soil-50 px-3 py-3"
+        className={`flex items-end gap-2 border-t border-soil-200 bg-soil-50 py-3 pr-3 ${resizeHandleInset ? "pl-3 sm:pl-10" : "pl-3"}`}
       >
         <textarea
           value={input}
