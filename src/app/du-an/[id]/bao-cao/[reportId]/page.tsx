@@ -19,6 +19,7 @@ import { MethodologyIdentity } from "@/components/project/methodology-identity";
 import { getMethodology, getProject, getStandard } from "../../../data";
 import { getPeriod, getReport, listProjectActors } from "../../giam-sat/data";
 import { ReportAssistPanel } from "./assist-panel";
+import { parseReportTemplateSnapshot } from "@/lib/mrv/template";
 
 export const metadata: Metadata = { title: "Báo cáo MRV" };
 
@@ -50,6 +51,8 @@ export default async function ReportPage({
   const abilities = abilitiesFor(project.deleted_at !== null);
   const supabase = await createClient();
   const assistantConfigured = (await loadChatConfig(supabase)) !== null;
+  const template = parseReportTemplateSnapshot(report.template_snapshot);
+  const hasReadyTemplate = template?.status === "ready";
 
   return (
     <div className="space-y-6">
@@ -154,14 +157,30 @@ export default async function ReportPage({
       />
 
       <Card title="Xuất báo cáo">
-        <Alert tone="warn" title="Chưa phải mẫu chính thức của tổ chức chứng nhận">
-          Kho mã hiện <strong>không có</strong> tệp mẫu PDF/Word thật của Verra hay Gold
-          Standard — bản ghi template trong hệ thống mới ở dạng placeholder. Hai đường xuất
-          dưới đây là bản trình bày của nền tảng này, dùng để rà soát nội bộ, không phải hồ
-          sơ nộp cho tổ chức chứng nhận.
-        </Alert>
+        {hasReadyTemplate ? (
+          <Alert tone="warn" title={`Template ${template.version} có tệp thật`}>
+            Báo cáo này đã chụp lại metadata của VCS Monitoring Report {template.version}.
+            Hệ thống chưa tự điền dữ liệu vào DOCX: hãy tải tệp, đọc phạm vi áp dụng trong
+            chính biểu mẫu và đối chiếu với bản in cùng CSV bên dưới. Bản in của nền tảng
+            không tự trở thành hồ sơ nộp cho Verra.
+          </Alert>
+        ) : (
+          <Alert tone="warn" title="Báo cáo này dùng template placeholder">
+            Báo cáo được sinh trước khi có tệp mẫu thật, nên snapshot của nó không thể đổi
+            hồi tố. Hai đường xuất dưới đây là bản trình bày nội bộ, không phải hồ sơ nộp
+            cho tổ chức chứng nhận. Hãy sinh báo cáo mới để chọn template ready.
+          </Alert>
+        )}
 
         <div className="mt-4 flex flex-wrap gap-3">
+          {hasReadyTemplate && (
+            <a
+              href={`/du-an/${id}/bao-cao/${reportId}/template`}
+              className="rounded-lg bg-leaf-700 px-4 py-2 text-sm font-medium text-white hover:bg-leaf-800"
+            >
+              Tải template {template.format.toUpperCase()}
+            </a>
+          )}
           <Link
             href={`/du-an/${id}/bao-cao/${reportId}/in`}
             className="rounded-lg border border-soil-200 bg-white px-4 py-2 text-sm font-medium text-soil-800 hover:bg-soil-100"
@@ -176,8 +195,8 @@ export default async function ReportPage({
           </a>
         </div>
         <p className="mt-2 text-xs text-soil-600">
-          Bản in dùng chức năng in của trình duyệt để lưu thành PDF — không cần cài thêm
-          phần mềm nào.
+          Bản in dùng chức năng in của trình duyệt để lưu thành PDF. Template DOCX là biểu
+          mẫu gốc, chưa được hệ thống tự điền dữ liệu.
         </p>
       </Card>
 

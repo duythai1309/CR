@@ -16,6 +16,7 @@ export function GenerateReportForm({
   outputs: string[];
 }) {
   const [result, action, pending] = useActionState(generateReport, null);
+  const hasReadyTemplate = templates.some((template) => template.status === "ready");
 
   return (
     <form action={action} className="space-y-4">
@@ -34,13 +35,17 @@ export function GenerateReportForm({
 
         <Field
           label="Template"
-          hint="Bản placeholder chưa có tệp thật của tổ chức chứng nhận."
+          hint={
+            hasReadyTemplate
+              ? "Tệp thật đã có; đọc phạm vi áp dụng trong từng template trước khi chọn."
+              : "Bản placeholder chưa có tệp thật của tổ chức chứng nhận."
+          }
         >
           <Select name="template_id" required defaultValue={templates[0]?.id ?? ""}>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
-                {t.status === "placeholder" ? " — chưa có tệp thật" : ""}
+                {t.status === "placeholder" ? " — chưa có tệp thật" : " — có tệp thật"}
               </option>
             ))}
           </Select>

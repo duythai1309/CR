@@ -4,6 +4,7 @@ import { requireProjectMember } from "@/lib/auth";
 import { TraceView, type TraceData } from "@/components/monitoring/trace-view";
 import { getMethodology, getProject, getStandard } from "../../../../data";
 import { getPeriod, getReport, listProjectActors } from "../../../giam-sat/data";
+import { parseReportTemplateSnapshot } from "@/lib/mrv/template";
 
 export const metadata: Metadata = { title: "Bản in báo cáo" };
 
@@ -46,6 +47,7 @@ export default async function PrintableReportPage({
     metric_values: Record<string, unknown>;
   }>;
   const metricKeys = [...new Set(snapshot.flatMap((r) => Object.keys(r.metric_values ?? {})))].sort();
+  const template = parseReportTemplateSnapshot(report.template_snapshot);
 
   return (
     <article className="mx-auto max-w-4xl bg-white p-8 text-soil-900 print:p-0">
@@ -83,10 +85,16 @@ export default async function PrintableReportPage({
         <h2 className="text-sm font-bold uppercase tracking-wide">Tuyên bố bắt buộc đọc</h2>
         <p className="mt-2 text-sm leading-relaxed">
           Tài liệu này là <strong>ước tính nội bộ</strong>, không phải tín chỉ carbon đã được
-          phát hành và không phải hồ sơ nộp cho tổ chức chứng nhận. Nó <strong>không</strong>{" "}
-          theo mẫu chính thức của Verra hay Gold Standard — kho mã hiện chưa có tệp mẫu thật
-          của các tổ chức đó. Số liệu chưa qua thẩm định độc lập.
+          phát hành và không phải hồ sơ nộp cho tổ chức chứng nhận. Bản in này là bố cục của
+          nền tảng, không phải bản DOCX đã điền theo biểu mẫu của Verra. Số liệu chưa qua
+          thẩm định độc lập.
         </p>
+        {template?.status === "ready" && (
+          <p className="mt-2 text-sm">
+            Snapshot báo cáo tham chiếu VCS Monitoring Report {template.version}; tệp gốc
+            được tải riêng ở trang chi tiết báo cáo.
+          </p>
+        )}
         {methodology?.is_sample && (
           <p className="mt-2 text-sm font-semibold">
             Methodology SAMPLE do nhóm sản phẩm tự soạn, chưa thẩm định và không được Verra

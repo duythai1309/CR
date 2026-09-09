@@ -17,6 +17,7 @@ import { getMethodology, getProject, getStandard } from "../../data";
 import { listPeriods, listReports, listTemplates } from "../giam-sat/data";
 import { creditCalculationOptions } from "./actions";
 import { GenerateReportForm } from "./forms";
+import { preferReadyTemplates } from "@/lib/mrv/template";
 
 export const metadata: Metadata = { title: "Báo cáo MRV" };
 
@@ -36,10 +37,12 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
   const methodology = await getMethodology(project.methodology_id);
   const standard = await getStandard(project.standard_id);
 
-  const templates =
+  const catalogTemplates =
     project.methodology_id && project.standard_id
       ? await listTemplates(project.methodology_id, project.standard_id)
       : [];
+  const templates = preferReadyTemplates(catalogTemplates);
+  const hasReadyTemplates = templates.some((template) => template.status === "ready");
 
   const outputs = locked[0] ? await creditCalculationOptions(locked[0].schema_snapshot) : [];
   const periodName = new Map(periods.map((p) => [p.id, p.name]));
@@ -100,10 +103,20 @@ export default async function ReportsPage({ params }: { params: Promise<{ id: st
               />
             ) : (
               <div className="space-y-4">
-                <Alert tone="warn" title="Template hiện là placeholder">
-                  Chưa có file biểu mẫu chính thức của Verra hoặc Gold Standard. Artifact sinh
-                  ra chỉ phục vụ rà soát nội bộ và không phải hồ sơ nộp cho tổ chức chứng nhận.
-                </Alert>
+                {hasReadyTemplates ? (
+                  <Alert tone="warn" title="Chọn đúng phạm vi áp dụng của template">
+                    Catalog có tệp VCS Monitoring Report chính thức. v5.0A và v5.0B áp dụng
+                    cho các nhóm dự án và phiên bản VCS Standard khác nhau; hãy đọc phần
+                    hướng dẫn ngay trong tệp trước khi dùng. Báo cáo vẫn là preview vì
+                    Methodology chưa được thẩm định chuyên môn.
+                  </Alert>
+                ) : (
+                  <Alert tone="warn" title="Template hiện là placeholder">
+                    Chưa có file biểu mẫu chính thức của Verra hoặc Gold Standard. Artifact
+                    sinh ra chỉ phục vụ rà soát nội bộ và không phải hồ sơ nộp cho tổ chức
+                    chứng nhận.
+                  </Alert>
+                )}
                 <GenerateReportForm
                   projectId={id}
                   periods={locked.map((p) => ({
