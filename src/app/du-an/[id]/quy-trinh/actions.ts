@@ -1,6 +1,6 @@
 "use server";
 
-import { createHash, randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -40,6 +40,84 @@ function uploadErrorDetail(error: unknown): string {
     : `${message} (mã ${String(code)})`;
 }
 
+const MAX_DOCUMENT_BYTES = 52_428_800;
+const UPLOAD_TICKET_TTL_MS = 2 * 60 * 60 * 1000;
+const DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+interface DocumentUploadTicket {
+  version: 1;
+  projectId: string;
+  uploaderId: string;
+  stageId: string;
+  kind: string;
+  objectPath: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  expiresAt: number;
+}
+
+function uploadTicketSecret(): string {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!secret) throw new Error("Máy chủ thiếu cấu hình ký phiếu tải lên.");
+  return secret;
+}
+
+function signUploadTicket(payload: DocumentUploadTicket): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = createHmac("sha256", uploadTicketSecret()).update(body).digest("base64url");
+  return `${body}.${signature}`;
+}
+
+function readUploadTicket(ticket: string): DocumentUploadTicket {
+  const [body, signature, extra] = ticket.split(".");
+  if (!body || !signature || extra) throw new Error("Phiếu tải lên không hợp lệ.");
+  const expected = createHmac("sha256", uploadTicketSecret()).update(body).digest();
+  const actual = Buffer.from(signature, "base64url");
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected))
+    throw new Error("Chữ ký phiếu tải lên không hợp lệ.");
+
+  let value: unknown;
+  try {
+    value = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  } catch {
+    throw new Error("Nội dung phiếu tải lên không đọc được.");
+  }
+  const payload = value as Partial<DocumentUploadTicket>;
+  if (
+    payload.version !== 1 ||
+    typeof payload.projectId !== "string" ||
+    typeof payload.uploaderId !== "string" ||
+    typeof payload.stageId !== "string" ||
+    typeof payload.kind !== "string" ||
+    typeof payload.objectPath !== "string" ||
+    typeof payload.originalName !== "string" ||
+    typeof payload.mimeType !== "string" ||
+    typeof payload.sizeBytes !== "number" ||
+    typeof payload.expiresAt !== "number"
+  )
+    throw new Error("Dữ liệu phiếu tải lên không hợp lệ.");
+  if (payload.expiresAt < Date.now()) throw new Error("Phiếu tải lên đã hết hạn. Xin URL mới.");
+  return payload as DocumentUploadTicket;
+}
+
+function documentServiceClient() {
+  const config = readSupabaseConfig();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!config || !serviceKey) return null;
+  return createSupabaseClient(config.url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 /**
  * Xoá đúng object vừa được action này tạo khi bước ghi metadata/liên kết thất bại.
  *
@@ -48,15 +126,11 @@ function uploadErrorDetail(error: unknown): string {
  * action dựng bằng UUID ngẫu nhiên trong chính lần gọi hiện tại.
  */
 async function rollbackDocumentObject(objectPath: string): Promise<string | null> {
-  const config = readSupabaseConfig();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!config || !serviceKey)
+  const service = documentServiceClient();
+  if (!service)
     return "máy chủ thiếu cấu hình service role để xoá object hoàn tác";
 
   try {
-    const service = createSupabaseClient(config.url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const { error } = await service.storage.from("project-documents").remove([objectPath]);
     return error ? uploadErrorDetail(error) : null;
   } catch (error) {
@@ -65,7 +139,7 @@ async function rollbackDocumentObject(objectPath: string): Promise<string | null
 }
 
 async function failAfterDocumentUpload(
-  step: "project_files" | "đọc nextVersion" | "project_documents",
+  step: "xác minh Storage" | "project_files" | "đọc nextVersion" | "project_documents",
   error: unknown,
   objectPath: string,
   projectFileId?: string,
@@ -365,147 +439,307 @@ export async function approveStage(_prev: Result, formData: FormData): Promise<R
 
 /* ------------------------------------------------------------------ tài liệu */
 
-/**
- * Tải tài liệu lên và ghi nhận một PHIÊN BẢN mới.
- *
- * Ba bước, đúng thứ tự: đưa bytes vào bucket `project-documents`, đăng ký metadata vào
- * `project_files` (kèm checksum SHA-256 của chính bytes vừa gửi), rồi gắn vào
- * `project_documents` với số phiên bản kế tiếp. `unique (project_id, kind, version)`
- * (`0013:178`) là thứ bảo đảm không hai người cùng ghi đè một phiên bản.
- *
- * Đường dẫn object phải là `{project_id}/{uploaded_by}/{uuid}/{tên tệp}` — cả ràng buộc
- * `check` trên bảng (`0013:147-149`) lẫn policy storage (`0013:957-960`) đều đòi đúng
- * hai cấp đầu, nên sai một cấp là bị từ chối ở cả hai nơi.
- */
-export async function uploadDocument(_prev: Result, formData: FormData): Promise<Result> {
-  let step = "kiểm tra dữ liệu đầu vào";
-  let objectPath: string | null = null;
-  let uploaded = false;
-  let projectFileId: string | undefined;
+type SignedUploadResult =
+  | {
+      ok: true;
+      signedUrl: string;
+      token: string;
+      path: string;
+      ticket: string;
+      contentType: string;
+    }
+  | { ok: false; message: string };
 
+/**
+ * Cấp URL tải thẳng từ trình duyệt lên Storage. Action chỉ nhận metadata nhỏ; bytes của
+ * tệp không đi qua Next/Vercel. `objectPath` luôn do server dựng và được niêm phong trong
+ * ticket HMAC, không bao giờ được action hoàn tất nhận như một field từ client.
+ */
+export async function createDocumentSignedUpload(input: {
+  projectId: string;
+  stageId: string;
+  kind: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}): Promise<SignedUploadResult> {
+  let step = "kiểm tra yêu cầu cấp signed URL";
   try {
     const configError = formConfigError();
-    if (configError) return fail(configError);
+    if (configError) return { ok: false, message: configError };
+    if (!input.projectId || !input.stageId)
+      return { ok: false, message: "Bước cấp signed URL thất bại: thiếu dự án hoặc hồ sơ." };
+    if (!isDocumentKind(input.kind))
+      return { ok: false, message: "Bước cấp signed URL thất bại: loại tài liệu không hợp lệ." };
+    const originalName = input.fileName.trim().slice(0, 200);
+    if (!originalName)
+      return { ok: false, message: "Bước cấp signed URL thất bại: tên tệp trống." };
+    if (!Number.isSafeInteger(input.sizeBytes) || input.sizeBytes < 1)
+      return { ok: false, message: "Bước cấp signed URL thất bại: kích thước tệp không hợp lệ." };
+    if (input.sizeBytes > MAX_DOCUMENT_BYTES)
+      return { ok: false, message: "Bước cấp signed URL thất bại: tệp vượt quá 50 MB." };
+    if (!DOCUMENT_MIME_TYPES.has(input.mimeType))
+      return { ok: false, message: "Bước cấp signed URL thất bại: kiểu tệp không được hỗ trợ." };
 
-    const projectId = String(formData.get("project_id") ?? "");
-    const stageId = String(formData.get("stage_id") ?? "");
-    if (!projectId || !stageId) return fail("Thiếu thông tin dự án hoặc bước.");
-    const { profile } = await requireProjectMember(projectId);
-
-    const kind = String(formData.get("kind") ?? "");
-    if (!isDocumentKind(kind)) return fail("Loại tài liệu không hợp lệ.");
-
-    const file = formData.get("file");
-    if (!(file instanceof File) || file.size === 0) return fail("Chưa chọn tệp.");
-    if (file.size > 4_194_304) return fail("Tệp vượt quá 4 MB. Vercel giới hạn cứng thân request ở 4,5 MB nên tệp lớn hơn không đi qua server action được.");
-
-    step = "đọc nội dung và tính checksum SHA-256";
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const checksum = createHash("sha256").update(bytes).digest("hex");
-    const safeName =
-      file.name.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(0, 120) || "tai-lieu";
-    objectPath = `${projectId}/${profile.id}/${randomUUID()}/${safeName}`;
-
-    step = "khởi tạo phiên dữ liệu";
+    step = "kiểm tra quyền thành viên";
+    const { profile } = await requireProjectMember(input.projectId);
     const db = await projectClient();
 
     step = "tra stage_id";
     const stage = await db
       .from("project_stages")
       .select("id")
-      .eq("project_id", projectId)
-      .eq("id", stageId)
+      .eq("project_id", input.projectId)
+      .eq("id", input.stageId)
       .maybeSingle();
     if (stage.error)
-      return fail(`Bước tra stage_id thất bại: ${uploadErrorDetail(stage.error)}.`);
-    if (!stage.data) return fail("Bước tra stage_id thất bại: hồ sơ không thuộc dự án này.");
+      return { ok: false, message: `Bước tra stage_id thất bại: ${uploadErrorDetail(stage.error)}.` };
+    if (!stage.data)
+      return { ok: false, message: "Bước tra stage_id thất bại: hồ sơ không thuộc dự án này." };
 
-    step = "tải object lên Storage";
-    const upload = await db.storage
+    const safeName =
+      originalName.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(0, 120) || "tai-lieu";
+    const objectPath = `${input.projectId}/${profile.id}/${randomUUID()}/${safeName}`;
+
+    step = "tạo signed URL của Storage";
+    const signed = await db.storage
       .from("project-documents")
-      .upload(objectPath, bytes, { contentType: file.type || "application/octet-stream" });
-    if (upload.error)
-      return fail(`Bước Storage thất bại: ${uploadErrorDetail(upload.error)}.`);
-    uploaded = true;
+      .createSignedUploadUrl(objectPath, { upsert: false });
+    if (signed.error || !signed.data)
+      return {
+        ok: false,
+        message: `Bước tạo signed URL thất bại: ${uploadErrorDetail(signed.error)}.`,
+      };
 
-    step = "ghi project_files";
-    const inserted = await db
-      .from("project_files")
-      .insert({
-        project_id: projectId,
-        object_path: objectPath,
-        original_name: file.name.slice(0, 200),
-        mime_type: file.type || "application/octet-stream",
-        size_bytes: bytes.byteLength,
-        checksum,
-      })
-      .select("id")
-      .single();
+    step = "ký phiếu tải lên";
+    const ticket = signUploadTicket({
+      version: 1,
+      projectId: input.projectId,
+      uploaderId: profile.id,
+      stageId: input.stageId,
+      kind: input.kind,
+      objectPath,
+      originalName,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      expiresAt: Date.now() + UPLOAD_TICKET_TTL_MS,
+    });
+    return {
+      ok: true,
+      signedUrl: signed.data.signedUrl,
+      token: signed.data.token,
+      path: signed.data.path,
+      ticket,
+      contentType: input.mimeType,
+    };
+  } catch (error) {
+    return { ok: false, message: `Bước ${step} phát sinh lỗi: ${uploadErrorDetail(error)}.` };
+  }
+}
 
-    if (inserted.error || !inserted.data)
+/** Ghi metadata sau khi trình duyệt đã PUT bytes thẳng lên signed URL. */
+export async function completeDocumentSignedUpload(input: {
+  ticket: string;
+  checksum: string;
+}): Promise<Result> {
+  let step = "kiểm tra phiếu tải lên";
+  let payload: DocumentUploadTicket | null = null;
+  let projectFileId: string | undefined;
+  let metadataCommitted = false;
+
+  try {
+    payload = readUploadTicket(input.ticket);
+    step = "kiểm tra lại quyền thành viên";
+    const { profile } = await requireProjectMember(payload.projectId);
+    if (profile.id !== payload.uploaderId)
+      return fail("Bước kiểm tra quyền thất bại: phiếu tải lên thuộc người dùng khác.");
+
+    if (!/^[0-9a-f]{64}$/.test(input.checksum))
       return await failAfterDocumentUpload(
         "project_files",
-        inserted.error ?? "insert thành công nhưng không trả về id",
-        objectPath,
+        "checksum SHA-256 phải gồm đúng 64 ký tự hex thường",
+        payload.objectPath,
       );
-    projectFileId = (inserted.data as { id: string }).id;
+    if (!isDocumentKind(payload.kind))
+      return await failAfterDocumentUpload(
+        "project_documents",
+        "loại tài liệu trong phiếu không hợp lệ",
+        payload.objectPath,
+      );
+
+    const db = await projectClient();
+
+    step = "xác minh object trong Storage";
+    const stored = await db.storage.from("project-documents").info(payload.objectPath);
+    if (stored.error || !stored.data)
+      return await failAfterDocumentUpload(
+        "xác minh Storage",
+        stored.error ?? "không tìm thấy object vừa tải",
+        payload.objectPath,
+      );
+    const storedContentType = stored.data.contentType
+      ?.split(";", 1)[0]
+      ?.trim()
+      .toLowerCase();
+    if (
+      stored.data.size !== payload.sizeBytes ||
+      (storedContentType !== undefined && storedContentType !== payload.mimeType)
+    )
+      return await failAfterDocumentUpload(
+        "xác minh Storage",
+        `metadata object không khớp phiếu (size ${String(stored.data.size)}, content-type ${String(stored.data.contentType)})`,
+        payload.objectPath,
+      );
+
+    step = "tra stage_id";
+    const stage = await db
+      .from("project_stages")
+      .select("id")
+      .eq("project_id", payload.projectId)
+      .eq("id", payload.stageId)
+      .maybeSingle();
+    if (stage.error || !stage.data)
+      return await failAfterDocumentUpload(
+        "project_documents",
+        stage.error ?? "stage_id không còn thuộc dự án",
+        payload.objectPath,
+      );
+
+    // Một response của action có thể mất sau khi DB đã commit. Nhận diện ticket gọi lại
+    // bằng object_path do server ký để không tạo version trùng hoặc xoá object hợp lệ.
+    step = "đối chiếu project_files đã ghi";
+    const registered = await db
+      .from("project_files")
+      .select("id, checksum, size_bytes")
+      .eq("project_id", payload.projectId)
+      .eq("object_path", payload.objectPath)
+      .maybeSingle();
+    if (registered.error)
+      return await failAfterDocumentUpload(
+        "project_files",
+        registered.error,
+        payload.objectPath,
+      );
+    if (registered.data) {
+      const row = registered.data as { id: string; checksum: string; size_bytes: number };
+      if (row.checksum !== input.checksum || row.size_bytes !== payload.sizeBytes)
+        return fail("Bước project_files thất bại: metadata đã ghi không khớp phiếu tải lên.");
+      projectFileId = row.id;
+      const priorLink = await db
+        .from("project_documents")
+        .select("version")
+        .eq("project_id", payload.projectId)
+        .eq("file_id", projectFileId)
+        .maybeSingle();
+      if (priorLink.error)
+        return await failAfterDocumentUpload(
+          "project_documents",
+          `đối chiếu metadata: ${uploadErrorDetail(priorLink.error)}`,
+          payload.objectPath,
+          projectFileId,
+        );
+      if (priorLink.data) {
+        const priorVersion = (priorLink.data as { version: number }).version;
+        metadataCommitted = true;
+        refresh(payload.projectId);
+        return ok(
+          `Tài liệu đã được ghi nhận trước đó — ${DOCUMENT_KIND_LABEL[payload.kind]}, phiên bản ${priorVersion}.`,
+        );
+      }
+    }
 
     step = "đọc nextVersion";
     const existing = await db
       .from("project_documents")
       .select("version")
-      .eq("project_id", projectId)
-      .eq("kind", kind)
+      .eq("project_id", payload.projectId)
+      .eq("kind", payload.kind)
       .order("version", { ascending: false })
       .limit(1);
     if (existing.error)
       return await failAfterDocumentUpload(
         "đọc nextVersion",
         existing.error,
-        objectPath,
-        projectFileId,
+        payload.objectPath,
       );
-
     const nextVersion =
       (((existing.data ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
 
+    if (!projectFileId) {
+      step = "ghi project_files";
+      const inserted = await db
+        .from("project_files")
+        .insert({
+          project_id: payload.projectId,
+          object_path: payload.objectPath,
+          original_name: payload.originalName,
+          mime_type: payload.mimeType,
+          size_bytes: payload.sizeBytes,
+          checksum: input.checksum,
+        })
+        .select("id")
+        .single();
+      if (inserted.error || !inserted.data)
+        return await failAfterDocumentUpload(
+          "project_files",
+          inserted.error ?? "insert thành công nhưng không trả về id",
+          payload.objectPath,
+        );
+      projectFileId = (inserted.data as { id: string }).id;
+    }
+
     step = "ghi project_documents";
     const linked = await db.from("project_documents").insert({
-      project_id: projectId,
-      stage_id: stageId,
+      project_id: payload.projectId,
+      stage_id: payload.stageId,
       file_id: projectFileId,
-      kind,
+      kind: payload.kind,
       version: nextVersion,
     });
-
     if (linked.error)
       return await failAfterDocumentUpload(
         "project_documents",
         linked.error,
-        objectPath,
+        payload.objectPath,
         projectFileId,
       );
 
-    uploaded = false;
-    step = "làm mới giao diện";
-    refresh(projectId);
-    return ok(`Đã tải lên ${DOCUMENT_KIND_LABEL[kind]} — phiên bản ${nextVersion}.`);
+    metadataCommitted = true;
+    refresh(payload.projectId);
+    return ok(`Đã tải lên ${DOCUMENT_KIND_LABEL[payload.kind]} — phiên bản ${nextVersion}.`);
   } catch (error) {
-    if (uploaded && objectPath) {
-      const failedStep =
-        step === "đọc nextVersion"
-          ? "đọc nextVersion"
-          : step === "ghi project_files"
-            ? "project_files"
-            : "project_documents";
+    if (payload && metadataCommitted)
+      return fail(
+        `Metadata tài liệu đã được ghi, nhưng bước ${step} phát sinh lỗi: ` +
+          `${uploadErrorDetail(error)}. Tải lại trang để xem tài liệu.`,
+      );
+    if (payload)
       return await failAfterDocumentUpload(
-        failedStep,
+        projectFileId ? "project_documents" : "project_files",
         `${step}: ${uploadErrorDetail(error)}`,
-        objectPath,
+        payload.objectPath,
         projectFileId,
       );
-    }
     return fail(`Bước ${step} phát sinh lỗi: ${uploadErrorDetail(error)}.`);
+  }
+}
+
+/** Dọn object khi trình duyệt không thể gọi tới bước hoàn tất sau lượt PUT trực tiếp. */
+export async function abandonDocumentSignedUpload(ticket: string): Promise<Result> {
+  try {
+    const payload = readUploadTicket(ticket);
+    const { profile } = await requireProjectMember(payload.projectId);
+    if (profile.id !== payload.uploaderId)
+      return fail("Bước dọn Storage thất bại: phiếu tải lên thuộc người dùng khác.");
+    const cleanupError = await rollbackDocumentObject(payload.objectPath);
+    return cleanupError
+      ? fail(
+          `Không xoá được object hoàn tác; còn file thừa trong kho tại ${payload.objectPath}. ` +
+            `Lỗi dọn kho: ${cleanupError}.`,
+        )
+      : ok("Đã xoá object tải dở khỏi Storage.");
+  } catch (error) {
+    return fail(`Bước dọn Storage phát sinh lỗi: ${uploadErrorDetail(error)}.`);
   }
 }
 

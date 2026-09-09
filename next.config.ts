@@ -15,8 +15,11 @@ const config: NextConfig = {
        * function ở 4,5 MB và không nâng được bằng cấu hình. Khai 50 MB ở đây chỉ dời chỗ
        * thất bại từ Next sang Vercel, vẫn im lặng như cũ.
        *
-       * Tệp lớn hơn phải đi đường tải thẳng lên Storage bằng signed URL, không qua server
-       * action. Cho tới khi có đường đó, giao diện phải nói đúng 4 MB thay vì 50 MB.
+       * Giới hạn này nay CHỈ còn ràng buộc các đường tải vẫn đi qua server action, cụ
+       * thể là tệp đính kèm công việc — nhãn của nó đã nói đúng 4 MB.
+       *
+       * Tài liệu hồ sơ đã chuyển sang tải THẲNG lên Storage bằng signed URL nên không
+       * chạm trần này; trần thật của nó là 50 MB do ứng dụng tự đặt.
        */
       bodySizeLimit: "4mb",
     },

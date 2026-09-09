@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import {
   Alert,
   Badge,
@@ -17,15 +18,33 @@ import {
 import { DOCUMENT_KIND_LABEL, type DocumentKind } from "@/components/project/rules";
 import type { BaselineDraft } from "@/types/project-setup";
 import {
+  abandonDocumentSignedUpload,
   approveStage,
   chooseMethodology,
   chooseStandard,
+  completeDocumentSignedUpload,
+  createDocumentSignedUpload,
   runBaselineDraftAssist,
   saveBaseline,
-  uploadDocument,
 } from "./actions";
 
 type Result = { ok: boolean; message: string } | null;
+
+const DOCUMENT_MIME_BY_EXTENSION: Record<string, string> = {
+  pdf: "application/pdf",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv: "text/csv",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+function documentMimeType(file: File): string {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return DOCUMENT_MIME_BY_EXTENSION[extension] ?? file.type.trim().toLowerCase();
+}
 
 function Feedback({ result }: { result: Result }) {
   if (!result) return null;
@@ -474,22 +493,123 @@ export function UploadDocumentForm({
   stageId: string;
   kind: DocumentKind;
 }) {
-  const [result, action, pending] = useActionState(uploadDocument, null);
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [result, setResult] = useState<Result>(null);
+  const [pending, setPending] = useState(false);
   const [name, setName] = useState<string | null>(null);
 
-  return (
-    <form action={action} className="space-y-2">
-      <input type="hidden" name="project_id" value={projectId} />
-      <input type="hidden" name="stage_id" value={stageId} />
-      <input type="hidden" name="kind" value={kind} />
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setResult({ ok: false, message: "Bước chọn tệp thất bại: chưa có tệp để tải lên." });
+      return;
+    }
+    if (file.size > 52_428_800) {
+      setResult({ ok: false, message: "Bước chọn tệp thất bại: tệp vượt quá 50 MB." });
+      return;
+    }
 
+    let step = "xin signed URL";
+    let ticket: string | null = null;
+    let uploaded = false;
+    let checksum: string | null = null;
+    setPending(true);
+    setResult(null);
+    try {
+      const mimeType = documentMimeType(file);
+      const signed = await createDocumentSignedUpload({
+        projectId,
+        stageId,
+        kind,
+        fileName: file.name,
+        mimeType,
+        sizeBytes: file.size,
+      });
+      if (!signed.ok) {
+        setResult(signed);
+        return;
+      }
+      ticket = signed.ticket;
+
+      step = "tính checksum SHA-256 trên trình duyệt";
+      const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      checksum = Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("");
+
+      step = "PUT tệp trực tiếp lên Storage";
+      const browser = createBrowserClient();
+      const directUpload = await browser.storage
+        .from("project-documents")
+        .uploadToSignedUrl(signed.path, signed.token, file, {
+          contentType: signed.contentType,
+        });
+      if (directUpload.error) {
+        const cleanup = await abandonDocumentSignedUpload(ticket);
+        setResult({
+          ok: false,
+          message:
+            `Bước Storage thất bại: ${directUpload.error.message}. ` +
+            (cleanup?.message ?? "Không xác nhận được việc dọn object tải dở."),
+        });
+        return;
+      }
+      uploaded = true;
+
+      step = "ghi project_files và project_documents";
+      const completed = await completeDocumentSignedUpload({ ticket, checksum });
+      setResult(completed);
+      if (completed?.ok) {
+        if (fileRef.current) fileRef.current.value = "";
+        setName(null);
+        router.refresh();
+      }
+    } catch (error) {
+      // Nếu response của action hoàn tất bị mất, action có thể đã commit. Gọi lại bằng
+      // cùng ticket (server xử lý idempotent) trước khi kết luận; không xoá mù một object
+      // có thể đã trở thành tài liệu hợp lệ.
+      if (uploaded && ticket && checksum) {
+        try {
+          const retried = await completeDocumentSignedUpload({ ticket, checksum });
+          setResult(retried);
+          if (retried?.ok) {
+            if (fileRef.current) fileRef.current.value = "";
+            setName(null);
+            router.refresh();
+          }
+          return;
+        } catch (retryError) {
+          setResult({
+            ok: false,
+            message:
+              `Bước ghi project_files và project_documents mất kết nối sau hai lần thử: ` +
+              `${retryError instanceof Error ? retryError.message : String(retryError)}. ` +
+              "Chưa thể xác định metadata đã được ghi hay chưa; tải lại trang trước khi thử lại.",
+          });
+          return;
+        }
+      }
+      setResult({
+        ok: false,
+        message: `Bước ${step} phát sinh lỗi: ${error instanceof Error ? error.message : String(error)}.`,
+      });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2">
       <Field
         label={`Tệp ${DOCUMENT_KIND_LABEL[kind]}`}
-        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 4 MB. Mỗi lần tải lên tạo một phiên bản mới."
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB. Tệp được tải thẳng lên kho, không đi qua máy chủ ứng dụng."
       >
         <input
+          ref={fileRef}
           type="file"
-          name="file"
           accept=".pdf,.docx,.xlsx,.csv,image/jpeg,image/png,image/webp"
           required
           onChange={(e) => setName(e.target.files?.[0]?.name ?? null)}
