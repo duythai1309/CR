@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { readSupabaseConfig } from "@/lib/supabase/config";
@@ -9,7 +10,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type UserRole = Database["public"]["Enums"]["user_role"];
 export type { ProjectRole };
 
-export async function getProfile(): Promise<Profile | null> {
+export const getProfile = cache(async function getProfile(): Promise<Profile | null> {
   // Thiếu cấu hình thì coi như khách chưa đăng nhập, để trang giới thiệu vẫn dựng
   // được. Các trang cần đăng nhập đã bị middleware chặn từ trước đó.
   if (!readSupabaseConfig()) return null;
@@ -22,7 +23,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   return data ?? null;
-}
+});
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
@@ -85,13 +86,15 @@ function asProjectRole(value: unknown): ProjectRole | null {
  * `project_members`: đó chính là hàm mà mọi policy RLS dùng để quyết định, nên tầng ứng
  * dụng và cơ sở dữ liệu không thể lệch nhau.
  */
-export async function getProjectRole(projectId: string): Promise<ProjectRole | null> {
+export const getProjectRole = cache(async function getProjectRole(
+  projectId: string,
+): Promise<ProjectRole | null> {
   if (!readSupabaseConfig()) return null;
   const db = await projectClient();
   const { data, error } = await db.rpc("app_project_role", { p_project_id: projectId });
   if (error) return null;
   return asProjectRole(data);
-}
+});
 
 /**
  * Chặn trang/hành động của một dự án theo vai trò dự án.
@@ -127,7 +130,9 @@ export interface ProjectMemberEntry {
  * (`0015_project_identity.sql`) vì policy `profiles_select` (`0003_rls.sql:59-60`) chỉ
  * cho đọc hồ sơ người cùng hợp tác xã — mà nền tảng dự án cố ý không gắn hợp tác xã.
  */
-export async function getProjectMembers(projectId: string): Promise<ProjectMemberEntry[]> {
+export const getProjectMembers = cache(async function getProjectMembers(
+  projectId: string,
+): Promise<ProjectMemberEntry[]> {
   if (!readSupabaseConfig()) return [];
   const db = await projectClient();
   const { data, error } = await db.rpc("project_member_directory", { p_project_id: projectId });
@@ -145,7 +150,7 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
       },
     ];
   });
-}
+});
 
 export interface ProjectStageApproval {
   stageId: string;
@@ -160,7 +165,7 @@ export interface ProjectStageApproval {
  * tại. Vì vậy một người đã rời dự án vẫn được ghi nhận đúng trong lịch sử stage.
  * RPC 0018 chỉ trả đúng năm cột cần hiển thị và không nới policy của `profiles`.
  */
-export async function getProjectStageApprovals(
+export const getProjectStageApprovals = cache(async function getProjectStageApprovals(
   projectId: string,
 ): Promise<ProjectStageApproval[]> {
   if (!readSupabaseConfig()) return [];
@@ -182,7 +187,7 @@ export async function getProjectStageApprovals(
       },
     ];
   });
-}
+});
 
 export interface ProjectSupportSession {
   id: string;
@@ -194,7 +199,7 @@ export interface ProjectSupportSession {
 }
 
 /** Phiên hỗ trợ đang có hiệu lực của admin hiện tại, dùng để hiện cảnh báo chỉ đọc. */
-export async function getActiveProjectSupport(
+export const getActiveProjectSupport = cache(async function getActiveProjectSupport(
   projectId: string,
   adminId: string,
 ): Promise<ProjectSupportSession | null> {
@@ -230,7 +235,7 @@ export async function getActiveProjectSupport(
     openedAt: row.opened_at,
     expiresAt: row.expires_at,
   };
-}
+});
 
 export type BeginProjectSupportResult =
   | { ok: true; sessionId: string; expiresAt: string }
@@ -277,7 +282,10 @@ export type InviteeLookup =
  * tính, không nói "email này chưa có tài khoản": đó là câu trả lời biến màn hình mời
  * thành công cụ dò xem ai có tài khoản trên hệ thống.
  */
-export async function lookupInvitee(projectId: string, email: string): Promise<InviteeLookup> {
+export const lookupInvitee = cache(async function lookupInvitee(
+  projectId: string,
+  email: string,
+): Promise<InviteeLookup> {
   const notFoundResult: InviteeLookup = {
     found: false,
     message: "Không mời được địa chỉ này. Người được mời cần có tài khoản trước.",
@@ -299,4 +307,4 @@ export async function lookupInvitee(projectId: string, email: string): Promise<I
     fullName: typeof row.full_name === "string" ? row.full_name : "",
     alreadyMember: row.already_member === true,
   };
-}
+});
