@@ -25,6 +25,7 @@ import {
   DOCUMENT_KIND_LABEL,
   STAGE_HINT,
   abilitiesFor,
+  approvalBlockers,
   approvalChecklist,
   baselineGateErrors,
   toStageView,
@@ -41,6 +42,7 @@ import {
   listMethodologies,
   listStandards,
 } from "../../data";
+import { documentUploadUnavailableReason } from "./actions";
 import {
   ApproveStageForm,
   BaselineForm,
@@ -80,8 +82,17 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
   await requireProjectMember(id);
   const supabase = await createClient();
 
-  const [project, stages, tasks, documents, standards, stageApprovals, setup, assistantConfig] =
-    await Promise.all([
+  const [
+    project,
+    stages,
+    tasks,
+    documents,
+    standards,
+    stageApprovals,
+    setup,
+    assistantConfig,
+    uploadUnavailable,
+  ] = await Promise.all([
       getProject(id),
       getStages(id),
       getTasks(id),
@@ -90,6 +101,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
       getProjectStageApprovals(id),
       getProjectSetup(id),
       loadChatConfig(supabase),
+      documentUploadUnavailableReason(),
     ]);
   if (!project) notFound();
 
@@ -138,6 +150,24 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
     projectDeleted: project.deleted_at !== null,
     baselineErrors,
   };
+
+  /**
+   * Những mục chưa duyệt, kèm rào đầu tiên của từng mục.
+   *
+   * Trước đây muốn duyệt phải tự cuộn tìm trong bảy khối đang mở sẵn — trang rất dài nên
+   * khối duyệt của mục 6 hay 7 nằm ngoài tầm nhìn. Danh sách này đưa thẳng người dùng
+   * tới đúng khối duyệt của mục họ chọn.
+   *
+   * `approvalBlockers` chỉ tính điều kiện đã KẾT LUẬN được; `unknown` không bị coi là
+   * rào, nên "duyệt được ngay" ở đây nghĩa là không có rào nào đã biết, không phải lời
+   * hứa rằng RPC chắc chắn nhận.
+   */
+  const pendingApprovals = views
+    .filter((stage) => !stage.approvedAt)
+    .map((stage) => ({
+      stage,
+      blockers: approvalBlockers(views, stage.ordinal, gate),
+    }));
 
   const baselineFields = methodology
     ? buildMethodologyForm(methodology.metric_schema, "vi", project.baseline as never).baseline
@@ -202,10 +232,14 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
             const state = hasContent
               ? "border-leaf-200 bg-leaf-50 text-leaf-900"
               : "border-soil-200 bg-white text-soil-600";
+            // Chưa duyệt thì nhảy thẳng tới khối duyệt; đã duyệt thì tới đầu khối.
+            const target = stage.approvedAt
+              ? `#buoc-${stage.ordinal}`
+              : `#duyet-buoc-${stage.ordinal}`;
             return (
               <li key={stage.id}>
                 <a
-                  href={`#buoc-${stage.ordinal}`}
+                  href={target}
                   className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition hover:border-leaf-500 ${state}`}
                 >
                   <span aria-hidden className="font-bold">
@@ -217,6 +251,49 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
             );
           })}
         </ul>
+      </section>
+
+      {/*
+        Đường vào việc duyệt. Hai trục — có nội dung chưa, và đã duyệt chưa — cố ý tách
+        thành hai khối riêng: gộp chúng vào một huy hiệu là đúng chỗ từng làm người dùng
+        đọc "Chưa có nội dung" ngay cạnh "Đã duyệt" thành hai câu mâu thuẫn.
+      */}
+      <section className="rounded-xl border border-soil-200 bg-white px-5 py-4 shadow-sm">
+        <SectionHeader
+          title={`Chờ duyệt (${pendingApprovals.length}/7)`}
+          description="Bấm vào một mục để tới thẳng checklist điều kiện và nút duyệt của mục đó."
+        />
+
+        {pendingApprovals.length === 0 ? (
+          <p className="mt-2 text-sm text-soil-700">
+            Cả bảy mục đã duyệt. Duyệt không thay thế thẩm định độc lập.
+          </p>
+        ) : (
+          <ul className="mt-3 grid gap-2">
+            {pendingApprovals.map(({ stage, blockers }) => (
+              <li
+                key={stage.id}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-soil-200 px-3 py-2"
+              >
+                <span className="font-mono text-xs text-soil-500">{stage.ordinal}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-soil-900">
+                  {stage.title}
+                </span>
+                {blockers.length === 0 ? (
+                  <Badge tone="leaf">Duyệt được ngay</Badge>
+                ) : (
+                  <span className="text-xs text-soil-600">{blockers[0]}</span>
+                )}
+                <LinkButton
+                  href={`#duyet-buoc-${stage.ordinal}`}
+                  variant={blockers.length === 0 ? "primary" : "secondary"}
+                >
+                  {blockers.length === 0 ? "Xem và duyệt" : "Xem điều kiện"}
+                </LinkButton>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {views.map((stage) => {
@@ -430,7 +507,12 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                       hint="Tải tài liệu chứng minh để hoàn thiện hồ sơ này. Mỗi lần tải lên tạo một phiên bản mới."
                       action={
                         abilities.canUploadFiles ? (
-                          <UploadDocumentForm projectId={id} stageId={stage.id} kind={kind} />
+                          <UploadDocumentForm
+                            projectId={id}
+                            stageId={stage.id}
+                            kind={kind}
+                            unavailableReason={uploadUnavailable}
+                          />
                         ) : (
                           <LinkButton href={`/du-an/${id}/thanh-vien`} variant="secondary">
                             Xem người phụ trách dự án
@@ -442,7 +524,12 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
 
                   {stageDocs.length > 0 && abilities.canUploadFiles && (
                     <div className="mt-3">
-                      <UploadDocumentForm projectId={id} stageId={stage.id} kind={kind} />
+                      <UploadDocumentForm
+                        projectId={id}
+                        stageId={stage.id}
+                        kind={kind}
+                        unavailableReason={uploadUnavailable}
+                      />
                     </div>
                   )}
                 </div>
@@ -461,7 +548,10 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
               )}
 
               {!stage.approvedAt && (
-                <div className="border-t border-soil-100 pt-4">
+                <div
+                  id={`duyet-buoc-${stage.ordinal}`}
+                  className="scroll-mt-6 border-t border-soil-100 pt-4"
+                >
                   <ApprovalChecklist
                     checks={checks}
                     action={

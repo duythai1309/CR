@@ -65,6 +65,25 @@ interface DocumentUploadTicket {
   expiresAt: number;
 }
 
+/**
+ * Vì sao tải tài liệu chưa dùng được, hoặc `null` nếu dùng được.
+ *
+ * Phiếu tải lên được ký HMAC bằng `SUPABASE_SERVICE_ROLE_KEY`. Thiếu biến đó thì
+ * `createDocumentSignedUpload` hỏng ở bước ký — SAU khi đã xin xong signed URL nhưng
+ * TRƯỚC khi trình duyệt PUT, nên không có object nào được tạo và không có dòng nào được
+ * ghi. Triệu chứng người dùng thấy là "tải lên xong mà thanh tiến độ không nhúc nhích",
+ * còn dữ liệu thì đúng là chưa có gì.
+ *
+ * Xuất ra để trang hỏi TRƯỚC khi dựng form, thay vì để người dùng chọn tệp rồi mới nhận
+ * lỗi.
+ */
+export async function documentUploadUnavailableReason(): Promise<string | null> {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    ? null
+    : "Máy chủ thiếu biến môi trường SUPABASE_SERVICE_ROLE_KEY nên chưa ký được phiếu tải lên. " +
+        "Thêm biến này trong Vercel (Project → Settings → Environment Variables) rồi deploy lại.";
+}
+
 function uploadTicketSecret(): string {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!secret) throw new Error("Máy chủ thiếu cấu hình ký phiếu tải lên.");
@@ -467,6 +486,9 @@ export async function createDocumentSignedUpload(input: {
   try {
     const configError = formConfigError();
     if (configError) return { ok: false, message: configError };
+    // Kiểm TRƯỚC khi xin signed URL: thiếu khoá ký thì có xin cũng vứt đi.
+    const unavailable = await documentUploadUnavailableReason();
+    if (unavailable) return { ok: false, message: unavailable };
     if (!input.projectId || !input.stageId)
       return { ok: false, message: "Bước cấp signed URL thất bại: thiếu dự án hoặc hồ sơ." };
     if (!isDocumentKind(input.kind))

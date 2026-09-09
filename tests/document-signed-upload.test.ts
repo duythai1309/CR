@@ -57,6 +57,33 @@ describe("đường tải tài liệu bằng signed URL", () => {
     expect(actions).toContain("Metadata tài liệu đã được ghi");
   });
 
+  /**
+   * Triệu chứng đã gặp: tải tệp lên rồi mà thanh tiến độ không nhúc nhích. Kiểm dữ liệu
+   * thì `project_documents` chưa từng có dòng nào và Storage không có object nào sau
+   * ngày chạy E2E — tức lượt tải chưa bao giờ tới nơi. Nguyên nhân là thiếu
+   * `SUPABASE_SERVICE_ROLE_KEY`: phiếu tải lên ký HMAC bằng biến đó, nên hàm hỏng ở
+   * bước ký, SAU khi đã xin signed URL nhưng TRƯỚC khi trình duyệt PUT.
+   */
+  it("thiếu SUPABASE_SERVICE_ROLE_KEY thì chặn ngay từ đầu, không xin signed URL trước", () => {
+    const start = actions.indexOf("export async function createDocumentSignedUpload");
+    const end = actions.indexOf("export async function completeDocumentSignedUpload");
+    const issueAction = actions.slice(start, end);
+
+    const guard = issueAction.indexOf("documentUploadUnavailableReason()");
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(issueAction.indexOf("createSignedUploadUrl(objectPath"));
+  });
+
+  it("lý do thiếu cấu hình gọi đúng tên biến môi trường để người dùng sửa được", () => {
+    expect(actions).toContain("export async function documentUploadUnavailableReason()");
+    expect(actions).toContain("SUPABASE_SERVICE_ROLE_KEY nên chưa ký được phiếu tải lên");
+  });
+
+  it("giao diện nói trước là chưa tải lên được, thay vì để người dùng chọn tệp rồi mới lỗi", () => {
+    expect(forms).toContain("unavailableReason");
+    expect(forms).toContain("if (unavailableReason)");
+  });
+
   it("giao diện công bố đúng trần 50 MB và chuẩn hoá MIME theo loại tệp", () => {
     expect(forms).toContain("tối đa 50 MB");
     expect(forms).toContain("if (file.size > 52_428_800)");

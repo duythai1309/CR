@@ -490,10 +490,16 @@ export function UploadDocumentForm({
   projectId,
   stageId,
   kind,
+  unavailableReason = null,
 }: {
   projectId: string;
   stageId: string;
   kind: DocumentKind;
+  /**
+   * Lý do máy chủ chưa tải tệp lên được, do trang hỏi trước khi dựng form. Có giá trị
+   * thì hiện thẳng ra thay vì để người dùng chọn tệp rồi mới nhận lỗi ở bước ký phiếu.
+   */
+  unavailableReason?: string | null;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -602,6 +608,13 @@ export function UploadDocumentForm({
       setPending(false);
     }
   }
+
+  if (unavailableReason)
+    return (
+      <Alert tone="error" title={`Chưa tải lên được ${DOCUMENT_KIND_LABEL[kind]}`}>
+        {unavailableReason}
+      </Alert>
+    );
 
   return (
     <form onSubmit={submit} className="space-y-2">
