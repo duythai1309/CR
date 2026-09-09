@@ -56,7 +56,7 @@ export function ProjectBoard({
   tasks: BoardTaskCard[];
   stages: StageView[];
   members: BoardMember[];
-  /** Chỉ Đơn vị phát triển mới nhận được việc — panel sửa nhanh dùng danh sách này. */
+  /** Mọi thành viên đều nhận được việc (0025) — panel sửa nhanh dùng danh sách này. */
   assignableMembers: BoardMember[];
   canWrite: boolean;
   /** Để lọc "việc của tôi" — `assignee_id` được so với chính người đang xem. */

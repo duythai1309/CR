@@ -750,7 +750,7 @@ function projectError(message: string): string {
     return "Methodology đã khoá, không đổi được nữa.";
   if (message.includes("methodology published"))
     return "Chỉ chọn được Methodology đã publish và đúng Standard của dự án.";
-  if (message.includes("Chỉ owner")) return "Chỉ chủ dự án làm được việc này.";
+  if (message.includes("Chỉ thành viên")) return "Bạn không còn là thành viên của dự án này.";
   if (message.includes("Cần duyệt các stage trước"))
     return "Phải duyệt các bước trước theo đúng thứ tự.";
   if (message.includes("Chưa khóa Standard")) return "Chưa khoá Standard ở bước 3.";

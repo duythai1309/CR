@@ -56,7 +56,7 @@ export function EditTaskForm({
         </Field>
         <Field
           label="Giao cho"
-          hint={members.length === 0 ? "Chưa có Đơn vị phát triển nào trong dự án." : undefined}
+          hint={members.length === 0 ? "Dự án chưa có thành viên nào." : undefined}
         >
           <Select name="assignee_id" defaultValue={task.assigneeId ?? ""}>
             <option value="">Chưa giao</option>

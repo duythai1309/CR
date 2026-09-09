@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { getActiveProjectSupport, requireProjectMember } from "@/lib/auth";
-import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import { Alert, Badge, NextAction } from "@/components/ui";
 import { getDocuments, getMethodology, getProject, getStages, getStandard } from "../data";
 import { getProjectSetup } from "./thiet-lap/data";
@@ -67,7 +66,7 @@ export default async function ProjectLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { profile, role } = await requireProjectMember(id);
+  const { profile } = await requireProjectMember(id);
 
   const [project, stages, documents, setup, supportSession] = await Promise.all([
     getProject(id),
@@ -106,7 +105,6 @@ export default async function ProjectLayout({
         methodologyId: project.methodology_id,
         standardLockedAt: project.standard_locked_at,
         methodologyLockedAt: project.methodology_locked_at,
-        isOwner: role === "owner",
         projectDeleted: project.deleted_at !== null,
       })[0] ?? null)
     : null;
@@ -117,7 +115,6 @@ export default async function ProjectLayout({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold text-soil-900">{project.name}</h1>
-            <Badge tone={role === "owner" ? "leaf" : "soil"}>{PROJECT_ROLE_LABEL[role]}</Badge>
             {methodology?.is_sample && <Badge tone="carbon">Methodology MẪU</Badge>}
           </div>
           {project.description && (
@@ -152,7 +149,7 @@ export default async function ProjectLayout({
       {project.deleted_at && (
         <div className="mb-4">
           <Alert tone="warn" title="Dự án đã xoá">
-            Dự án này đã được chủ dự án xoá. Nội dung vẫn xem lại được, nhưng mọi thao tác
+            Dự án này đã bị xoá. Nội dung vẫn xem lại được, nhưng mọi thao tác
             ghi đều bị chặn.
           </Alert>
         </div>

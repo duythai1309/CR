@@ -185,13 +185,6 @@ const METHODOLOGY_COLUMNS =
   "id, standard_id, code, version, name, project_type, is_sample, " +
   "professionally_validated, disclaimer, schema_hash";
 
-/** Nhãn tiếng Việt cho vai trò trong dự án; trợ lý nói với người dùng, không nói mã. */
-const PROJECT_ROLE_VI: Record<string, string> = {
-  owner: "chủ dự án",
-  developer: "đơn vị phát triển",
-  viewer: "người xem",
-};
-
 const TASK_STATUS_VI: Record<string, string> = {
   todo: "chưa làm",
   in_progress: "đang làm",
@@ -456,12 +449,10 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         db.from("methodologies").select(METHODOLOGY_COLUMNS),
       ]);
 
-    const myRole = new Map<string, string>();
     const memberCount = new Map<string, number>();
     for (const m of (members ?? []) as MemberRow[]) {
       if (m.project_id === undefined) continue;
       memberCount.set(m.project_id, (memberCount.get(m.project_id) ?? 0) + 1);
-      if (m.user_id === profile.id) myRole.set(m.project_id, m.role);
     }
 
     const approved = new Map<string, number>();
@@ -482,8 +473,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         return {
           ten: p.name,
           mo_ta: p.description || null,
-          vai_tro_trong_du_an:
-            PROJECT_ROLE_VI[myRole.get(p.id) ?? ""] ?? myRole.get(p.id) ?? "—",
           buoc_da_duyet: `${approved.get(p.id) ?? 0}/7`,
           so_thanh_vien: memberCount.get(p.id) ?? null,
           standard: p.standard_id ? (standardCode.get(p.standard_id) ?? null) : null,
@@ -513,7 +502,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       { data: tasks },
       { data: periods },
       { data: reports },
-      { data: members },
     ] = await Promise.all([
       db
         .from("project_stages")
@@ -536,14 +524,10 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         .eq("project_id", project.id)
         .order("generated_at", { ascending: false })
         .limit(1),
-      db.from("project_members").select("user_id, role").eq("project_id", project.id),
     ]);
 
     const byStatus: Record<string, number> = {};
     for (const t of (tasks ?? []) as TaskRow[]) byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
-
-    const myRole =
-      ((members ?? []) as MemberRow[]).find((m) => m.user_id === profile.id)?.role ?? null;
 
     const stages = ((stageRows ?? []) as StageRow[])
       .slice()
@@ -561,7 +545,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
 
     return {
       du_an: project.name,
-      vai_tro_cua_nguoi_hoi: myRole ? (PROJECT_ROLE_VI[myRole] ?? myRole) : null,
       da_xoa: project.deleted_at !== null,
       standard_da_khoa: Boolean(project.standard_locked_at),
       methodology_da_khoa: Boolean(project.methodology_locked_at),
@@ -608,7 +591,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       ghi_chu:
         "Con số ở 'bao_cao_gan_nhat' là ƯỚC TÍNH theo phương pháp luận đã chọn, chưa qua " +
         "thẩm định độc lập và không phải tín chỉ đã được phát hành. " +
-        "Chỉ chủ dự án mới duyệt được bước. " +
         CANH_BAO_MAU,
     };
   },
@@ -620,13 +602,10 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     const project = await resolveProject(db, name);
     if (!project) return khongTimThayDuAn(name);
 
-    const [{ data: stageRows }, { data: members }] = await Promise.all([
-      db
-        .from("project_stages")
-        .select("ordinal, title, approved_at, approved_by")
-        .eq("project_id", project.id),
-      db.from("project_members").select("user_id, role").eq("project_id", project.id),
-    ]);
+    const { data: stageRows } = await db
+      .from("project_stages")
+      .select("ordinal, title, approved_at, approved_by")
+      .eq("project_id", project.id);
 
     const stages = ((stageRows ?? []) as StageRow[]).slice().sort((a, b) => a.ordinal - b.ordinal);
 
@@ -656,8 +635,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     const methodology = await loadMethodology(db, project.methodology_id ?? null);
     const baseline = checkBaseline(parseSchema(methodology?.metric_schema), project.baseline);
 
-    const myRole =
-      ((members ?? []) as MemberRow[]).find((m) => m.user_id === profile.id)?.role ?? null;
     const conditions = stageConditions(stage.ordinal, project, stages, baseline);
 
     return {
@@ -668,8 +645,7 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
       duyet_luc: stage.approved_at,
       dieu_kien: conditions,
       con_vuong: conditions.filter((c) => !c.dat).map((c) => c.dieu_kien),
-      ai_duyet_duoc: "Chỉ chủ dự án (owner).",
-      nguoi_hoi_duyet_duoc: myRole === "owner",
+      ai_duyet_duoc: "Mọi thành viên của dự án.",
       ghi_chu:
         "Danh sách điều kiện này là ĐÚNG luật mà cơ sở dữ liệu áp khi duyệt bước " +
         "(hàm approve_project_stage), không phải quy trình chung của ngành hay yêu cầu " +
@@ -939,8 +915,8 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         (selected.length > shown.length
           ? `Chỉ liệt kê ${shown.length} việc đầu trên tổng ${selected.length} việc khớp. `
           : "") +
-        "Chỉ giao việc được cho thành viên có vai trò Đơn vị phát triển — đó là ràng " +
-        "buộc của cơ sở dữ liệu, không phải lựa chọn giao diện.",
+        "Giao việc được cho bất kỳ thành viên nào của dự án; ràng buộc duy nhất của cơ " +
+        "sở dữ liệu là người nhận phải đã ở trong dự án.",
     };
   },
 
@@ -1006,15 +982,12 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     if (!period)
       return { khong_tim_thay: "Không có monitoring period nào khớp trong dự án này." };
 
-    const [{ data: memberRows }, { data: recordRows, error }] = await Promise.all([
-      db.from("project_members").select("user_id, role").eq("project_id", project.id),
-      db
-        .from("monitoring_data")
-        .select("period_id, record_key, observed_on, metric_values, revision, entered_by, updated_at")
-        .eq("period_id", period.id)
-        .order("updated_at", { ascending: false })
-        .limit(MAX_ROWS_FOR_AGGREGATE + 1),
-    ]);
+    const { data: recordRows, error } = await db
+      .from("monitoring_data")
+      .select("period_id, record_key, observed_on, metric_values, revision, entered_by, updated_at")
+      .eq("period_id", period.id)
+      .order("updated_at", { ascending: false })
+      .limit(MAX_ROWS_FOR_AGGREGATE + 1);
     fail(error);
     const allRows = (recordRows ?? []) as unknown as MonitoringDataRow[];
     const truncated = allRows.length > MAX_ROWS_FOR_AGGREGATE;
@@ -1033,11 +1006,9 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
     const errorCounts = new Map<string, number>();
     for (const issue of errors)
       errorCounts.set(issue.field || "(toàn dòng)", (errorCounts.get(issue.field || "(toàn dòng)") ?? 0) + 1);
-    const myRole = ((memberRows ?? []) as MemberRow[]).find((member) => member.user_id === profile.id)?.role;
     const dbBlockers: string[] = [];
     if (project.deleted_at) dbBlockers.push("Dự án đã xoá mềm");
     if (period.status !== "open") dbBlockers.push("Kỳ không còn ở trạng thái open");
-    if (myRole !== "owner") dbBlockers.push("Chỉ owner được gọi RPC khoá kỳ");
     if (rows.length === 0) dbBlockers.push("Kỳ chưa có dữ liệu");
     const qualityWarnings: string[] = [];
     if (!schema) qualityWarnings.push("Không parse được schema_snapshot nên chưa kiểm được field");
@@ -1262,7 +1233,6 @@ export const HANDLERS: Record<string, (ctx: ToolContext, args: Args) => Promise<
         return {
           user_id: userId,
           ho_ten: typeof member.full_name === "string" ? member.full_name : "—",
-          vai_tro: PROJECT_ROLE_VI[String(member.role)] ?? String(member.role ?? "—"),
           email: typeof member.email === "string" ? member.email : null,
           so_viec_dang_mo: assigned.length,
           viec_dang_mo: assigned.slice(0, MAX_ROWS_PER_TOOL).map((task) => ({

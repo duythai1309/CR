@@ -51,11 +51,10 @@ const state = (checks: ReturnType<typeof approvalChecklist>, id: string) =>
   checks.find((c) => c.id === id)?.state;
 
 describe("danh sách kiểm duyệt bước — chép từ approve_project_stage (0013:696-714)", () => {
-  it("liệt kê đủ bảy điều kiện mà RPC kiểm, không hơn", () => {
+  it("liệt kê đủ sáu điều kiện mà RPC còn kiểm, không hơn", () => {
     const checks = approvalChecklist(stages([]), 1, OPEN);
     expect(checks.map((c) => c.id)).toEqual([
       "project_active",
-      "owner",
       "ordinal_range",
       "sequence",
       "standard_locked",
@@ -105,14 +104,12 @@ describe("danh sách kiểm duyệt bước — chép từ approve_project_stage
     expect(state(checks, "baseline_valid")).toBe("unknown");
   });
 
-  it("dự án đã xoá và người không phải owner đều bị chặn, đúng như RPC", () => {
-    const checks = approvalChecklist(stages([]), 1, {
-      ...OPEN,
-      projectDeleted: true,
-      isOwner: false,
-    });
+  it("dự án đã xoá bị chặn; vai trò không còn là điều kiện duyệt", () => {
+    const checks = approvalChecklist(stages([]), 1, { ...OPEN, projectDeleted: true });
     expect(state(checks, "project_active")).toBe("fail");
-    expect(state(checks, "owner")).toBe("fail");
+    // 0022 gỡ vế `app_project_role = 'owner'` khỏi `approve_project_stage`, nên danh
+    // sách kiểm không được phép mọc lại phép kiểm đó.
+    expect(checks.some((c) => c.id === "owner")).toBe(false);
   });
 });
 
@@ -272,7 +269,6 @@ describe("danh mục nhiều dự án", () => {
     id: "p1",
     name: "Dự án A",
     description: "",
-    role: "owner",
     deletedAt: null,
     standardCode: "VCS",
     methodologyCode: null,
@@ -322,12 +318,11 @@ describe("danh mục nhiều dự án", () => {
     expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, includeDeleted: true })).toHaveLength(2);
   });
 
-  it("lọc theo vai trò, Standard và tiến độ", () => {
+  it("lọc theo Standard và tiến độ", () => {
     const rows = [
-      row({ id: "p1", role: "owner", approvedStages: 7, currentStage: null }),
-      row({ id: "p2", role: "viewer", standardCode: "GS" }),
+      row({ id: "p1", approvedStages: 7, currentStage: null }),
+      row({ id: "p2", standardCode: "GS" }),
     ];
-    expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, role: "viewer" })).toHaveLength(1);
     expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, standard: "GS" })).toHaveLength(1);
     expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, progress: "designed" })).toHaveLength(1);
     expect(filterProjects(rows, { ...EMPTY_PORTFOLIO_FILTER, progress: "planning" })).toHaveLength(1);

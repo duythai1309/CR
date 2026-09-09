@@ -33,7 +33,7 @@ export default async function ReportPage({
   params: Promise<{ id: string; reportId: string }>;
 }) {
   const { id, reportId } = await params;
-  const { role } = await requireProjectMember(id);
+  await requireProjectMember(id);
 
   const [project, report] = await Promise.all([getProject(id), getReport(id, reportId)]);
   if (!project || !report) notFound();
@@ -47,7 +47,7 @@ export default async function ReportPage({
   const requester = actors.find((actor) => actor.userId === report.requested_by);
   const results = report.results as ReportResults;
   const credit = results?.estimated_credit;
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const supabase = await createClient();
   const assistantConfigured = (await loadChatConfig(supabase)) !== null;
 

@@ -52,7 +52,7 @@ export default async function ProjectListPage() {
                 Đây là nơi tập hợp các hồ sơ dự án carbon mà bạn tham gia.
               </span>
               <span className="mt-2 block">
-                Hãy tạo dự án đầu tiên với tên và mô tả ngắn. Tạo xong, bạn là chủ dự án
+                Hãy tạo dự án đầu tiên với tên và mô tả ngắn. Tạo xong, bạn có toàn quyền
                 và có ngay bảy stage thiết kế từ Project concept tới PDD để bắt đầu làm hồ
                 sơ.
               </span>

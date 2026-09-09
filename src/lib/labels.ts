@@ -1,5 +1,4 @@
 import type { Database } from "@/types/database";
-import type { ProjectRole } from "@/types/project-platform";
 
 /**
  * Nhãn vai trò toàn cục. Enum vẫn giữ bốn giá trị để tương thích với hồ sơ và types đã
@@ -18,20 +17,6 @@ export const ROLE_LABEL: Record<Enums["user_role"], string> = {
   coop_manager: "Tài khoản nền tảng",
   coop_staff: "Tài khoản nền tảng",
   buyer: "Tài khoản nền tảng",
-};
-
-/**
- * Vai trò trong MỘT dự án — trục quyền của nền tảng dự án.
- *
- * Tách hẳn khỏi `ROLE_LABEL` ở trên: `user_role` nói người này là ai trên nền tảng,
- * `project_role` nói họ làm gì trong dự án đang mở. Một người có thể là owner ở dự án
- * này và viewer ở dự án khác, nên hai nhãn không bao giờ thay thế được cho nhau.
- * Xem `docs/design/auth-role-design.md` §1.
- */
-export const PROJECT_ROLE_LABEL: Record<ProjectRole, string> = {
-  owner: "Chủ dự án",
-  developer: "Đơn vị phát triển",
-  viewer: "Người xem",
 };
 
 export const REGION_LABEL: Record<Enums["vn_region"], string> = {

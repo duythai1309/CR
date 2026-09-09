@@ -276,8 +276,8 @@ export async function detachFile(_prev: Result, formData: FormData): Promise<Res
 
 /** Đổi lỗi cơ sở dữ liệu thành câu người dùng hiểu được, giữ nguyên phần còn lại. */
 function taskError(message: string): string {
-  if (message.includes("project_tasks_project_id_assignee_id_assignee_role_fkey"))
-    return "Chỉ giao được việc cho thành viên có vai trò Đơn vị phát triển trong dự án này.";
+  if (message.includes("project_tasks_assignee_member_fkey"))
+    return "Chỉ giao được việc cho thành viên của dự án này. Mời họ vào dự án trước ở tab Thành viên.";
   if (message.includes("project_tasks_stage_id_project_id_fkey"))
     return "Bước được chọn không thuộc dự án này.";
   if (message.includes("row-level security") || message.includes("permission denied"))

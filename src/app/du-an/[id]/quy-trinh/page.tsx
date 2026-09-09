@@ -67,9 +67,9 @@ const STAGE_DOCUMENT: Record<number, DocumentKind> = {
 /**
  * Danh mục bảy hồ sơ thiết kế cần xây dựng xuyên suốt vòng đời dự án.
  *
- * Trạng thái nội dung chỉ nói hồ sơ đã có hay còn thiếu. Duyệt là hành động riêng của
- * chủ dự án, vẫn dùng bảy phép kiểm trong `approve_project_stage` và vẫn tuần tự ở DB,
- * nhưng không được dùng làm cổng chặn người khác điền hồ sơ.
+ * Trạng thái nội dung chỉ nói hồ sơ đã có hay còn thiếu. Duyệt là hành động riêng, mọi
+ * thành viên đều làm được, vẫn dùng các phép kiểm trong `approve_project_stage` và vẫn
+ * tuần tự ở DB, nhưng không được dùng làm cổng chặn người khác điền hồ sơ.
  *
  * Baseline được kiểm TRƯỚC bằng `validateValues` để người dùng biết field nào sai, thay
  * vì bấm Duyệt rồi nhận một `raise exception` thô. `baselineGateErrors()` lọc lại về đúng
@@ -77,7 +77,7 @@ const STAGE_DOCUMENT: Record<number, DocumentKind> = {
  */
 export default async function WorkflowPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { role } = await requireProjectMember(id);
+  await requireProjectMember(id);
   const supabase = await createClient();
 
   const [project, stages, tasks, documents, standards, stageApprovals, setup, assistantConfig] =
@@ -98,7 +98,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
     getMethodology(project.methodology_id),
   ]);
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const views = stages.map(toStageView);
 
   // Nội dung bốn hồ sơ đầu, gộp từ màn Khởi tạo cũ. `canWriteTasks` là cùng quyền mà màn
@@ -135,7 +135,6 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
     methodologyId: project.methodology_id,
     standardLockedAt: project.standard_locked_at,
     methodologyLockedAt: project.methodology_locked_at,
-    isOwner: role === "owner",
     projectDeleted: project.deleted_at !== null,
     baselineErrors,
   };
@@ -259,8 +258,14 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
               </span>
 
               <span className="text-right text-xs text-soil-600">
+                {/*
+                  Nhãn phải nói rõ nó đang nói về NỘI DUNG. Bản cũ ghi "Còn thiếu" ngay
+                  cạnh dòng "Đã duyệt", làm người dùng đọc thành hai câu mâu thuẫn về
+                  cùng một thứ — trong khi đó là hai trục khác nhau: có nội dung chưa, và
+                  đã bấm duyệt chưa.
+                */}
                 <Badge tone={hasContent ? "leaf" : "soil"}>
-                  {hasContent ? "Đã có" : "Còn thiếu"}
+                  {hasContent ? "Đã có nội dung" : "Chưa có nội dung"}
                 </Badge>
                 {stage.approvedAt && (
                   <span className="mt-1 block">
@@ -470,8 +475,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                         />
                       ) : (
                         <p className="max-w-xs text-right text-xs text-soil-600">
-                          Chỉ chủ dự án bấm duyệt được. Vai trò của bạn:{" "}
-                          {role === "developer" ? "Đơn vị phát triển" : "Người xem"}.
+                          Dự án đã bị xoá nên mọi đường ghi, kể cả duyệt, đã đóng lại.
                         </p>
                       )
                     }
@@ -518,7 +522,7 @@ function ApprovalChecklist({
   return (
     <div className="rounded-lg border border-soil-200 bg-soil-50 p-4">
       <SectionHeader
-        title="Duyệt hồ sơ — hành động của chủ dự án"
+        title="Duyệt hồ sơ"
         description={
           <>
             Duyệt là việc riêng, không khoá quyền điền hồ sơ. Checklist chép từ{" "}

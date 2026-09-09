@@ -58,7 +58,7 @@ export default async function TaskPage({
   params: Promise<{ id: string; taskId: string }>;
 }) {
   const { id, taskId } = await params;
-  const { role, profile } = await requireProjectMember(id);
+  const { profile } = await requireProjectMember(id);
 
   const [project, task, stages, members, comments, attachments] = await Promise.all([
     getProject(id),
@@ -70,7 +70,7 @@ export default async function TaskPage({
   ]);
   if (!project || !task) notFound();
 
-  const abilities = abilitiesFor(role, project.deleted_at !== null);
+  const abilities = abilitiesFor(project.deleted_at !== null);
   const status = isTaskStatus(task.status) ? task.status : "todo";
   const stage = stages.map(toStageView).find((s) => s.id === task.stage_id);
   const memberName = new Map(members.map((m) => [m.userId, m.fullName]));
@@ -95,7 +95,7 @@ export default async function TaskPage({
       kind: "comment",
       body: c.body,
       action:
-        (c.author_id === profile.id || role === "owner") && abilities.canComment ? (
+        abilities.canComment ? (
           <DeleteTaskButton kind="comment" projectId={id} targetId={c.id} label="Xoá" />
         ) : null,
     })),
@@ -287,7 +287,7 @@ export default async function TaskPage({
         ) : (
           <Locked
             title="Bạn chưa thể thêm bình luận hoặc tệp"
-            reason="Vai trò hiện tại chỉ được xem công việc. Khối này mở khi chủ dự án đổi vai trò của bạn sang Đơn vị phát triển hoặc Chủ dự án."
+            reason="Dự án đã bị xoá nên mọi đường ghi, kể cả sửa công việc, đã đóng lại."
           />
         )}
       </section>

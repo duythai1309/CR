@@ -23,8 +23,8 @@ export function BoardNotices({
     <>
       {!canWrite && (
         <Alert tone="warn" title="Chỉ xem">
-          Vai trò của bạn trong dự án này không cho phép sửa công việc. Lọc, sắp xếp và đổi
-          chế độ xem vẫn dùng được.
+          Dự án đã bị xoá nên không sửa được công việc. Lọc, sắp xếp và đổi chế độ xem vẫn
+          dùng được.
         </Alert>
       )}
 

@@ -95,7 +95,7 @@ export function StandardPicker({
   if (!canEdit)
     return (
       <p className="text-sm text-soil-600">
-        {current ? `Đang chọn: ${current.label}` : "Chủ dự án chưa chọn Standard."}
+        {current ? `Đang chọn: ${current.label}` : "Chưa chọn Standard."}
       </p>
     );
 
@@ -183,7 +183,7 @@ export function MethodologyPicker({
   if (!canEdit)
     return (
       <p className="text-sm text-soil-600">
-        {current ? `Đang chọn: ${current.label}` : "Chủ dự án chưa chọn Methodology."}
+        {current ? `Đang chọn: ${current.label}` : "Chưa chọn Methodology."}
       </p>
     );
 
@@ -359,7 +359,9 @@ export function BaselineForm({
             {pending ? "Đang lưu…" : "Lưu baseline"}
           </Button>
         ) : (
-          <p className="text-sm text-soil-600">Chỉ chủ dự án sửa được baseline.</p>
+          <p className="text-sm text-soil-600">
+            Dự án đã bị xoá nên không sửa được baseline nữa.
+          </p>
         )}
       </form>
 
@@ -438,7 +440,7 @@ export function BaselineForm({
         )}
         {!canAssist && (
           <p className="mt-3 text-sm text-soil-600">
-            Vai trò hiện tại không được yêu cầu trợ lý tạo bản nháp.
+            Dự án đã bị xoá nên không yêu cầu trợ lý tạo bản nháp được nữa.
           </p>
         )}
         <Feedback result={assistResult} />
