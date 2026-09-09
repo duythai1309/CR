@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { useEffect, useState } from "react";
 
 const LEFT = [
@@ -69,14 +70,12 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
             ))}
           </div>
 
-          <Link
-            href="/"
-            className={`flex items-center gap-2.5 text-lg font-bold leading-tight tracking-tight transition ${
-              scrolled ? "text-white" : "text-forest-900"
-            }`}
-          >
-            <RouteMark className={scrolled ? "text-mint-400" : "text-forest-800"} />
-            <span>C-ROUTE</span>
+          {/*
+            Landing dùng biến thể DỌC theo quy ước nhận diện. Logo có alpha nên đặt được
+            trên cả nền sáng lúc đầu trang lẫn nền tối sau khi cuộn, không cần đổi màu.
+          */}
+          <Link href="/" className="flex items-center transition hover:opacity-90">
+            <BrandLogo variant="doc" onDark={scrolled} priority className="h-14 w-auto" />
           </Link>
 
           <div className="hidden flex-1 items-center justify-end gap-8 text-[15px] font-medium lg:flex">
@@ -141,33 +140,3 @@ export function SiteHeader({ ctaHref, ctaLabel }: Props) {
   );
 }
 
-/**
- * Dấu hiệu nhận diện của C-route: một lộ trình đi lên qua các mốc.
- *
- * Trước đây là mầm lúa vươn lên từ hai lá mạ — đúng với sản phẩm MRV lúa nước cũ, nhưng
- * lệch hẳn với nền tảng quản lý vòng đời dự án Carbon và với cái tên mới. Hình mới đọc
- * thẳng ra tên sản phẩm: một tuyến đường gấp khúc đi lên, ba mốc là các bước phải qua.
- */
-function RouteMark({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      {/* Tuyến đi lên qua ba mốc */}
-      <path d="M4 19l5-5 4 3 7-9" />
-      {/* Ba mốc trên tuyến */}
-      <circle cx="4" cy="19" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="13" cy="17" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="20" cy="8" r="1.6" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}

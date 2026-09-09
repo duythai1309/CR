@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth-actions";
 import { PROJECT_ROLE_LABEL, ROLE_LABEL } from "@/lib/labels";
+import { BrandLogo } from "@/components/brand-logo";
 import type { Profile, ProjectRole } from "@/lib/auth";
 
 const PROJECT_LINK = { href: "/du-an", label: "Dự án carbon" };
@@ -42,8 +43,8 @@ export function AppNav({
   return (
     <header className="border-b border-soil-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
-        <Link href="/" className="font-semibold text-leaf-800">
-          C-route
+        <Link href="/" className="flex items-center transition hover:opacity-90">
+          <BrandLogo variant="ngang" priority className="h-8 w-auto" />
         </Link>
         <nav className="flex flex-wrap items-center gap-1">
           {links.map((l) => (

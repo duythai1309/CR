@@ -4,6 +4,7 @@ import { getProfile, homePathFor } from "@/lib/auth";
 import { SiteHeader } from "@/components/site-header";
 import { HeroCarousel, type HeroSlide } from "@/components/hero-carousel";
 import { LazyVideo } from "@/components/lazy-video";
+import { BrandLogo } from "@/components/brand-logo";
 
 const SLIDES: HeroSlide[] = [
   {
@@ -485,7 +486,7 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-6 py-16">
           <div className="flex flex-wrap items-start justify-between gap-10">
             <div>
-              <div className="text-lg font-bold text-white">C-ROUTE</div>
+              <BrandLogo variant="doc" onDark className="h-12 w-auto" />
               <p className="mt-3 max-w-sm leading-relaxed text-mint-100/70">
                 Nền tảng quản lý vòng đời dự án carbon cho đội ngũ phát triển chuyên nghiệp.
               </p>
