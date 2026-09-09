@@ -16,10 +16,23 @@ export interface ChatSize {
   height: number;
 }
 
+export interface ChatPosition {
+  x: number;
+  y: number;
+}
+
+interface ChatFrame {
+  size: ChatSize;
+  position: ChatPosition;
+}
+
 const DEFAULT_CHAT_SIZE: ChatSize = { width: 416, height: 512 };
 const MIN_CHAT_SIZE: ChatSize = { width: 320, height: 360 };
 const CHAT_SIZE_KEY = "c-route:chat-size";
+const CHAT_POSITION_KEY = "c-route:chat-position";
 const RESIZE_STEP = 16;
+const VIEWPORT_GAP = 16;
+const DEFAULT_TOP = 80;
 
 /** Kẹp cả hai chiều để khung không thành vô dụng hoặc tràn khỏi viewport. */
 export function clampChatSize(size: ChatSize, maximum: ChatSize): ChatSize {
@@ -31,6 +44,20 @@ export function clampChatSize(size: ChatSize, maximum: ChatSize): ChatSize {
   };
 }
 
+/** Giữ toàn bộ cửa sổ trong viewport, kể cả sau khi viewport bị thu nhỏ. */
+export function clampChatPosition(
+  position: ChatPosition,
+  size: ChatSize,
+  viewport: ChatSize,
+): ChatPosition {
+  const maxX = Math.max(VIEWPORT_GAP, viewport.width - size.width - VIEWPORT_GAP);
+  const maxY = Math.max(VIEWPORT_GAP, viewport.height - size.height - VIEWPORT_GAP);
+  return {
+    x: Math.min(maxX, Math.max(VIEWPORT_GAP, Math.round(position.x))),
+    y: Math.min(maxY, Math.max(VIEWPORT_GAP, Math.round(position.y))),
+  };
+}
+
 function viewportMaximum(): ChatSize {
   return {
     width: window.innerWidth - 32,
@@ -38,8 +65,25 @@ function viewportMaximum(): ChatSize {
   };
 }
 
-function sameSize(left: ChatSize, right: ChatSize): boolean {
-  return left.width === right.width && left.height === right.height;
+function viewportSize(): ChatSize {
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+function defaultPosition(size: ChatSize): ChatPosition {
+  return clampChatPosition(
+    { x: window.innerWidth - size.width - VIEWPORT_GAP, y: DEFAULT_TOP },
+    size,
+    viewportSize(),
+  );
+}
+
+function sameFrame(left: ChatFrame, right: ChatFrame): boolean {
+  return (
+    left.size.width === right.size.width &&
+    left.size.height === right.size.height &&
+    left.position.x === right.position.x &&
+    left.position.y === right.position.y
+  );
 }
 
 /**
@@ -58,13 +102,23 @@ export function ChatWidget({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [anchor, setAnchor] = useState<Element | null>(null);
-  const [size, setSize] = useState<ChatSize>(DEFAULT_CHAT_SIZE);
+  const [frame, setFrame] = useState<ChatFrame>({
+    size: DEFAULT_CHAT_SIZE,
+    position: { x: VIEWPORT_GAP, y: DEFAULT_TOP },
+  });
   const [storageReady, setStorageReady] = useState(false);
-  const drag = useRef<{
+  const resize = useRef<{
     pointerId: number;
     x: number;
     y: number;
     size: ChatSize;
+    position: ChatPosition;
+  } | null>(null);
+  const move = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    position: ChatPosition;
   } | null>(null);
 
   useEffect(() => {
@@ -72,35 +126,61 @@ export function ChatWidget({
   }, [anchorSelector]);
 
   useEffect(() => {
+    let loadedSize = DEFAULT_CHAT_SIZE;
     try {
       const raw = window.localStorage.getItem(CHAT_SIZE_KEY);
       if (raw) {
         const saved = JSON.parse(raw) as Partial<ChatSize>;
         if (typeof saved.width === "number" && typeof saved.height === "number")
-          setSize(clampChatSize({ width: saved.width, height: saved.height }, viewportMaximum()));
+          loadedSize = clampChatSize(
+            { width: saved.width, height: saved.height },
+            viewportMaximum(),
+          );
       }
     } catch {
       // Trình duyệt có thể chặn localStorage; kích thước mặc định vẫn dùng được.
-    } finally {
-      setStorageReady(true);
     }
+
+    let loadedPosition = defaultPosition(loadedSize);
+    try {
+      const raw = window.localStorage.getItem(CHAT_POSITION_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<ChatPosition>;
+        if (typeof saved.x === "number" && typeof saved.y === "number")
+          loadedPosition = clampChatPosition(
+            { x: saved.x, y: saved.y },
+            loadedSize,
+            viewportSize(),
+          );
+      }
+    } catch {
+      // Vị trí mặc định vẫn dùng được khi localStorage bị chặn hoặc chứa dữ liệu hỏng.
+    }
+
+    setFrame({ size: loadedSize, position: loadedPosition });
+    setStorageReady(true);
   }, []);
 
   useEffect(() => {
     if (!storageReady) return;
     try {
-      window.localStorage.setItem(CHAT_SIZE_KEY, JSON.stringify(size));
+      window.localStorage.setItem(CHAT_SIZE_KEY, JSON.stringify(frame.size));
+      window.localStorage.setItem(CHAT_POSITION_KEY, JSON.stringify(frame.position));
     } catch {
       // Không cho lỗi lưu sở thích làm hỏng khung chat.
     }
-  }, [size, storageReady]);
+  }, [frame, storageReady]);
 
   useEffect(() => {
     const fitToViewport = () => {
       if (window.innerWidth < 640) return;
-      setSize((current) => {
-        const next = clampChatSize(current, viewportMaximum());
-        return sameSize(current, next) ? current : next;
+      setFrame((current) => {
+        const nextSize = clampChatSize(current.size, viewportMaximum());
+        const next = {
+          size: nextSize,
+          position: clampChatPosition(current.position, nextSize, viewportSize()),
+        };
+        return sameFrame(current, next) ? current : next;
       });
     };
     window.addEventListener("resize", fitToViewport);
@@ -134,44 +214,127 @@ export function ChatWidget({
               : null;
     if (!delta) return;
     event.preventDefault();
-    setSize((current) =>
-      clampChatSize(
-        { width: current.width + delta.width, height: current.height + delta.height },
+    setFrame((current) => {
+      const nextSize = clampChatSize(
+        {
+          width: current.size.width + delta.width,
+          height: current.size.height + delta.height,
+        },
         viewportMaximum(),
-      ),
-    );
+      );
+      return {
+        size: nextSize,
+        position: clampChatPosition(
+          {
+            x: current.position.x + current.size.width - nextSize.width,
+            y: current.position.y,
+          },
+          nextSize,
+          viewportSize(),
+        ),
+      };
+    });
   }
 
   function startResize(event: PointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = {
+    resize.current = {
       pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      size,
+      size: frame.size,
+      position: frame.position,
     };
   }
 
   function moveResize(event: PointerEvent<HTMLButtonElement>) {
-    const current = drag.current;
+    const current = resize.current;
     if (!current || current.pointerId !== event.pointerId) return;
-    setSize(
-      clampChatSize(
-        {
-          // Panel neo bên phải: kéo cạnh trái sang trái làm tăng chiều rộng.
-          width: current.size.width - (event.clientX - current.x),
-          height: current.size.height + (event.clientY - current.y),
-        },
-        viewportMaximum(),
-      ),
+    const nextSize = clampChatSize(
+      {
+        // Tay cầm ở cạnh trái: kéo sang trái làm tăng chiều rộng.
+        width: current.size.width - (event.clientX - current.x),
+        height: current.size.height + (event.clientY - current.y),
+      },
+      viewportMaximum(),
     );
+    setFrame({
+      size: nextSize,
+      position: clampChatPosition(
+        {
+          x: current.position.x + current.size.width - nextSize.width,
+          y: current.position.y,
+        },
+        nextSize,
+        viewportSize(),
+      ),
+    });
   }
 
   function stopResize(event: PointerEvent<HTMLButtonElement>) {
-    if (drag.current?.pointerId !== event.pointerId) return;
-    drag.current = null;
+    if (resize.current?.pointerId !== event.pointerId) return;
+    resize.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function moveFromKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
+    const step = event.shiftKey ? RESIZE_STEP * 2 : RESIZE_STEP;
+    const delta =
+      event.key === "ArrowLeft"
+        ? { x: -step, y: 0 }
+        : event.key === "ArrowRight"
+          ? { x: step, y: 0 }
+          : event.key === "ArrowUp"
+            ? { x: 0, y: -step }
+            : event.key === "ArrowDown"
+              ? { x: 0, y: step }
+              : null;
+    if (!delta || window.innerWidth < 640) return;
+    event.preventDefault();
+    setFrame((current) => ({
+      ...current,
+      position: clampChatPosition(
+        { x: current.position.x + delta.x, y: current.position.y + delta.y },
+        current.size,
+        viewportSize(),
+      ),
+    }));
+  }
+
+  function startMove(event: PointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 || window.innerWidth < 640) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    move.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      position: frame.position,
+    };
+  }
+
+  function movePanel(event: PointerEvent<HTMLButtonElement>) {
+    const current = move.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    setFrame((active) => ({
+      ...active,
+      position: clampChatPosition(
+        {
+          x: current.position.x + event.clientX - current.x,
+          y: current.position.y + event.clientY - current.y,
+        },
+        active.size,
+        viewportSize(),
+      ),
+    }));
+  }
+
+  function stopMove(event: PointerEvent<HTMLButtonElement>) {
+    if (move.current?.pointerId !== event.pointerId) return;
+    move.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
   }
@@ -197,8 +360,10 @@ export function ChatWidget({
   );
 
   const panelStyle = {
-    "--chat-width": `${size.width}px`,
-    "--chat-height": `${size.height}px`,
+    "--chat-width": `${frame.size.width}px`,
+    "--chat-height": `${frame.size.height}px`,
+    "--chat-left": `${frame.position.x}px`,
+    "--chat-top": `${frame.position.y}px`,
   } as CSSProperties;
 
   return (
@@ -214,13 +379,23 @@ export function ChatWidget({
           hidden={!open}
           aria-label="Trợ lý C-route"
           style={panelStyle}
-          className="fixed inset-x-3 bottom-3 top-20 z-50 flex h-auto w-auto flex-col overflow-hidden rounded-2xl border border-soil-200 bg-soil-50 shadow-xl sm:inset-auto sm:right-4 sm:top-20 sm:h-[var(--chat-height)] sm:max-h-[calc(100dvh-6rem)] sm:w-[var(--chat-width)] sm:max-w-[calc(100vw-2rem)]"
+          className="fixed inset-x-3 bottom-3 top-20 z-50 flex h-auto w-auto flex-col overflow-hidden rounded-2xl border border-soil-200 bg-soil-50 shadow-xl sm:inset-auto sm:left-[var(--chat-left)] sm:top-[var(--chat-top)] sm:h-[var(--chat-height)] sm:max-h-[calc(100dvh-2rem)] sm:w-[var(--chat-width)] sm:max-w-[calc(100vw-2rem)]"
         >
           <header className="flex items-center justify-between border-b border-soil-200 bg-white px-4 py-3">
-            <div>
+            <button
+              type="button"
+              aria-label="Di chuyển khung chat"
+              aria-describedby="chat-move-help"
+              onKeyDown={moveFromKeyboard}
+              onPointerDown={startMove}
+              onPointerMove={movePanel}
+              onPointerUp={stopMove}
+              onPointerCancel={stopMove}
+              className="min-w-0 flex-1 cursor-default touch-auto select-none text-left focus:outline-none focus:ring-2 focus:ring-leaf-500 sm:cursor-move sm:touch-none"
+            >
               <p className="text-sm font-semibold text-soil-900">Trợ lý</p>
               <p className="text-xs text-soil-600">Tra số liệu và hướng dẫn dùng hệ thống</p>
-            </div>
+            </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -246,6 +421,9 @@ export function ChatWidget({
           </button>
           <span id="chat-resize-help" className="sr-only">
             Dùng phím mũi tên trái hoặc phải để đổi chiều rộng; lên hoặc xuống để đổi chiều cao.
+          </span>
+          <span id="chat-move-help" className="sr-only">
+            Kéo để di chuyển khung chat. Dùng các phím mũi tên để di chuyển bằng bàn phím.
           </span>
         </section>
       )}
