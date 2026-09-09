@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { formConfigError, missingSupabaseEnv, readSupabaseConfig } from "@/lib/supabase/config";
+
+const configSource = readFileSync(join(process.cwd(), "src/lib/supabase/config.ts"), "utf8");
 
 const FULL = {
   NEXT_PUBLIC_SUPABASE_URL: "https://abc.supabase.co",
@@ -65,5 +69,31 @@ describe("chắn lỗi cấu hình cho biểu mẫu công khai", () => {
 
   it("biến để rỗng cũng tính là thiếu", () => {
     expect(formConfigError({ ...FULL, NEXT_PUBLIC_SUPABASE_ANON_KEY: "  " })).toBeTruthy();
+  });
+});
+
+/**
+ * LỖI ĐÃ GẶP: tải tệp lên báo "Thiếu biến môi trường: NEXT_PUBLIC_SUPABASE_URL,
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY" ngay ở bước PUT của trình duyệt, dù cả hai biến đã khai
+ * báo đủ ở .env.local lẫn Vercel.
+ *
+ * Nguyên nhân: Next thay biến công khai bằng cách khớp ĐÚNG dạng văn bản
+ * `process.env.NEXT_PUBLIC_TÊN` lúc build. Tệp cấu hình khi đó chỉ đọc qua `env[k]` và
+ * `env.NEXT_PUBLIC_X` với `env` là tham số, nên không dạng nào được thay. Đo trên bundle
+ * thật: chunk trình duyệt chứa TÊN biến mà không chứa GIÁ TRỊ.
+ *
+ * Không có test chạy trong Node nào bắt được lỗi này — ở Node `process.env` là thật nên
+ * mọi cách đọc đều đúng. Vì vậy ca dưới đây kiểm chính VĂN BẢN NGUỒN, đúng thứ mà bước
+ * build của Next nhìn vào.
+ */
+describe("biến công khai phải đọc được sau khi Next nội tuyến", () => {
+  it("có biểu thức tĩnh cho cả hai biến", () => {
+    expect(configSource).toContain("process.env.NEXT_PUBLIC_SUPABASE_URL");
+    expect(configSource).toContain("process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  });
+
+  it("không hàm nào mặc định đọc thẳng process.env", () => {
+    // `env: Env = process.env` là đúng cái đã hỏng: ở trình duyệt nó rỗng.
+    expect(configSource).not.toMatch(/env:\s*Env\s*=\s*process\.env/);
   });
 });
