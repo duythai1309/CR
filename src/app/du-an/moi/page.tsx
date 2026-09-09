@@ -8,10 +8,8 @@ export const metadata: Metadata = { title: "Tạo dự án" };
 /**
  * Tạo dự án.
  *
- * Form chỉ có hai ô, nhưng cái tạo ra thì không nhỏ: RPC `create_project` chạy trigger
- * `project_bootstrap` trong cùng transaction, dựng tư cách owner và đủ bảy stage. Trang
- * nói trước điều đó, và nói luôn hai thứ CHƯA được chọn — Standard và Methodology, cả hai
- * khoá một chiều — để người dùng chuyên nghiệp không tưởng đây là bước chọn chuẩn.
+ * Form chỉ nhận thông tin ban đầu. Thẻ bên cạnh nói gọn những gì hệ thống dựng sẵn,
+ * những lựa chọn để lại cho phần hồ sơ và ranh giới của kết quả tạo ra.
  */
 export default function NewProjectPage() {
   return (
@@ -26,34 +24,27 @@ export default function NewProjectPage() {
           <NewProjectForm />
         </Card>
 
-        <div className="space-y-4">
-          <Card title="Tạo xong thì có gì">
-            <ul className="space-y-2 text-sm text-soil-700">
-              <li>Bảy stage từ Project concept tới PDD, đúng thứ tự, duyệt tuần tự.</li>
-              <li>Mời thêm người cùng làm ở tab Thành viên; ai vào dự án cũng có đủ quyền.</li>
-              <li>Một bảng công việc rỗng — mỗi stage là một cột.</li>
-            </ul>
-          </Card>
-
-          <Card title="Chưa chọn ở bước này">
+        <div>
+          <Card title="Sau khi tạo">
             <ul className="space-y-2 text-sm text-soil-700">
               <li>
-                <strong>Standard</strong> chọn và khoá ở bước 3. Khoá là một chiều: cơ sở dữ
-                liệu từ chối mọi lượt đổi sau đó.
+                Có ngay bảy mục hồ sơ từ <strong>Project concept</strong> tới{" "}
+                <strong>PDD</strong> và một bảng công việc rỗng.
               </li>
               <li>
-                <strong>Methodology</strong> chọn và khoá ở bước 4, chỉ trong những bản đã
-                publish thuộc Standard đã khoá.
-              </li>
-              <li>
-                <strong>Baseline</strong> nhập ở bước 5, theo{" "}
-                <code className="font-mono text-xs">metric_schema</code> của Methodology đã
-                khoá.
+                <strong>Standard</strong>, <strong>Methodology</strong> và{" "}
+                <strong>Baseline</strong> được chọn trong các mục hồ sơ sau. Khi khoá
+                Standard hoặc Methodology, cơ sở dữ liệu không cho đổi lại.
               </li>
             </ul>
             <p className="mt-3 border-t border-soil-100 pt-3 text-xs text-soil-600">
               Bốn methodology hiện có là <strong>dữ liệu mẫu chưa thẩm định</strong>, không
               phải methodology được Verra hay Gold Standard công nhận.
+            </p>
+            <p className="mt-2 text-xs text-soil-600">
+              Nền tảng dừng trước validation, registration, VVB verification và issuance.
+              Hồ sơ dựng ở đây <strong>chưa phải hồ sơ nộp được</strong>; MRV report chỉ là
+              ước tính, không phải tín chỉ đã phát hành.
             </p>
           </Card>
         </div>

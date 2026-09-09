@@ -167,6 +167,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
     .map((stage) => ({
       stage,
       blockers: approvalBlockers(views, stage.ordinal, gate),
+      checks: approvalChecklist(views, stage.ordinal, gate),
     }));
 
   const baselineFields = methodology
@@ -254,42 +255,87 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
       </section>
 
       {/*
-        Đường vào việc duyệt. Hai trục — có nội dung chưa, và đã duyệt chưa — cố ý tách
-        thành hai khối riêng: gộp chúng vào một huy hiệu là đúng chỗ từng làm người dùng
-        đọc "Chưa có nội dung" ngay cạnh "Đã duyệt" thành hai câu mâu thuẫn.
+        NƠI DUY NHẤT để duyệt.
+        Trước đây mỗi mục trong bảy mục mang một khung "Duyệt hồ sơ" riêng, mỗi khung lặp
+        lại cùng một đoạn giải thích về `approve_project_stage` và cùng một danh sách sáu
+        điều kiện — bảy lần trên một trang. Đoạn giải thích chung nay viết một lần ở đây,
+        checklist của từng mục nằm trong hàng của chính mục đó và chỉ mở khi cần.
+
+        Hai trục vẫn tách: "có nội dung chưa" thuộc về từng khối hồ sơ bên dưới, "đã duyệt
+        chưa" thuộc về khối này.
       */}
-      <section className="rounded-xl border border-soil-200 bg-white px-5 py-4 shadow-sm">
+      <section
+        id="cho-duyet"
+        className="scroll-mt-6 rounded-xl border border-soil-200 bg-white px-5 py-4 shadow-sm"
+      >
         <SectionHeader
           title={`Chờ duyệt (${pendingApprovals.length}/7)`}
-          description="Bấm vào một mục để tới thẳng checklist điều kiện và nút duyệt của mục đó."
+          description={
+            <>
+              Mở một mục để xem đủ điều kiện của mục đó rồi duyệt tại chỗ. Checklist chép
+              từ <code className="font-mono">approve_project_stage</code> trong{" "}
+              <code className="font-mono">0013_project_platform.sql</code>: cơ sở dữ liệu
+              cưỡng chế thứ tự duyệt và không kiểm gì ngoài danh sách đó. Duyệt là việc
+              riêng, không khoá quyền điền hồ sơ.
+            </>
+          }
         />
 
         {pendingApprovals.length === 0 ? (
           <p className="mt-2 text-sm text-soil-700">
-            Cả bảy mục đã duyệt. Duyệt không thay thế thẩm định độc lập.
+            Cả bảy mục đã duyệt. Duyệt ở đây không thay thế thẩm định độc lập.
           </p>
         ) : (
           <ul className="mt-3 grid gap-2">
-            {pendingApprovals.map(({ stage, blockers }) => (
-              <li
-                key={stage.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-soil-200 px-3 py-2"
-              >
-                <span className="font-mono text-xs text-soil-500">{stage.ordinal}</span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-soil-900">
-                  {stage.title}
-                </span>
-                {blockers.length === 0 ? (
-                  <Badge tone="leaf">Duyệt được ngay</Badge>
-                ) : (
-                  <span className="text-xs text-soil-600">{blockers[0]}</span>
-                )}
-                <LinkButton
-                  href={`#duyet-buoc-${stage.ordinal}`}
-                  variant={blockers.length === 0 ? "primary" : "secondary"}
+            {pendingApprovals.map(({ stage, blockers, checks }, index) => (
+              <li key={stage.id}>
+                {/*
+                  Chỉ mở sẵn hàng đầu tiên. Cơ sở dữ liệu cưỡng chế duyệt TUẦN TỰ, nên
+                  trong mọi lúc chỉ đúng một mục là duyệt được — chính là mục này. Sáu
+                  hàng còn lại đã nói ngay ở dòng tóm tắt rằng chúng đang chờ mục nào,
+                  nên mở sẵn cả bảy chỉ dựng lại đúng bức tường vừa gỡ.
+                */}
+                <details
+                  id={`duyet-buoc-${stage.ordinal}`}
+                  open={index === 0}
+                  className="scroll-mt-6 overflow-hidden rounded-lg border border-soil-200"
                 >
-                  {blockers.length === 0 ? "Xem và duyệt" : "Xem điều kiện"}
-                </LinkButton>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2 hover:bg-soil-50">
+                    <span className="font-mono text-xs text-soil-500">{stage.ordinal}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-soil-900">
+                      {stage.title}
+                    </span>
+                    {blockers.length === 0 ? (
+                      <Badge tone="leaf">Duyệt được ngay</Badge>
+                    ) : (
+                      <span className="text-xs text-soil-600">{blockers[0]}</span>
+                    )}
+                    <span className="text-xs font-medium text-leaf-800">
+                      {blockers.length === 0 ? "Mở để duyệt" : "Xem điều kiện"}
+                    </span>
+                  </summary>
+
+                  <div className="border-t border-soil-200 bg-soil-50 px-3 py-3">
+                    <ApprovalChecklist
+                      checks={checks}
+                      action={
+                        abilities.canApproveStage ? (
+                          <ApproveStageForm
+                            projectId={id}
+                            ordinal={stage.ordinal}
+                            blockers={checks
+                              .filter((c) => c.state === "fail")
+                              .map((c) => c.requirement)}
+                          />
+                        ) : (
+                          <p className="max-w-xs text-right text-xs text-soil-600">
+                            Dự án đã bị xoá nên mọi đường ghi, kể cả duyệt, đã đóng lại.
+                          </p>
+                        )
+                      }
+                    />
+                  </div>
+                </details>
               </li>
             ))}
           </ul>
@@ -297,7 +343,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
       </section>
 
       {views.map((stage) => {
-        const checks = approvalChecklist(views, stage.ordinal, gate);
+        const blockers = approvalBlockers(views, stage.ordinal, gate);
         const stageTasks = tasks.filter((t) => t.stage_id === stage.id);
         const done = stageTasks.filter((t) => t.status === "done").length;
         const kind = STAGE_DOCUMENT[stage.ordinal];
@@ -547,30 +593,22 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
                 </p>
               )}
 
+              {/*
+                Một dòng, không phải một khung. Checklist và nút duyệt nằm ở khối "Chờ
+                duyệt" đầu trang; nhắc lại đủ sáu điều kiện ở đây là chép cùng một đoạn
+                bảy lần trên một trang.
+              */}
               {!stage.approvedAt && (
-                <div
-                  id={`duyet-buoc-${stage.ordinal}`}
-                  className="scroll-mt-6 border-t border-soil-100 pt-4"
-                >
-                  <ApprovalChecklist
-                    checks={checks}
-                    action={
-                      abilities.canApproveStage ? (
-                        <ApproveStageForm
-                          projectId={id}
-                          ordinal={stage.ordinal}
-                          blockers={checks
-                            .filter((c) => c.state === "fail")
-                            .map((c) => c.requirement)}
-                        />
-                      ) : (
-                        <p className="max-w-xs text-right text-xs text-soil-600">
-                          Dự án đã bị xoá nên mọi đường ghi, kể cả duyệt, đã đóng lại.
-                        </p>
-                      )
-                    }
-                  />
-                </div>
+                <p className="border-t border-soil-100 pt-4 text-sm text-soil-600">
+                  Chưa duyệt —{" "}
+                  {blockers.length === 0 ? "đã đủ điều kiện." : blockers[0]}{" "}
+                  <a
+                    href={`#duyet-buoc-${stage.ordinal}`}
+                    className="font-medium text-leaf-800 hover:underline"
+                  >
+                    {blockers.length === 0 ? "Duyệt hồ sơ này" : "Xem điều kiện"}
+                  </a>
+                </p>
               )}
             </div>
           </details>
@@ -610,21 +648,15 @@ function ApprovalChecklist({
   const failing = checks.filter((c) => c.state === "fail");
 
   return (
-    <div className="rounded-lg border border-soil-200 bg-soil-50 p-4">
-      <SectionHeader
-        title="Duyệt hồ sơ"
-        description={
-          <>
-            Duyệt là việc riêng, không khoá quyền điền hồ sơ. Checklist chép từ{" "}
-            <code className="font-mono">approve_project_stage</code> trong{" "}
-            <code className="font-mono">0013_project_platform.sql</code>; cơ sở dữ liệu vẫn
-            cưỡng chế thứ tự duyệt và không kiểm gì ngoài danh sách này.
-          </>
-        }
-        aside={action}
-      />
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-soil-500">
+          Điều kiện cơ sở dữ liệu cưỡng chế
+        </p>
+        {action}
+      </div>
 
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-2 space-y-2">
         {checks.map((check) => (
           <li key={check.id} className="flex gap-2.5">
             <CheckMark state={check.state} />

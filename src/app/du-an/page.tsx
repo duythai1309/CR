@@ -30,7 +30,7 @@ export default async function ProjectListPage() {
     <>
       <PageHeader
         title="Danh mục dự án"
-        description="Hồ sơ thiết kế dự án carbon mà bạn là thành viên. Bảy bước từ Project concept tới PDD, rồi monitoring period và MRV estimate."
+        description="Theo dõi các hồ sơ dự án bạn tham gia và việc cần chú ý."
         action={
           <div className="flex gap-2">
             {profile.role === "platform_admin" && (
@@ -46,18 +46,7 @@ export default async function ProjectListPage() {
       {rows.length === 0 ? (
         <Empty
           title="Danh mục dự án của bạn đang trống"
-          hint={
-            <>
-              <span className="block">
-                Đây là nơi tập hợp các hồ sơ dự án carbon mà bạn tham gia.
-              </span>
-              <span className="mt-2 block">
-                Hãy tạo dự án đầu tiên với tên và mô tả ngắn. Tạo xong, bạn có toàn quyền
-                và có ngay bảy stage thiết kế từ Project concept tới PDD để bắt đầu làm hồ
-                sơ.
-              </span>
-            </>
-          }
+          hint="Tạo dự án đầu tiên để bắt đầu xây dựng hồ sơ và theo dõi công việc."
           action={<LinkButton href="/du-an/moi">Tạo dự án đầu tiên</LinkButton>}
         />
       ) : (
@@ -92,21 +81,6 @@ export default async function ProjectListPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-soil-200 bg-soil-100/60 px-5 py-4">
-        <h2 className="text-sm font-semibold text-soil-900">Phạm vi của nền tảng</h2>
-        <p className="mt-1.5 text-sm text-soil-700">
-          Nền tảng đi từ <strong>Project concept</strong> tới <strong>PDD</strong>, rồi
-          monitoring period và MRV estimate có calculation trace. Luồng{" "}
-          <strong>dừng trước</strong> stakeholder consultation, validation, registration,
-          VVB verification, standard review và issuance — tương ứng bước 8–11 và 15–17 của
-          quy trình chuẩn.
-        </p>
-        <p className="mt-2 text-sm text-soil-700">
-          Nghĩa là: hồ sơ dựng ở đây <strong>chưa phải hồ sơ nộp được</strong>, và MRV
-          report là ước tính, không phải tín chỉ đã phát hành. Import observation data hiện
-          chỉ nhận CSV.
-        </p>
-      </div>
     </>
   );
 }
