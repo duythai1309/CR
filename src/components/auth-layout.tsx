@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -55,8 +56,7 @@ export function AuthLayout({
       <div className="relative mx-auto grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/20 bg-forest-950/40 shadow-2xl shadow-forest-950/50 backdrop-blur-sm lg:grid-cols-[minmax(0,1fr)_minmax(26rem,0.85fr)]">
         <section className="hidden flex-col justify-between p-10 text-white lg:flex">
           <Link href="/" className="inline-flex items-center gap-2.5 text-white transition hover:text-mint-100">
-            <RouteMark />
-            <span className="text-base font-bold tracking-tight">C-route</span>
+            <BrandLogo variant="ngang" onDark className="h-9 w-auto" />
           </Link>
           <div className="max-w-xl py-16">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-mint-100">{eyebrow}</p>
@@ -77,8 +77,7 @@ export function AuthLayout({
             href="/"
             className="inline-flex items-center gap-2.5 text-forest-900 transition hover:text-forest-700 lg:hidden"
           >
-            <RouteMark />
-            <span className="text-base font-bold tracking-tight">C-route</span>
+            <BrandLogo variant="ngang" className="h-9 w-auto" />
           </Link>
 
           <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-leaf-700 lg:mt-0">{eyebrow}</p>
@@ -95,23 +94,3 @@ export function AuthLayout({
   );
 }
 
-/** Cùng dấu hiệu nhận diện với thanh điều hướng: lộ trình đi lên qua ba mốc. */
-function RouteMark() {
-  return (
-    <svg
-      aria-hidden
-      width="26"
-      height="26"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-    >
-      <path d="M4 19l5-5 4 3 7-9" strokeLinejoin="round" />
-      <circle cx="4" cy="19" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="13" cy="17" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="20" cy="8" r="1.6" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}

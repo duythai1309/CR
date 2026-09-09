@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 import { getActiveProjectSupport, requireProjectMember } from "@/lib/auth";
 import { PROJECT_ROLE_LABEL } from "@/lib/labels";
 import { Alert, Badge, NextAction } from "@/components/ui";
-import { getMethodology, getProject, getStages, getStandard } from "../data";
+import { getDocuments, getMethodology, getProject, getStages, getStandard } from "../data";
+import { getProjectSetup } from "./thiet-lap/data";
 import { MethodologyIdentity } from "@/components/project/methodology-identity";
-import { JourneyRail } from "@/components/project/journey-rail";
+import { JourneyRail, dossierCountFor } from "@/components/project/journey-rail";
 import { ProjectTabs } from "@/components/project/project-tabs";
-import { approvalBlockers, approvedCount, toStageView } from "@/components/project/rules";
+import { approvalBlockers, toStageView } from "@/components/project/rules";
 
 /**
  * Khung của MỘT dự án: kiểm tư cách thành viên một lần, rồi dựng tiêu đề và điều hướng.
@@ -68,9 +69,11 @@ export default async function ProjectLayout({
   const { id } = await params;
   const { profile, role } = await requireProjectMember(id);
 
-  const [project, stages, supportSession] = await Promise.all([
+  const [project, stages, documents, setup, supportSession] = await Promise.all([
     getProject(id),
     getStages(id),
+    getDocuments(id),
+    getProjectSetup(id),
     profile.role === "platform_admin" ? getActiveProjectSupport(id, profile.id) : Promise.resolve(null),
   ]);
   if (!project) notFound();
@@ -79,8 +82,23 @@ export default async function ProjectLayout({
     getMethodology(project.methodology_id),
   ]);
 
+  /**
+   * Thanh tiến độ đếm HỒ SƠ ĐÃ CÓ NỘI DUNG, không đếm lượt duyệt stage.
+   *
+   * Tính ngay tại đây và truyền xuống, thay vì để `JourneyRail` tự đi lấy: layout đã cầm
+   * sẵn `project`, nên tự truy vấn lại trong component là lặp một vòng trên MỌI trang con.
+   * `getDocuments` là nguồn của hai hồ sơ Additionality (bước 6) và PDD (bước 7) — tải tài
+   * liệu lên cho hai bước đó phải làm con số này nhích lên.
+   */
+  const dossierCount = dossierCountFor({
+    setup,
+    standardId: project.standard_id,
+    methodologyId: project.methodology_id,
+    baseline: project.baseline,
+    documentKinds: documents.map((document) => document.kind),
+  });
+
   const views = stages.map(toStageView);
-  const approved = approvedCount(views);
   const current = views.find((s) => !s.approvedAt) ?? null;
   const firstBlocker = current
     ? (approvalBlockers(views, current.ordinal, {
@@ -109,7 +127,7 @@ export default async function ProjectLayout({
 
         <JourneyRail
           projectId={id}
-          approved={approved}
+          dossierCount={dossierCount}
           methodologyLocked={project.methodology_locked_at !== null}
         />
 

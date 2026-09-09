@@ -2,9 +2,10 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { projectClient, requireProjectMember } from "@/lib/auth";
-import { formConfigError } from "@/lib/supabase/config";
+import { formConfigError, readSupabaseConfig } from "@/lib/supabase/config";
 import { HANDLERS } from "@/lib/chat/handlers";
 import { loadChatConfig, missingKeyMessage } from "@/lib/chat/settings";
 import { assertNoForbiddenFeasibilityKeys, runSetupJsonTurn } from "@/lib/chat/setup-assist";
@@ -23,6 +24,67 @@ type Result = { ok: boolean; message: string } | null;
 
 const ok = (message: string): Result => ({ ok: true, message });
 const fail = (message: string): Result => ({ ok: false, message });
+
+function uploadErrorDetail(error: unknown): string {
+  if (!error) return "không rõ lý do";
+  const value = error as { message?: unknown; code?: unknown; status?: unknown; statusCode?: unknown };
+  const message =
+    typeof value.message === "string"
+      ? value.message
+      : error instanceof Error
+        ? error.message
+        : String(error);
+  const code = value.code ?? value.statusCode ?? value.status;
+  return code === undefined || code === null || code === ""
+    ? message
+    : `${message} (mã ${String(code)})`;
+}
+
+/**
+ * Xoá đúng object vừa được action này tạo khi bước ghi metadata/liên kết thất bại.
+ *
+ * Policy 0013 cố ý cấm authenticated xoá object bằng RLS. Vì vậy rollback hẹp này dùng
+ * service role ở phía máy chủ, nhưng không nhận đường dẫn từ form: `objectPath` luôn được
+ * action dựng bằng UUID ngẫu nhiên trong chính lần gọi hiện tại.
+ */
+async function rollbackDocumentObject(objectPath: string): Promise<string | null> {
+  const config = readSupabaseConfig();
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!config || !serviceKey)
+    return "máy chủ thiếu cấu hình service role để xoá object hoàn tác";
+
+  try {
+    const service = createSupabaseClient(config.url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await service.storage.from("project-documents").remove([objectPath]);
+    return error ? uploadErrorDetail(error) : null;
+  } catch (error) {
+    return uploadErrorDetail(error);
+  }
+}
+
+async function failAfterDocumentUpload(
+  step: "project_files" | "đọc nextVersion" | "project_documents",
+  error: unknown,
+  objectPath: string,
+  projectFileId?: string,
+): Promise<Result> {
+  const cleanupError = await rollbackDocumentObject(objectPath);
+  const metadataNote = projectFileId
+    ? ` Bản ghi project_files ${projectFileId} đã được tạo nhưng chưa liên kết.`
+    : "";
+  if (cleanupError)
+    return fail(
+      `Bước ${step} thất bại: ${uploadErrorDetail(error)}. ` +
+        `Không xoá được object hoàn tác; còn file thừa trong kho tại ${objectPath}. ` +
+        `Lỗi dọn kho: ${cleanupError}.${metadataNote}`,
+    );
+  return fail(
+    `Bước ${step} thất bại: ${uploadErrorDetail(error)}. ` +
+      `Đã xoá object vừa tải lên để hoàn tác.${metadataNote}`,
+  );
+}
 
 const BASELINE_DRAFT_DISCLAIMER =
   "Nội dung do máy sinh, chưa được thẩm định. Người dùng phải tự kiểm tra, chép sang form và bấm Lưu baseline.";
@@ -316,77 +378,135 @@ export async function approveStage(_prev: Result, formData: FormData): Promise<R
  * hai cấp đầu, nên sai một cấp là bị từ chối ở cả hai nơi.
  */
 export async function uploadDocument(_prev: Result, formData: FormData): Promise<Result> {
-  const configError = formConfigError();
-  if (configError) return fail(configError);
+  let step = "kiểm tra dữ liệu đầu vào";
+  let objectPath: string | null = null;
+  let uploaded = false;
+  let projectFileId: string | undefined;
 
-  const projectId = String(formData.get("project_id") ?? "");
-  const stageId = String(formData.get("stage_id") ?? "");
-  if (!projectId || !stageId) return fail("Thiếu thông tin dự án hoặc bước.");
-  const { profile } = await requireProjectMember(projectId);
+  try {
+    const configError = formConfigError();
+    if (configError) return fail(configError);
 
-  const kind = String(formData.get("kind") ?? "");
-  if (!isDocumentKind(kind)) return fail("Loại tài liệu không hợp lệ.");
+    const projectId = String(formData.get("project_id") ?? "");
+    const stageId = String(formData.get("stage_id") ?? "");
+    if (!projectId || !stageId) return fail("Thiếu thông tin dự án hoặc bước.");
+    const { profile } = await requireProjectMember(projectId);
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return fail("Chưa chọn tệp.");
-  if (file.size > 52_428_800) return fail("Tệp vượt quá 50 MB.");
+    const kind = String(formData.get("kind") ?? "");
+    if (!isDocumentKind(kind)) return fail("Loại tài liệu không hợp lệ.");
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const checksum = createHash("sha256").update(bytes).digest("hex");
-  const safeName = file.name.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(0, 120) || "tai-lieu";
-  const objectPath = `${projectId}/${profile.id}/${randomUUID()}/${safeName}`;
+    const file = formData.get("file");
+    if (!(file instanceof File) || file.size === 0) return fail("Chưa chọn tệp.");
+    if (file.size > 52_428_800) return fail("Tệp vượt quá 50 MB.");
 
-  const db = await projectClient();
+    step = "đọc nội dung và tính checksum SHA-256";
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const checksum = createHash("sha256").update(bytes).digest("hex");
+    const safeName =
+      file.name.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(0, 120) || "tai-lieu";
+    objectPath = `${projectId}/${profile.id}/${randomUUID()}/${safeName}`;
 
-  const upload = await db.storage
-    .from("project-documents")
-    .upload(objectPath, bytes, { contentType: file.type || "application/octet-stream" });
-  if (upload.error) return fail(`Không tải được tệp lên: ${upload.error.message}`);
+    step = "khởi tạo phiên dữ liệu";
+    const db = await projectClient();
 
-  const inserted = await db
-    .from("project_files")
-    .insert({
+    step = "tra stage_id";
+    const stage = await db
+      .from("project_stages")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("id", stageId)
+      .maybeSingle();
+    if (stage.error)
+      return fail(`Bước tra stage_id thất bại: ${uploadErrorDetail(stage.error)}.`);
+    if (!stage.data) return fail("Bước tra stage_id thất bại: hồ sơ không thuộc dự án này.");
+
+    step = "tải object lên Storage";
+    const upload = await db.storage
+      .from("project-documents")
+      .upload(objectPath, bytes, { contentType: file.type || "application/octet-stream" });
+    if (upload.error)
+      return fail(`Bước Storage thất bại: ${uploadErrorDetail(upload.error)}.`);
+    uploaded = true;
+
+    step = "ghi project_files";
+    const inserted = await db
+      .from("project_files")
+      .insert({
+        project_id: projectId,
+        object_path: objectPath,
+        original_name: file.name.slice(0, 200),
+        mime_type: file.type || "application/octet-stream",
+        size_bytes: bytes.byteLength,
+        checksum,
+      })
+      .select("id")
+      .single();
+
+    if (inserted.error || !inserted.data)
+      return await failAfterDocumentUpload(
+        "project_files",
+        inserted.error ?? "insert thành công nhưng không trả về id",
+        objectPath,
+      );
+    projectFileId = (inserted.data as { id: string }).id;
+
+    step = "đọc nextVersion";
+    const existing = await db
+      .from("project_documents")
+      .select("version")
+      .eq("project_id", projectId)
+      .eq("kind", kind)
+      .order("version", { ascending: false })
+      .limit(1);
+    if (existing.error)
+      return await failAfterDocumentUpload(
+        "đọc nextVersion",
+        existing.error,
+        objectPath,
+        projectFileId,
+      );
+
+    const nextVersion =
+      (((existing.data ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
+
+    step = "ghi project_documents";
+    const linked = await db.from("project_documents").insert({
       project_id: projectId,
-      object_path: objectPath,
-      original_name: file.name.slice(0, 200),
-      mime_type: file.type || "application/octet-stream",
-      size_bytes: bytes.byteLength,
-      checksum,
-    })
-    .select("id")
-    .single();
+      stage_id: stageId,
+      file_id: projectFileId,
+      kind,
+      version: nextVersion,
+    });
 
-  if (inserted.error || !inserted.data)
-    return fail(
-      `Tệp đã lên kho nhưng chưa ghi nhận được: ${inserted.error?.message ?? "không rõ lý do"}`,
-    );
+    if (linked.error)
+      return await failAfterDocumentUpload(
+        "project_documents",
+        linked.error,
+        objectPath,
+        projectFileId,
+      );
 
-  const { data: existing } = await db
-    .from("project_documents")
-    .select("version")
-    .eq("project_id", projectId)
-    .eq("kind", kind)
-    .order("version", { ascending: false })
-    .limit(1);
-
-  const nextVersion =
-    (((existing ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
-
-  const linked = await db.from("project_documents").insert({
-    project_id: projectId,
-    stage_id: stageId,
-    file_id: (inserted.data as { id: string }).id,
-    kind,
-    version: nextVersion,
-  });
-
-  if (linked.error)
-    return linked.error.message.includes("duplicate key")
-      ? fail("Vừa có người khác tải lên cùng lúc. Thử lại để nhận số phiên bản mới.")
-      : fail(`Không gắn được tài liệu vào bước: ${linked.error.message}`);
-
-  refresh(projectId);
-  return ok(`Đã tải lên ${DOCUMENT_KIND_LABEL[kind]} — phiên bản ${nextVersion}.`);
+    uploaded = false;
+    step = "làm mới giao diện";
+    refresh(projectId);
+    return ok(`Đã tải lên ${DOCUMENT_KIND_LABEL[kind]} — phiên bản ${nextVersion}.`);
+  } catch (error) {
+    if (uploaded && objectPath) {
+      const failedStep =
+        step === "đọc nextVersion"
+          ? "đọc nextVersion"
+          : step === "ghi project_files"
+            ? "project_files"
+            : "project_documents";
+      return await failAfterDocumentUpload(
+        failedStep,
+        `${step}: ${uploadErrorDetail(error)}`,
+        objectPath,
+        projectFileId,
+      );
+    }
+    return fail(`Bước ${step} phát sinh lỗi: ${uploadErrorDetail(error)}.`);
+  }
 }
 
 function projectError(message: string): string {

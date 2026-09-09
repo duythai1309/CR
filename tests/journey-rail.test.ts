@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   countPresentDossiers,
+  dossierCountFor,
   dossierPresence,
   journeyPhases,
 } from "@/components/project/journey-rail";
+import { DOCUMENT_KIND_STAGE } from "@/components/project/rules";
 
 /**
  * Trục hành trình đếm nội dung hồ sơ, không đếm lượt duyệt. Mốc khoá Methodology vẫn là
@@ -118,5 +120,84 @@ describe("trục hành trình của dự án", () => {
     expect(presence.feasibility).toBe(true);
     expect(presence.baseline).toBe(true);
     expect(countPresentDossiers(presence)).toBe(2);
+  });
+});
+
+/**
+ * LỖI-1: tải tài liệu cho bước 6 (Additionality) và bước 7 (PDD) không làm thanh tiến độ
+ * nhúc nhích. Nguyên nhân là đường dây từ tài liệu tới con số bị đứt ở layout, nên các ca
+ * dưới đây đi trọn mạch `dossierCountFor` — đúng hàm mà layout gọi — chứ không chỉ kiểm
+ * `dossierPresence` rời rạc.
+ */
+describe("LỖI-1: tải tài liệu bước 6 và bước 7 phải làm số hồ sơ tăng", () => {
+  /** Dự án đã có 5 hồ sơ đầu, còn thiếu đúng Additionality và PDD. */
+  const project = (documentKinds: string[]) => ({
+    setup: {
+      idea: { activity: "Phục hồi rừng ngập mặn" },
+      feasibility: { notes: "Đã khảo sát sơ bộ" },
+    },
+    standardId: "std-1",
+    methodologyId: "meth-1",
+    baseline: { carbon_stock: "12.4" },
+    documentKinds,
+  });
+
+  it("hai loại tài liệu này đúng là của bước 6 và bước 7", () => {
+    expect(DOCUMENT_KIND_STAGE.additionality).toBe(6);
+    expect(DOCUMENT_KIND_STAGE.pdd).toBe(7);
+  });
+
+  it("chưa tải gì thì dừng ở 5/7", () => {
+    expect(dossierCountFor(project([]))).toBe(5);
+    expect(journeyPhases({ dossierCount: 5, methodologyLocked: true })[0].detail).toBe(
+      "5/7 hồ sơ đã có",
+    );
+  });
+
+  it("tải tài liệu Additionality (bước 6) thì số hồ sơ tăng 5 → 6", () => {
+    const before = dossierCountFor(project([]));
+    const after = dossierCountFor(project(["additionality"]));
+
+    expect(after).toBe(before + 1);
+    expect(after).toBe(6);
+    expect(journeyPhases({ dossierCount: after, methodologyLocked: true })[0].detail).toBe(
+      "6/7 hồ sơ đã có",
+    );
+  });
+
+  it("tải tài liệu PDD (bước 7) thì số hồ sơ tăng 5 → 6", () => {
+    const before = dossierCountFor(project([]));
+    const after = dossierCountFor(project(["pdd"]));
+
+    expect(after).toBe(before + 1);
+    expect(dossierPresence(project(["pdd"])).pdd).toBe(true);
+  });
+
+  it("tải cả hai thì đủ 7/7 và Thiết kế chuyển sang xong", () => {
+    const count = dossierCountFor(project(["additionality", "pdd"]));
+    expect(count).toBe(7);
+
+    const [design] = journeyPhases({ dossierCount: count, methodologyLocked: true });
+    expect(design.detail).toBe("Đã có đủ 7/7 hồ sơ");
+    expect(design.state).toBe("done");
+  });
+
+  it("mỗi loại tài liệu chỉ mở đúng hồ sơ của nó, không cộng lây sang hồ sơ khác", () => {
+    const only6 = dossierPresence(project(["additionality"]));
+    expect(only6.additionality).toBe(true);
+    expect(only6.pdd).toBe(false);
+
+    const only7 = dossierPresence(project(["pdd"]));
+    expect(only7.pdd).toBe(true);
+    expect(only7.additionality).toBe(false);
+  });
+
+  it("tải nhiều phiên bản cùng một loại vẫn chỉ tính một hồ sơ", () => {
+    expect(dossierCountFor(project(["pdd", "pdd", "pdd"]))).toBe(6);
+  });
+
+  it("số hồ sơ không phụ thuộc lượt duyệt stage — đó là prop `approved` đã gỡ", () => {
+    // Dự án chưa duyệt bước nào nhưng đã có đủ tài liệu: tiến độ vẫn phải là 7/7.
+    expect(dossierCountFor(project(["additionality", "pdd"]))).toBe(7);
   });
 });

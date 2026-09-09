@@ -82,6 +82,17 @@ export function countPresentDossiers(presence: DossierPresence): number {
   return DOSSIER_KEYS.filter((key) => presence[key]).length;
 }
 
+/**
+ * Đi trọn một mạch từ dữ liệu thô của dự án tới con số hiện trên thanh tiến độ.
+ *
+ * Layout gọi đúng hàm này, nên đường dây "tải tài liệu lên → số hồ sơ tăng" kiểm được
+ * bằng test mà không cần dựng React hay cơ sở dữ liệu. Trước đây phần đếm nằm rải giữa
+ * layout và component nên không có chỗ nào canh được cả mạch.
+ */
+export function dossierCountFor(input: Parameters<typeof dossierPresence>[0]): number {
+  return countPresentDossiers(dossierPresence(input));
+}
+
 /** Ba giai đoạn suy ra từ số hồ sơ đã có và phụ thuộc thật để mở Module B. */
 export function journeyPhases({
   dossierCount,
@@ -144,36 +155,28 @@ const TONE: Record<PhaseState, { bar: string; label: string; detail: string }> =
   },
 };
 
-export async function JourneyRail({
+/**
+ * Thanh tiến độ. Chỉ VẼ — số hồ sơ do layout tính rồi truyền xuống.
+ *
+ * Không còn prop `approved`. Nó là số lượt duyệt stage, đã hết được dùng từ khi Thiết kế
+ * chuyển sang đếm hồ sơ, nhưng vẫn nằm trong chữ ký nên layout cứ truyền và không ai thấy
+ * là nó rơi vào hư không. Một prop chết mà vẫn nhận chính là cái bẫy đó, nên gỡ hẳn thay
+ * vì đổi tên thành `_legacy`.
+ *
+ * Component này cũng thôi tự đi lấy dữ liệu: layout đã có `project` trong tay, tự truy vấn
+ * lại ở đây là lặp một vòng trên MỌI trang con của dự án.
+ */
+export function JourneyRail({
   projectId,
-  approved: _legacyApproved,
+  dossierCount,
   methodologyLocked,
 }: {
   projectId: string;
-  /** Giữ prop cũ để layout không phải đổi; tiến độ không còn dùng số lượt duyệt này. */
-  approved: number;
+  /** Số hồ sơ đã có nội dung, do `dossierCountFor` tính ở layout. */
+  dossierCount: number;
   methodologyLocked: boolean;
 }) {
-  const [{ getDocuments, getProject }, { getProjectSetup }] = await Promise.all([
-    import("@/app/du-an/data"),
-    import("@/app/du-an/[id]/thiet-lap/data"),
-  ]);
-  const [project, documents, setup] = await Promise.all([
-    getProject(projectId),
-    getDocuments(projectId),
-    getProjectSetup(projectId),
-  ]);
-  const present = dossierPresence({
-    setup,
-    standardId: project?.standard_id ?? null,
-    methodologyId: project?.methodology_id ?? null,
-    baseline: project?.baseline,
-    documentKinds: documents.map((document) => document.kind),
-  });
-  const phases = journeyPhases({
-    dossierCount: countPresentDossiers(present),
-    methodologyLocked,
-  });
+  const phases = journeyPhases({ dossierCount, methodologyLocked });
 
   return (
     <ol className="mt-4 grid gap-2 sm:grid-cols-3" aria-label="Giai đoạn của dự án">
