@@ -397,7 +397,7 @@ export async function uploadDocument(_prev: Result, formData: FormData): Promise
 
     const file = formData.get("file");
     if (!(file instanceof File) || file.size === 0) return fail("Chưa chọn tệp.");
-    if (file.size > 52_428_800) return fail("Tệp vượt quá 50 MB.");
+    if (file.size > 4_194_304) return fail("Tệp vượt quá 4 MB. Vercel giới hạn cứng thân request ở 4,5 MB nên tệp lớn hơn không đi qua server action được.");
 
     step = "đọc nội dung và tính checksum SHA-256";
     const bytes = Buffer.from(await file.arrayBuffer());

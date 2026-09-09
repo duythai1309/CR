@@ -305,7 +305,7 @@ export async function attachFileToTask(_prev: Result, formData: FormData): Promi
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return "Chưa chọn tệp.";
-  if (file.size > 52_428_800) return "Tệp vượt quá 50 MB.";
+  if (file.size > 4_194_304) return "Tệp vượt quá 4 MB. Vercel giới hạn cứng thân request ở 4,5 MB nên tệp lớn hơn không đi qua server action được.";
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const checksum = createHash("sha256").update(bytes).digest("hex");

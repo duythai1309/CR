@@ -112,7 +112,7 @@ export function AttachForm({ projectId, taskId }: { projectId: string; taskId: s
       <input type="hidden" name="task_id" value={taskId} />
       <Field
         label="Tệp đính kèm cho công việc"
-        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB."
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 4 MB."
       >
         <input
           type="file"

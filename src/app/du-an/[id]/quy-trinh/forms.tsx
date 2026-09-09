@@ -485,7 +485,7 @@ export function UploadDocumentForm({
 
       <Field
         label={`Tệp ${DOCUMENT_KIND_LABEL[kind]}`}
-        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 50 MB. Mỗi lần tải lên tạo một phiên bản mới."
+        hint="Nhận PDF, Word (.docx), Excel (.xlsx), CSV hoặc ảnh; tối đa 4 MB. Mỗi lần tải lên tạo một phiên bản mới."
       >
         <input
           type="file"
